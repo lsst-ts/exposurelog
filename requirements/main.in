@@ -7,7 +7,15 @@
 
 safir
 aiohttp
+aiopg
 aiodns
 cchardet
 importlib_metadata
 click
+# These are for daf_butler
+astropy
+deprecated
+numpy
+pyyaml
+requests
+sqlalchemy

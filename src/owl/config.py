@@ -33,3 +33,26 @@ class Configuration:
 
     Set with the ``SAFIR_LOG_LEVEL`` environment variable.
     """
+
+    owl_database_url: str = os.getenv(
+        "OWL_DATABASE_URL", "postgresql://owl@localhost/postgres"
+    )
+    """Path to the OWL database server containing messages.
+
+    Set with the ``OWL_DATABASE_URL`` environment variable.
+    The format is the standard postgres URL::
+
+        postgresql://[user[:password]@][netloc][:port][/dbname]
+    """
+
+    butler_uri_1: str = os.getenv("BUTLER_URI_1")
+    """URI for a butler registry.
+
+    Set with the ```BUTLER_URI_1``` environment variable.
+    """
+
+    butler_uri_2: str = os.getenv("BUTLER_URI_2", "")
+    """URI for a second butler registry, or "" if none.
+
+    Set with the ```BUTLER_URI_2``` environment variable.
+    """
