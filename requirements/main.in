@@ -5,17 +5,26 @@
 # After editing, update requirements/main.txt by running:
 #     make update-deps
 
-safir
+aiodns
 aiohttp
 aiopg
-aiodns
+astropy
 cchardet
-importlib_metadata
 click
+# graphql-server 3.0.0b1 has a bug that prevents asyncio from working reliably.
+# This has been fixed on master. Once the fix is released,
+# uncomment the next line and delete the one after it.
+# graphql-server[aiohttp]
+git+git://github.com/graphql-python/graphql-server.git@master#graphql-server[aiohttp]
+importlib_metadata
+jinja2
+jsonschema
+safir
+sqlalchemy
+
 # These are for daf_butler
 astropy
 deprecated
 numpy
 pyyaml
 requests
-sqlalchemy

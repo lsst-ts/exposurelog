@@ -7,8 +7,10 @@
 
 pre-commit
 coverage[toml]
+black
 flake8
 mypy
 pytest
 pytest-aiohttp
 aiohttp-devtools
+testing.postgresql

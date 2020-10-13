@@ -1,7 +1,6 @@
-"""Tests for the owl.handlers.external.index module and routes."""
-
 from __future__ import annotations
 
+import pathlib
 from typing import TYPE_CHECKING
 
 from owl.app import create_app
@@ -12,7 +11,8 @@ if TYPE_CHECKING:
 
 async def test_get_index(aiohttp_client: TestClient) -> None:
     """Test GET /app-name/"""
-    app = create_app()
+    repo_path = pathlib.Path(__file__).parent / "data" / "hsc_raw"
+    app = create_app(butler_uri_1=repo_path)
     name = app["safir/config"].name
     client = await aiohttp_client(app)
 

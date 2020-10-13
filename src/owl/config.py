@@ -45,8 +45,10 @@ class Configuration:
         postgresql://[user[:password]@][netloc][:port][/dbname]
     """
 
-    butler_uri_1: str = os.getenv("BUTLER_URI_1")
-    """URI for a butler registry.
+    # List a default value for this required parameter to make mypi happy.
+    # It probably better than using Optional[str] for a required parameter.
+    butler_uri_1: str = os.getenv("BUTLER_URI_1", "")
+    """URI for a butler registry. Required.
 
     Set with the ```BUTLER_URI_1``` environment variable.
     """
