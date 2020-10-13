@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import pathlib
 from typing import TYPE_CHECKING
 
 from owl.app import create_app
@@ -13,7 +14,8 @@ if TYPE_CHECKING:
 
 async def test_get_index(aiohttp_client: TestClient) -> None:
     """Test GET /"""
-    app = create_app()
+    repo_path = pathlib.Path(__file__).parents[2] / "data" / "hsc_raw"
+    app = create_app(butler_uri_1=repo_path)
     client = await aiohttp_client(app)
 
     response = await client.get("/")

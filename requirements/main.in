@@ -9,9 +9,11 @@ safir
 aiohttp
 aiopg
 aiodns
+astropy
 cchardet
 importlib_metadata
 click
+jsonschema
 # These are for daf_butler
 astropy
 deprecated

@@ -1,0 +1,28 @@
+$schema: http://json-schema.org/draft-07/schema#
+$id: https://github.com/lsst-sq/owl/blob/master/schema/add.yaml
+title: edit
+description: Schema for OWL edit command
+type: object
+properties:
+  id:
+    description: ID of message to edit.
+    type: integer
+  message_text:
+    description: Message text.
+    type: string
+  user_id:
+    description: User identification.
+    type: string
+  user_agent:
+    description: The application used to submit this request.
+    type: string
+  is_human:
+    description: Did a human create the message (true) or a bot (false)?
+    type: boolean
+  exposure_flag:
+    description: Specify this only if there is an obvious problem with the exposure.
+    type: string
+    enum: [junk, questionable]
+required:
+  - id
+additionalProperties: false

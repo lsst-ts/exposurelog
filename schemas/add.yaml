@@ -1,0 +1,44 @@
+$schema: http://json-schema.org/draft-07/schema#
+$id: https://github.com/lsst-sq/owl/blob/master/schema/add.yaml
+title: add
+description: Schema for OWL add command
+type: object
+properties:
+  obs_id:
+    description: Observation ID; must match an entry in the data registry.
+    type: string
+  instrument:
+    description: Instrument used to take the exposure.
+    type: string
+  message_text:
+    description: Message text.
+    type: string
+  user_id:
+    description: User identification.
+    type: string
+  user_agent:
+    description: The application used to submit this request.
+    type: string
+  is_human:
+    description: Did a human create the message (true) or a bot (false)?
+    type: boolean
+  is_new:
+    description: >-
+      Is this a new exposure (which may not yet be ingested)?
+      If true then ``obs_id`` need not appear in the butler
+      (though the code will check) and if it does not,
+      ``day_obs`` is computed from the current time.
+    type: boolean
+    default: false
+  exposure_flag:
+    description: Specify this only if there is an obvious problem with the exposure.
+    type: string
+    enum: [junk, questionable]
+required:
+  - obs_id
+  - instrument
+  - message_text
+  - user_id
+  - user_agent
+  - is_human
+additionalProperties: false

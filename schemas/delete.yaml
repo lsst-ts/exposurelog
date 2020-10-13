@@ -1,0 +1,12 @@
+$schema: http://json-schema.org/draft-07/schema#
+$id: https://github.com/lsst-sq/owl/blob/master/schema/add.yaml
+title: add
+description: Schema for OWL delete command
+type: object
+properties:
+  id:
+    description: Message ID.
+    type: integer
+required:
+  - id
+additionalProperties: false
