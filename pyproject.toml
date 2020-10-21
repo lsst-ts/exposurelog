@@ -2,7 +2,7 @@
 requires = [
     "setuptools>=42",
     "wheel",
-    "setuptools_scm[toml]>=3.4"
+    "setuptools_scm[toml]>=3.4",
 ]
 build-backend = 'setuptools.build_meta'
 
@@ -21,6 +21,20 @@ deps =
     -r{toxinidir}/requirements/dev.txt
 commands =
     coverage run -m pytest {posargs}
+passenv =
+    # Basic configuration
+    OWL_DATABASE_URL
+    BUTLER_URI_1
+    BUTLER_URI_2
+    # OpenSplice DDS and SAL
+    LSST_DDS_QOS
+    OSPL_HOME
+    OSPL_URI
+    ADLINK_LICENSE
+    # Running daf_butler with eups (I hope this is temporary)
+    PYTHONPATH
+    LD_LIBRARY_PATH
+    DYLD_LIBRARY_PATH
 
 [testenv:coverage-report]
 description = Compile coverage from each test run.

@@ -1,8 +1,11 @@
 .PHONY: update-deps
 update-deps:
 	pip install --upgrade pip-tools pip setuptools
-	pip-compile --upgrade --build-isolation --generate-hashes --output-file requirements/main.txt requirements/main.in
-	pip-compile --upgrade --build-isolation --generate-hashes --output-file requirements/dev.txt requirements/dev.in
+	# add --generate-hashes to the next two lines if and when:
+	# * installation of daf_butler allows it (I doubt it will)
+	# * we can use a released version of graphql-server[aiohttp] instead of getting it from github.
+	pip-compile --upgrade --build-isolation --output-file requirements/main.txt requirements/main.in
+	pip-compile --upgrade --build-isolation --output-file requirements/dev.txt requirements/dev.in
 
 .PHONY: init
 init:
