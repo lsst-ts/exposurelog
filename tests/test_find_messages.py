@@ -369,7 +369,9 @@ async def test_find_messages(aiohttp_client: TestClient) -> None:
         # I issue the order_by command but do not test the resulting
         # order if ordering by a string field.
         fields = list(MessageType.fields)
-        str_fields = set(("instrument", "message_text", "obs_id"))
+        str_fields = set(
+            ("instrument", "message_text", "obs_id", "user_id", "user_agent")
+        )
         for field in fields:
             order_by = [field]
             find_args = find_args_day_obs.copy()
