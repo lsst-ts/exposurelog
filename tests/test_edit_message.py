@@ -80,7 +80,9 @@ async def test_edit_message(aiohttp_client: TestClient) -> None:
         old_message_id = messages[0]["id"]
 
         find_old_message_args = dict(
-            min_id=old_message_id, max_id=old_message_id + 1
+            min_id=old_message_id,
+            max_id=old_message_id + 1,
+            is_valid=False,
         )
         full_edit_args = dict(
             id=old_message_id,

@@ -130,7 +130,7 @@ def assert_two_messages_ordered(
         elif cmp_result != 0:
             raise AssertionError(
                 f"messages mis-ordered in key {key}: "
-                f"message1[{field}]={val1!r}, message2[{field}]={val2!r}"
+                f"message1[{field!r}]={val1!r}, message2[{field!r}]={val2!r}"
             )
 
 
@@ -217,7 +217,7 @@ async def test_find_messages(aiohttp_client: TestClient) -> None:
             max_value = values[-1]
             assert max_value > min_value
 
-            @doc_str(f"message[{field}] not None and >= {min_value}.")
+            @doc_str(f"message[{field!r}] not None and >= {min_value}.")
             def test_min(
                 message: MessageDictT,
                 field: str = field,
@@ -227,7 +227,7 @@ async def test_find_messages(aiohttp_client: TestClient) -> None:
                     message[field] is not None and message[field] >= min_value
                 )
 
-            @doc_str(f"message[{field}] not None and < {max_value}.")
+            @doc_str(f"message[{field!r}] not None and < {max_value}.")
             def test_max(
                 message: MessageDictT,
                 field: str = field,
@@ -265,7 +265,7 @@ async def test_find_messages(aiohttp_client: TestClient) -> None:
             )
             values = [message[field] for message in messages_to_find]
 
-            @doc_str(f"message[{field}] in {values}")
+            @doc_str(f"message[{field!r}] in {values}")
             def test_collection(
                 message: MessageDictT,
                 field: str = field,
@@ -285,7 +285,7 @@ async def test_find_messages(aiohttp_client: TestClient) -> None:
         for field in ("obs_id", "message_text"):
             value = messages[2][field][1:2]
 
-            @doc_str(f"{value} in message[{field}]")
+            @doc_str(f"{value} in message[{field!r}]")
             def test_contains(
                 message: MessageDictT, field: str = field, value: str = value
             ) -> bool:
@@ -297,11 +297,11 @@ async def test_find_messages(aiohttp_client: TestClient) -> None:
         for field in ("date_is_valid_changed", "parent_id"):
             arg_name = f"has_{field}"
 
-            @doc_str(f"message[{field}] is not None")
+            @doc_str(f"message[{field!r}] is not None")
             def test_has(message: MessageDictT, field: str = field) -> bool:
                 return message[field] is not None
 
-            @doc_str(f"message[{field}] is None")
+            @doc_str(f"message[{field!r}] is None")
             def test_has_not(
                 message: MessageDictT, field: str = field
             ) -> bool:
@@ -315,11 +315,11 @@ async def test_find_messages(aiohttp_client: TestClient) -> None:
         # Booleans fields.
         for field in ("is_human", "is_valid"):
 
-            @doc_str(f"message[{field}] is True")
+            @doc_str(f"message[{field!r}] is True")
             def test_true(message: MessageDictT, field: str = field) -> bool:
                 return message[field] is True
 
-            @doc_str(f"message[{field}] is False")
+            @doc_str(f"message[{field!r}] is False")
             def test_false(message: MessageDictT, field: str = field) -> bool:
                 return message[field] is False
 
@@ -331,6 +331,18 @@ async def test_find_messages(aiohttp_client: TestClient) -> None:
         # Test single requests: one entry from find_args_predicates.
         for find_args, predicate in find_args_predicates:
             response = await requestor(find_args)
+            if "is_valid" not in find_args:
+                # Handle the fact that is_valid defaults to True
+                @doc_str(
+                    f'{predicate.__doc__} and message["is_valid"] is True'
+                )
+                def predicate_and_is_valid(
+                    message: MessageDictT,
+                    predicate: typing.Callable = predicate,
+                ) -> bool:
+                    return predicate(message) and message["is_valid"] is True
+
+                predicate = predicate_and_is_valid
             await assert_good_find_response(response, messages, predicate)
 
         # Test pairs of requests: two entries from find_args_predicates,
@@ -356,12 +368,16 @@ async def test_find_messages(aiohttp_client: TestClient) -> None:
             response = await requestor(find_args)
             await assert_good_find_response(response, messages, and_predicates)
 
-        # Test that find with no arguments finds all messages.
+        # Test that find with no arguments finds all is_valid messages.
+        def is_valid_predicate(message: MessageDictT) -> bool:
+            """message["is_valid"] is True"""
+            return message["is_valid"] is True
+
         response = await requestor(dict())
         messages = await assert_good_response(
             response, command="find_messages"
         )
-        assert len(messages) == num_messages
+        await assert_good_find_response(response, messages, is_valid_predicate)
 
         # Check order_by one field
         # Note: SQL databases sort strings differently than Python.
