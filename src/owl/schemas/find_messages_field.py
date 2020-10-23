@@ -55,8 +55,8 @@ find_messages_field = graphql.GraphQLField(
         is_valid=graphql.GraphQLArgument(
             graphql.GraphQLBoolean,
             description="Is the message valid "
-            "(False if deleted or superseded)? "
-            "Defaults to True.",
+            "(False if deleted or superseded)?",
+            default_value=True,
         ),
         exposure_flags=graphql.GraphQLArgument(
             graphql.GraphQLList(ExposureFlagType),
