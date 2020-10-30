@@ -5,11 +5,11 @@
 #    pip-compile --output-file=requirements/main.txt requirements/main.in
 #
 aiodns==2.0.0             # via -r requirements/main.in
-aiohttp==3.7.2            # via -r requirements/main.in, safir
+aiohttp==3.7.2            # via -r requirements/main.in, graphql-server, safir
 aiopg==1.0.0              # via -r requirements/main.in
 astropy==4.1              # via -r requirements/main.in
 async-timeout==3.0.1      # via aiohttp
-attrs==20.2.0             # via aiohttp, jsonschema
+attrs==20.3.0             # via aiohttp, jsonschema
 cchardet==2.1.7           # via -r requirements/main.in
 certifi==2020.6.20        # via requests
 cffi==1.14.3              # via pycares
@@ -17,7 +17,7 @@ chardet==3.0.4            # via aiohttp, requests
 click==7.1.2              # via -r requirements/main.in
 deprecated==1.2.10        # via -r requirements/main.in
 graphql-core==3.1.2       # via graphql-server
-git+git://github.com/graphql-python/graphql-server.git@master#graphql-server[aiohttp]  # via -r requirements/main.in
+graphql-server[aiohttp]==3.0.0b2  # via -r requirements/main.in
 idna==2.10                # via requests, yarl
 importlib-metadata==2.0.0  # via -r requirements/main.in, jsonschema, safir
 jinja2==2.11.2            # via -r requirements/main.in
