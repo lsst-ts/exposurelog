@@ -8,9 +8,9 @@ from dataclasses import dataclass
 
 @dataclass
 class Configuration:
-    """Configuration for owl."""
+    """Configuration for explog."""
 
-    name: str = os.getenv("SAFIR_NAME", "owl")
+    name: str = os.getenv("SAFIR_NAME", "explog")
     """The application's name, which doubles as the root HTTP endpoint path.
 
     Set with the ``SAFIR_NAME`` environment variable.
@@ -22,7 +22,7 @@ class Configuration:
     Set with the ``SAFIR_PROFILE`` environment variable.
     """
 
-    logger_name: str = os.getenv("SAFIR_LOGGER", "owl")
+    logger_name: str = os.getenv("SAFIR_LOGGER", "explog")
     """The root name of the application's logger.
 
     Set with the ``SAFIR_LOGGER`` environment variable.
@@ -34,12 +34,12 @@ class Configuration:
     Set with the ``SAFIR_LOG_LEVEL`` environment variable.
     """
 
-    owl_database_url: str = os.getenv(
-        "OWL_DATABASE_URL", "postgresql://owl@localhost/postgres"
+    exposure_log_database_url: str = os.getenv(
+        "EXPOSURE_LOG_DATABASE_URL", "postgresql://explog@localhost/postgres"
     )
-    """Path to the OWL database server containing messages.
+    """Path to the exposure log database server containing messages.
 
-    Set with the ``OWL_DATABASE_URL`` environment variable.
+    Set with the ``EXPOSURE_LOG_DATABASE_URL`` environment variable.
     The format is the standard postgres URL::
 
         postgresql://[user[:password]@][netloc][:port][/dbname]

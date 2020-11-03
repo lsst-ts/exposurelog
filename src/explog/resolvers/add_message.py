@@ -10,7 +10,7 @@ import astropy.units as u
 import lsst.daf.butler
 import sqlalchemy
 
-from owl.dict_from_result_proxy import dict_from_result_proxy
+from explog.dict_from_result_proxy import dict_from_result_proxy
 
 if typing.TYPE_CHECKING:
     import aiohttp
@@ -46,8 +46,8 @@ async def add_message(
     message_data
         Full data for the new message, as field=value.
     """
-    owl_database = app["owl/owl_database"]
-    registries = app["owl/registries"]
+    exposure_log_database = app["explog/exposure_log_database"]
+    registries = app["explog/registries"]
 
     data_dict = kwargs.copy()
     data_dict["is_valid"] = True
@@ -76,9 +76,9 @@ async def add_message(
     data_dict["day_obs"] = int(obs_day_full.strftime("%Y%m%d"))
 
     # Add the message.
-    async with owl_database.engine.acquire() as connection:
+    async with exposure_log_database.engine.acquire() as connection:
         result_proxy = await connection.execute(
-            owl_database.table.insert()
+            exposure_log_database.table.insert()
             .values(**data_dict)
             .returning(sqlalchemy.literal_column("*"))
         )

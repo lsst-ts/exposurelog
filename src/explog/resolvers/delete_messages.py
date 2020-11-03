@@ -7,7 +7,7 @@ import typing
 import astropy.time
 import sqlalchemy
 
-from owl.dict_from_result_proxy import dict_from_result_proxy
+from explog.dict_from_result_proxy import dict_from_result_proxy
 
 if typing.TYPE_CHECKING:
     import aiohttp
@@ -31,17 +31,17 @@ async def delete_messages(
         Message field=value data.
         The only entry used is ``id``.
     """
-    owl_database = app["owl/owl_database"]
+    exposure_log_database = app["explog/exposure_log_database"]
 
     # Validate the user data and handle defaults
     message_ids = kwargs["ids"]
     current_tai = astropy.time.Time.now().tai.iso
 
     # Delete the messages
-    async with owl_database.engine.acquire() as connection:
+    async with exposure_log_database.engine.acquire() as connection:
         result_proxy = await connection.execute(
-            owl_database.table.update()
-            .where(owl_database.table.c.id.in_(message_ids))
+            exposure_log_database.table.update()
+            .where(exposure_log_database.table.c.id.in_(message_ids))
             .values(is_valid=False, date_is_valid_changed=current_tai)
             .returning(sqlalchemy.literal_column("*"))
         )

@@ -7,7 +7,7 @@ import astropy.time
 import graphql
 import sqlalchemy
 
-from owl.dict_from_result_proxy import dict_from_result_proxy
+from explog.dict_from_result_proxy import dict_from_result_proxy
 
 
 async def edit_message(
@@ -35,18 +35,18 @@ async def edit_message(
     kwargs
         Find conditions as field=value data.
     """
-    owl_database = app["owl/owl_database"]
+    exposure_log_database = app["explog/exposure_log_database"]
 
     request_data = kwargs.copy()
 
     old_message_id = request_data["id"]
 
     # Get all data for the existing message
-    async with owl_database.engine.acquire() as connection:
+    async with exposure_log_database.engine.acquire() as connection:
         # async for row in conn.execute(tbl.select().where(tbl.c.val=='abc')):
         get_old_result_proxy = await connection.execute(
-            owl_database.table.select().where(
-                owl_database.table.c.id == old_message_id
+            exposure_log_database.table.select().where(
+                exposure_log_database.table.c.id == old_message_id
             )
         )
         if get_old_result_proxy.rowcount == 0:
@@ -63,16 +63,16 @@ async def edit_message(
 
     # Add the new message and update the old one.
     # TODO: make this a single transaction (aiopg does not support that).
-    async with owl_database.engine.acquire() as connection:
+    async with exposure_log_database.engine.acquire() as connection:
         add_result_proxy = await connection.execute(
-            owl_database.table.insert()
+            exposure_log_database.table.insert()
             .values(**new_data)
             .returning(sqlalchemy.literal_column("*"))
         )
         add_result = await add_result_proxy.fetchone()
         await connection.execute(
-            owl_database.table.update()
-            .where(owl_database.table.c.id == old_message_id)
+            exposure_log_database.table.update()
+            .where(exposure_log_database.table.c.id == old_message_id)
             .values(is_valid=False, date_is_valid_changed=current_tai_iso)
         )
 

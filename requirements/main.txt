@@ -5,12 +5,12 @@
 #    pip-compile --output-file=requirements/main.txt requirements/main.in
 #
 aiodns==2.0.0             # via -r requirements/main.in
-aiohttp==3.6.3            # via -r requirements/main.in, safir
+aiohttp==3.7.2            # via -r requirements/main.in, safir
 aiopg==1.0.0              # via -r requirements/main.in
-astropy==4.0.3            # via -r requirements/main.in
+astropy==4.1              # via -r requirements/main.in
 async-timeout==3.0.1      # via aiohttp
 attrs==20.2.0             # via aiohttp, jsonschema
-cchardet==2.1.6           # via -r requirements/main.in
+cchardet==2.1.7           # via -r requirements/main.in
 certifi==2020.6.20        # via requests
 cffi==1.14.3              # via pycares
 chardet==3.0.4            # via aiohttp, requests
@@ -23,8 +23,8 @@ importlib-metadata==2.0.0  # via -r requirements/main.in, jsonschema, safir
 jinja2==2.11.2            # via -r requirements/main.in
 jsonschema==3.2.0         # via -r requirements/main.in
 markupsafe==1.1.1         # via jinja2
-multidict==4.7.6          # via aiohttp, yarl
-numpy==1.19.2             # via -r requirements/main.in, astropy
+multidict==5.0.0          # via aiohttp, yarl
+numpy==1.19.4             # via -r requirements/main.in, astropy
 psycopg2-binary==2.8.6    # via aiopg
 pycares==3.1.1            # via aiodns
 pycparser==2.20           # via cffi
@@ -35,11 +35,11 @@ safir==0.1.0              # via -r requirements/main.in
 six==1.15.0               # via jsonschema, structlog
 sqlalchemy==1.3.20        # via -r requirements/main.in
 structlog==20.1.0         # via safir
-typing-extensions==3.7.4.3  # via graphql-server, yarl
+typing-extensions==3.7.4.3  # via aiohttp, graphql-server, yarl
 urllib3==1.25.11          # via requests
 wrapt==1.12.1             # via deprecated
-yarl==1.5.1               # via aiohttp
-zipp==3.3.1               # via importlib-metadata
+yarl==1.6.2               # via aiohttp
+zipp==3.4.0               # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

@@ -4,9 +4,10 @@ import sqlalchemy as sa
 
 
 def create_messages_table(create_indices: bool) -> sa.Table:
-    """Make the owl_messages sqlalchemy table and, optionally, the indices.
+    """Make the exposure_log_messages sqlalchemy table and,
+    optionally, the indices.
 
-    This is a model of the owl_messages database table
+    This is a model of the ``exposure_log_messages`` database table
     that can be used to query the database and modify rows.
 
     It can also be used to create a new table, and if you plan to
@@ -14,7 +15,7 @@ def create_messages_table(create_indices: bool) -> sa.Table:
     (the indices are only relevant when creating a new database table).
     """
     table = sa.Table(
-        "owl_messages",
+        "exposure_log_messages",
         sa.MetaData(),
         sa.Column("id", sa.BigInteger(), primary_key=True),
         sa.Column("obs_id", sa.String(), nullable=False),

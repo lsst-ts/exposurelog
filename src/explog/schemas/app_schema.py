@@ -4,10 +4,10 @@ __all__ = ["app_schema"]
 
 import graphql
 
-from owl.schemas.add_message_field import add_message_field
-from owl.schemas.delete_messages_field import delete_messages_field
-from owl.schemas.edit_message_field import edit_message_field
-from owl.schemas.find_messages_field import find_messages_field
+from explog.schemas.add_message_field import add_message_field
+from explog.schemas.delete_messages_field import delete_messages_field
+from explog.schemas.edit_message_field import edit_message_field
+from explog.schemas.find_messages_field import find_messages_field
 
 app_schema = graphql.GraphQLSchema(
     query=graphql.GraphQLObjectType(

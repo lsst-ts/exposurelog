@@ -4,8 +4,8 @@ __all__ = ["add_message_field"]
 
 import graphql
 
-from owl.resolvers.add_message import add_message
-from owl.schemas.message_type import ExposureFlagType, MessageType
+from explog.resolvers.add_message import add_message
+from explog.schemas.message_type import ExposureFlagType, MessageType
 
 add_message_field = graphql.GraphQLField(
     MessageType,

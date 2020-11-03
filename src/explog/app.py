@@ -1,4 +1,4 @@
-"""The main application definition for owl service."""
+"""The main application definition for explog service."""
 
 __all__ = ["create_app"]
 
@@ -12,10 +12,10 @@ from safir.logging import configure_logging
 from safir.metadata import setup_metadata
 from safir.middleware import bind_logger
 
-from owl.config import Configuration
-from owl.handlers import init_external_routes, init_internal_routes
-from owl.owl_database import OwlDatabase
-from owl.schemas.app_schema import app_schema
+from explog.config import Configuration
+from explog.handlers import init_external_routes, init_internal_routes
+from explog.log_message_database import LogMessageDatabase
+from explog.schemas.app_schema import app_schema
 
 
 def create_app(**configs: typing.Any) -> web.Application:
@@ -27,7 +27,7 @@ def create_app(**configs: typing.Any) -> web.Application:
         name=config.logger_name,
     )
 
-    owl_db = OwlDatabase(config.owl_database_url)
+    explog_db = LogMessageDatabase(config.exposure_log_database_url)
     if not config.butler_uri_1:
         raise ValueError("Must specify BUTLER_URI_1")
     # Use str(...) around the butler URIs to support pathlib.Path paths.
@@ -37,9 +37,9 @@ def create_app(**configs: typing.Any) -> web.Application:
 
     root_app = web.Application()
     root_app["safir/config"] = config
-    root_app["owl/owl_database"] = owl_db
-    root_app["owl/registries"] = [butler.registry for butler in butlers]
-    setup_metadata(package_name="owl", app=root_app)
+    root_app["explog/exposure_log_database"] = explog_db
+    root_app["explog/registries"] = [butler.registry for butler in butlers]
+    setup_metadata(package_name="explog", app=root_app)
     setup_middleware(root_app)
     root_app.add_routes(init_internal_routes())
     root_app.cleanup_ctx.append(init_http_session)
@@ -47,7 +47,7 @@ def create_app(**configs: typing.Any) -> web.Application:
     GraphQLView.attach(
         root_app,
         schema=app_schema,
-        route_path="/owl/graphql",
+        route_path="/explog/graphql",
         root_value=root_app,
         enable_async=True,
         graphiql=True,

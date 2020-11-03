@@ -1,27 +1,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: owl
+  name: explog
   labels:
-    app: owl
+    app: explog
 spec:
   replicas: 1
   selector:
     matchLabels:
-      name: owl
+      name: explog
   template:
     metadata:
       labels:
-        name: owl
+        name: explog
     spec:
       containers:
         - name: app
           imagePullPolicy: "Always"
           # Use images field in a Kustomization to regularly set/update image tag
-          image: "lsstsqre/owl"
+          image: "lsstsqre/explog"
           ports:
             - containerPort: 8080
               name: app
           envFrom:
             - configMapRef:
-                name: owl
+                name: explog

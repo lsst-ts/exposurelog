@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING
 
 import testing.postgresql
 
-from owl.app import create_app
-from owl.testutils import (
+from explog.app import create_app
+from explog.testutils import (
     ArgDictT,
     MessageDictT,
     Requestor,
@@ -63,12 +63,12 @@ async def test_edit_message(aiohttp_client: TestClient) -> None:
         messages = create_test_database(postgresql=postgresql, num_messages=1)
 
         app = create_app(
-            owl_database_url=postgresql.url(), butler_uri_1=repo_path
+            exposure_log_database_url=postgresql.url(), butler_uri_1=repo_path
         )
         name = app["safir/config"].name
 
         client = await aiohttp_client(app)
-        await app["owl/owl_database"].start_task
+        await app["explog/exposure_log_database"].start_task
 
         requestor = Requestor(
             client=client,

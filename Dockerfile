@@ -60,4 +60,4 @@ USER appuser
 
 EXPOSE 8080
 
-ENTRYPOINT ["owl", "run", "--port", "8080"]
+ENTRYPOINT ["explog", "run", "--port", "8080"]

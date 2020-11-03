@@ -4,7 +4,7 @@ import typing
 
 import astropy.time
 
-from owl.schemas.message_type import MessageType
+from explog.schemas.message_type import MessageType
 
 
 def convert_item(key: str, value: typing.Any) -> typing.Any:
@@ -34,11 +34,12 @@ def convert_item(key: str, value: typing.Any) -> typing.Any:
 def format_http_request(
     category: str, command: str, args_dict: dict, fields: list = None
 ) -> tuple:
-    """Format data for an OWL GraphQL POST request.
+    """Format data for an exposure log GraphQL POST request.
 
     This is not sophisticated and is primarily intended for unit tests.
-    It is specific to OWL, though could fairly easily be broadened;
-    the main issue is how to identify enumeration fields in a general way.
+    It is specific to exposure log.
+    For more general use consider using gqc, which has the ability
+    to format requests.
 
     Parameters
     ----------
@@ -50,7 +51,7 @@ def format_http_request(
         Dict of argument name: data.
     fields
         Names of fields to return.
-        If None then return all owl message fields.
+        If None then return all explog message fields.
 
     Returns
     -------
@@ -65,9 +66,9 @@ def format_http_request(
 
         import requests
 
-        from src.owl.format_http_request import format_http_request
+        from src.explog.format_http_request import format_http_request
 
-        url = "http://localhost:8000/owl/graphql"
+        url = "http://localhost:8000/explog/graphql"
         find_args = dict(obs_id="HSCA90333600")
         find_data, headers = format_http_request(
             category="query", command="find_messages", args_dict=find_args

@@ -1,10 +1,10 @@
-"""Handlers for the app's root, ``/``."""
+"""Handler for the app's root, ``/``."""
 
 __all__ = ["get_index"]
 
 from aiohttp import web
 
-from owl.handlers import internal_routes
+from explog.handlers import internal_routes
 
 
 @internal_routes.get("/")
