@@ -3,7 +3,7 @@ from __future__ import annotations
 import pathlib
 from typing import TYPE_CHECKING
 
-from owl.app import create_app
+from explog.app import create_app
 
 if TYPE_CHECKING:
     from aiohttp.pytest_plugin.test_utils import TestClient

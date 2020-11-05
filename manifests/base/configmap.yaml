@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: owl
+  name: explog
 data:
   # These configurations are injected as environment variables into the
   # app container.
-  SAFIR_NAME: "owl"
+  SAFIR_NAME: "explog"
   SAFIR_PROFILE: "production"
-  SAFIR_LOGGER: "owl"
+  SAFIR_LOGGER: "explog"
   SAFIR_LOG_LEVEL: "INFO"

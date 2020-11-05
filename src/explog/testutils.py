@@ -14,9 +14,9 @@ import astropy
 import numpy as np
 from sqlalchemy import create_engine
 
-from owl.create_messages_table import create_messages_table
-from owl.format_http_request import format_http_request
-from owl.schemas.message_type import MessageType
+from explog.create_messages_table import create_messages_table
+from explog.format_http_request import format_http_request
+from explog.schemas.message_type import MessageType
 
 if typing.TYPE_CHECKING:
     import aiohttp
@@ -47,7 +47,7 @@ class Requestor:
     command
         Default command.
     url_suffix
-        URL suffix for requests, e.g. owl/graphql
+        URL suffix for requests, e.g. explog/graphql
     """
 
     def __init__(

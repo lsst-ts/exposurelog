@@ -4,8 +4,8 @@ __all__ = ["delete_messages_field"]
 
 import graphql
 
-from owl.resolvers.delete_messages import delete_messages
-from owl.schemas.message_type import MessageType
+from explog.resolvers.delete_messages import delete_messages
+from explog.schemas.message_type import MessageType
 
 delete_messages_field = graphql.GraphQLField(
     graphql.GraphQLList(MessageType),

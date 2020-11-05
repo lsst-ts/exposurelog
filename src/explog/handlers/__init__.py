@@ -23,7 +23,7 @@ def init_external_routes() -> web.RouteTableDef:
     """
     # Import handlers so that they are registered with the routes table via
     # decorators. This isn't a global import to avoid circular dependencies.
-    import owl.handlers.external  # noqa: F401
+    import explog.handlers.external  # noqa: F401
 
     return routes
 
@@ -34,6 +34,6 @@ def init_internal_routes() -> web.RouteTableDef:
     """
     # Import handlers so that they are registered with the routes table via
     # decorators. This isn't a global import to avoid circular dependencies.
-    import owl.handlers.internal  # noqa: F401
+    import explog.handlers.internal  # noqa: F401
 
     return internal_routes

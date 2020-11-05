@@ -1,5 +1,3 @@
-"""The owl service."""
-
 __all__ = ["__version__"]
 
 import sys

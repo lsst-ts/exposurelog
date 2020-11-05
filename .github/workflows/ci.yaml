@@ -49,22 +49,22 @@ jobs:
 
       - name: Pull previous images
         run: |
-          docker pull lsstsqre/owl:deps-${{steps.vars.outputs.tag}} || true
-          docker pull lsstsqre/owl:${{steps.vars.outputs.tag}} || true
+          docker pull lsstsqre/explog:deps-${{steps.vars.outputs.tag}} || true
+          docker pull lsstsqre/explog:${{steps.vars.outputs.tag}} || true
 
       - name: Build the dependencies Docker image
         run: |
           docker build --target dependencies-image \
-            --cache-from=lsstsqre/owl:deps-${{steps.vars.outputs.tag}} \
-            --tag lsstsqre/owl:deps-${{steps.vars.outputs.tag}} .
+            --cache-from=lsstsqre/explog:deps-${{steps.vars.outputs.tag}} \
+            --tag lsstsqre/explog:deps-${{steps.vars.outputs.tag}} .
 
       - name: Build the runtime Docker image
         run: |
           docker build --target runtime-image \
-            --cache-from=lsstsqre/owl:${{steps.vars.outputs.tag}} \
-            --tag lsstsqre/owl:${{steps.vars.outputs.tag}} .
+            --cache-from=lsstsqre/explog:${{steps.vars.outputs.tag}} \
+            --tag lsstsqre/explog:${{steps.vars.outputs.tag}} .
 
       - name: Push Docker images
         run: |
-          docker push lsstsqre/owl:deps-${{steps.vars.outputs.tag}}
-          docker push lsstsqre/owl:${{steps.vars.outputs.tag}}
+          docker push lsstsqre/explog:deps-${{steps.vars.outputs.tag}}
+          docker push lsstsqre/explog:${{steps.vars.outputs.tag}}

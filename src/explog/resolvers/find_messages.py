@@ -6,7 +6,7 @@ import typing
 
 import sqlalchemy.sql as sql
 
-from owl.dict_from_result_proxy import dict_from_result_proxy
+from explog.dict_from_result_proxy import dict_from_result_proxy
 
 if typing.TYPE_CHECKING:
     import aiohttp
@@ -29,21 +29,21 @@ async def find_messages(
     kwargs
         Find conditions as field=value data.
     """
-    owl_database = app["owl/owl_database"]
+    exposure_log_database = app["explog/exposure_log_database"]
 
-    async with owl_database.engine.acquire() as connection:
+    async with exposure_log_database.engine.acquire() as connection:
         conditions = []
         order_by = []
         # Handle minimums and maximums
         for key, value in kwargs.items():
             if key.startswith("min_"):
-                column = getattr(owl_database.table.c, key[4:])
+                column = getattr(exposure_log_database.table.c, key[4:])
                 conditions.append(column >= value)
             elif key.startswith("max_"):
-                column = getattr(owl_database.table.c, key[4:])
+                column = getattr(exposure_log_database.table.c, key[4:])
                 conditions.append(column < value)
             elif key.startswith("has_"):
-                column = getattr(owl_database.table.c, key[4:])
+                column = getattr(exposure_log_database.table.c, key[4:])
                 if value:
                     conditions.append(column != None)  # noqa
                 else:
@@ -55,29 +55,31 @@ async def find_messages(
                 "exposure_flags",
             ):
                 # Value is a list; field name is key without the final "s".
-                column = getattr(owl_database.table.c, key[:-1])
+                column = getattr(exposure_log_database.table.c, key[:-1])
                 conditions.append(column.in_(value))
             elif key in ("message_text", "obs_id"):
-                column = getattr(owl_database.table.c, key)
+                column = getattr(exposure_log_database.table.c, key)
                 conditions.append(column.contains(value))
             elif key in ("is_human", "is_valid"):
-                column = getattr(owl_database.table.c, key)
+                column = getattr(exposure_log_database.table.c, key)
                 conditions.append(column == value)
             elif key == "order_by":
                 for item in value:
                     if item.startswith("-"):
-                        column = getattr(owl_database.table.c, item[1:])
+                        column = getattr(
+                            exposure_log_database.table.c, item[1:]
+                        )
                         order_by.append(sql.desc(column))
                     else:
-                        column = getattr(owl_database.table.c, item)
+                        column = getattr(exposure_log_database.table.c, item)
                         order_by.append(sql.asc(column))
-                column = owl_database.table.c.exposure_flag
+                column = exposure_log_database.table.c.exposure_flag
 
             else:
                 raise RuntimeError(f"Bug: unrecognized key: {key}")
         full_conditions = sql.and_(*conditions)
         result_proxy = await connection.execute(
-            owl_database.table.select()
+            exposure_log_database.table.select()
             .where(full_conditions)
             .order_by(*order_by)
         )

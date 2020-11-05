@@ -2,7 +2,7 @@ from __future__ import annotations
 
 """Configuration definition."""
 
-__all__ = ["OwlDatabase"]
+__all__ = ["LogMessageDatabase"]
 
 import asyncio
 import typing
@@ -14,23 +14,23 @@ import structlog
 if typing.TYPE_CHECKING:
     import sqlalchemy
 
-from owl.create_messages_table import create_messages_table
+from explog.create_messages_table import create_messages_table
 
 
-class OwlDatabase:
-    """Connection to the OWL database and message table.
+class LogMessageDatabase:
+    """Connection to the exposure log database and message table.
 
     Parameters
     ----------
     url
-        URL of OWL database server in the form:
+        URL of exposure log database server in the form:
         postgresql://[user[:password]@][netloc][:port][/dbname]
     """
 
     def __init__(self, url: str):
         self._closed = False
         self.url = url
-        self.logger = structlog.get_logger("OwlDatabase")
+        self.logger = structlog.get_logger("LogMessageDatabase")
         # Asynchronous database engine;
         # None until ``start_task`` is done.
         self.engine: typing.Optional[aiopg.sa.Engine] = None
@@ -63,7 +63,7 @@ class OwlDatabase:
             self.engine.terminate()
             await self.engine.wait_closed()
 
-    async def __aenter__(self) -> OwlDatabase:
+    async def __aenter__(self) -> LogMessageDatabase:
         return self
 
     async def __aexit__(self, *args: typing.Any) -> None:
