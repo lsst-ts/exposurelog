@@ -27,7 +27,6 @@ def create_app(**configs: typing.Any) -> web.Application:
         name=config.logger_name,
     )
 
-    explog_db = LogMessageDatabase(config.exposure_log_database_url)
     if not config.butler_uri_1:
         raise ValueError("Must specify BUTLER_URI_1")
     # Use str(...) around the butler URIs to support pathlib.Path paths.
@@ -35,9 +34,24 @@ def create_app(**configs: typing.Any) -> web.Application:
     if config.butler_uri_2:
         butlers.append(Butler(str(config.butler_uri_2), writeable=False))
 
+    async def startup(app: typing.Any):
+        """Create and start LogMessageDatabase.
+
+        When the app is created there is no event loop, so LogMessageDatabase
+        cannot be created and started in the main body of this code.
+        See https://docs.aiohttp.org/en/v2.3.3/web.html#background-tasks
+        """
+        explog_db = LogMessageDatabase(config.exposure_log_database_url)
+        root_app["explog/exposure_log_database"] = explog_db
+
+    async def cleanup(app: typing.Any):
+        explog_db = root_app["explog/exposure_log_database"]
+        await explog_db.close()
+
     root_app = web.Application()
+    root_app.on_startup.append(startup)
+    root_app.on_cleanup.append(cleanup)
     root_app["safir/config"] = config
-    root_app["explog/exposure_log_database"] = explog_db
     root_app["explog/registries"] = [butler.registry for butler in butlers]
     setup_metadata(package_name="explog", app=root_app)
     setup_middleware(root_app)
