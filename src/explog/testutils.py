@@ -297,7 +297,7 @@ def create_test_database(
         )
     engine = sa.create_engine(postgresql.url())
 
-    table = create_messages_table(create_indices=True)
+    table = create_messages_table(engine=engine)
     table.metadata.create_all(engine)
 
     messages = random_messages(

@@ -35,9 +35,7 @@ class LogMessageDatabase:
         # None until ``start_task`` is done.
         self.engine: typing.Optional[aiopg.sa.Engine] = None
         # A model of the database table.
-        self.table: sa.Table = create_messages_table(
-            create_indices=False
-        )
+        self.table: sa.Table = create_messages_table()
         # Set done when the engine has been created.
         self.start_task = asyncio.create_task(self.start())
 
