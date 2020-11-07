@@ -34,7 +34,7 @@ def create_app(**configs: typing.Any) -> web.Application:
     if config.butler_uri_2:
         butlers.append(Butler(str(config.butler_uri_2), writeable=False))
 
-    async def startup(app: typing.Any):
+    async def startup(app: web.Application) -> None:
         """Create and start LogMessageDatabase.
 
         When the app is created there is no event loop, so LogMessageDatabase
@@ -44,7 +44,7 @@ def create_app(**configs: typing.Any) -> web.Application:
         explog_db = LogMessageDatabase(config.exposure_log_database_url)
         root_app["explog/exposure_log_database"] = explog_db
 
-    async def cleanup(app: typing.Any):
+    async def cleanup(app: web.Application) -> None:
         explog_db = root_app["explog/exposure_log_database"]
         await explog_db.close()
 
