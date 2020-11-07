@@ -9,22 +9,12 @@ aiodns
 aiohttp
 aiopg
 astropy
-cchardet
 click
-# graphql-server 3.0.0b1 has a bug that prevents asyncio from working reliably.
-# This has been fixed on master. Once the fix is released,
-# uncomment the next line and delete the one after it.
-# graphql-server[aiohttp]
-git+git://github.com/graphql-python/graphql-server.git@master#graphql-server[aiohttp]
+graphql-server[aiohttp]
 importlib_metadata
-jinja2
-jsonschema
 safir
 sqlalchemy
+git+git://github.com/lsst/daf_butler.git@master#daf_butler
 
-# These are for daf_butler
-astropy
-deprecated
-numpy
-pyyaml
-requests
+# Extra dependencies that should have been included by above packages
+jinja2  # Needed by graphql-server
