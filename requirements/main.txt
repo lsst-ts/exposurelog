@@ -4,13 +4,11 @@
 #
 #    pip-compile --output-file=requirements/main.txt requirements/main.in
 #
-aiodns==2.0.0             # via -r requirements/main.in
 aiohttp==3.7.2            # via -r requirements/main.in, graphql-server, safir
 aiopg==1.0.0              # via -r requirements/main.in
 astropy==4.1              # via -r requirements/main.in, daf-butler
 async-timeout==3.0.1      # via aiohttp
 attrs==20.3.0             # via aiohttp
-cffi==1.14.3              # via pycares
 chardet==3.0.4            # via aiohttp
 click==7.1.2              # via -r requirements/main.in, daf-butler
 git+git://github.com/lsst/daf_butler.git@master#daf_butler  # via -r requirements/main.in
@@ -24,8 +22,6 @@ markupsafe==1.1.1         # via jinja2
 multidict==5.0.0          # via aiohttp, yarl
 numpy==1.19.4             # via astropy, lsst-sphgeom
 psycopg2-binary==2.8.6    # via aiopg
-pycares==3.1.1            # via aiodns
-pycparser==2.20           # via cffi
 pyyaml==5.3.1             # via daf-butler
 safir==0.1.0              # via -r requirements/main.in
 six==1.15.0               # via structlog
