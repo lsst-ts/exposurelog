@@ -12,7 +12,7 @@ import aiopg.sa
 import structlog
 
 if typing.TYPE_CHECKING:
-    import sqlalchemy
+    import sqlalchemy as sa
 
 from explog.create_messages_table import create_messages_table
 
@@ -35,7 +35,7 @@ class LogMessageDatabase:
         # None until ``start_task`` is done.
         self.engine: typing.Optional[aiopg.sa.Engine] = None
         # A model of the database table.
-        self.table: sqlalchemy.Table = create_messages_table(
+        self.table: sa.Table = create_messages_table(
             create_indices=False
         )
         # Set done when the engine has been created.

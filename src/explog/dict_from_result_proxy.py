@@ -2,10 +2,10 @@ __all__ = ["dict_from_result_proxy"]
 
 import datetime
 
-import sqlalchemy
+import sqlalchemy as sa
 
 
-def dict_from_result_proxy(result: sqlalchemy.engine.ResultProxy) -> dict:
+def dict_from_result_proxy(result: sa.engine.ResultProxy) -> dict:
     """Convert a ResultProxy to a dict, with timestamps as ISO time strings."""
     data_dict = dict()
     for key, value in result.items():

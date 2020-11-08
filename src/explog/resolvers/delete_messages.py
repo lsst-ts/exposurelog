@@ -5,7 +5,7 @@ __all__ = ["delete_messages"]
 import typing
 
 import astropy.time
-import sqlalchemy
+import sqlalchemy as sa
 
 from explog.dict_from_result_proxy import dict_from_result_proxy
 
@@ -43,7 +43,7 @@ async def delete_messages(
             exposure_log_database.table.update()
             .where(exposure_log_database.table.c.id.in_(message_ids))
             .values(is_valid=False, date_is_valid_changed=current_tai)
-            .returning(sqlalchemy.literal_column("*"))
+            .returning(sa.literal_column("*"))
         )
         messages = []
         async for row in result_proxy:
