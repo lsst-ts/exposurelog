@@ -8,7 +8,7 @@ import typing
 import astropy.time
 import astropy.units as u
 import lsst.daf.butler
-import sqlalchemy
+import sqlalchemy as sa
 
 from explog.dict_from_result_proxy import dict_from_result_proxy
 
@@ -81,7 +81,7 @@ async def add_message(
         result_proxy = await connection.execute(
             exposure_log_database.table.insert()
             .values(**data_dict)
-            .returning(sqlalchemy.literal_column("*"))
+            .returning(sa.literal_column("*"))
         )
         result = await result_proxy.fetchone()
 

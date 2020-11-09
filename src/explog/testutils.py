@@ -12,7 +12,7 @@ import typing
 
 import astropy
 import numpy as np
-from sqlalchemy import create_engine
+import sqlalchemy as sa
 
 from explog.create_messages_table import create_messages_table
 from explog.format_http_request import format_http_request
@@ -295,9 +295,9 @@ def create_test_database(
             f"num_edited={num_edited} must be zero or "
             f"less than num_messages={num_messages}"
         )
-    engine = create_engine(postgresql.url())
+    engine = sa.create_engine(postgresql.url())
 
-    table = create_messages_table(create_indices=True)
+    table = create_messages_table(engine=engine)
     table.metadata.create_all(engine)
 
     messages = random_messages(

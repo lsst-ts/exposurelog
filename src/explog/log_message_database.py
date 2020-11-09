@@ -12,7 +12,7 @@ import aiopg.sa
 import structlog
 
 if typing.TYPE_CHECKING:
-    import sqlalchemy
+    import sqlalchemy as sa
 
 from explog.create_messages_table import create_messages_table
 
@@ -33,35 +33,41 @@ class LogMessageDatabase:
         self.logger = structlog.get_logger("LogMessageDatabase")
         # Asynchronous database engine;
         # None until ``start_task`` is done.
-        self.engine: typing.Optional[aiopg.sa.Engine] = None
+        self._engine: typing.Optional[aiopg.sa.Engine] = None
         # A model of the database table.
-        self.table: sqlalchemy.Table = create_messages_table(
-            create_indices=False
-        )
+        self.table: sa.Table = create_messages_table()
         # Set done when the engine has been created.
         self.start_task = asyncio.create_task(self.start())
 
     async def start(self) -> None:
         """Create the engine used to query the database."""
         self.logger.info("Create engine")
-        self.engine = await aiopg.sa.create_engine(self.url)
+        self._engine = await aiopg.sa.create_engine(self.url)
 
     def basic_close(self) -> None:
         """Minimal close. Call this if you have no event loop."""
         if self._closed:
             return
         self._closed = True
-        if self.engine is not None:
-            self.engine.terminate()
+        self.start_task.cancel()
+        if self._engine is not None:
+            self._engine.terminate()
+
+    @property
+    def engine(self) -> aiopg.sa.Engine:
+        if self._engine is None:
+            raise RuntimeError("Not connected to the log message database.")
+        return self._engine
 
     async def close(self) -> None:
         """Full close. Call this if you have an event loop."""
         if self._closed:
             return
         self._closed = True
-        if self.engine is not None:
-            self.engine.terminate()
-            await self.engine.wait_closed()
+        self.start_task.cancel()
+        if self._engine is not None:
+            self._engine.terminate()
+            await self._engine.wait_closed()
 
     async def __aenter__(self) -> LogMessageDatabase:
         return self

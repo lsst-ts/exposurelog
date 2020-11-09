@@ -5,12 +5,14 @@
 # After editing, update requirements/dev.txt by running:
 #     make update-deps
 
-pre-commit
-coverage[toml]
+aiohttp-devtools
 black
+coverage[toml]
 flake8
 mypy
+pre-commit
 pytest
 pytest-aiohttp
-aiohttp-devtools
+pytest-asyncio
+requests
 testing.postgresql

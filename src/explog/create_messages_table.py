@@ -1,18 +1,23 @@
 __all__ = ["create_messages_table"]
 
+import typing
+
 import sqlalchemy as sa
 
 
-def create_messages_table(create_indices: bool) -> sa.Table:
-    """Make the exposure_log_messages sqlalchemy table and,
-    optionally, the indices.
+def create_messages_table(
+    engine: typing.Optional[sa.engine.Engine] = None,
+) -> sa.Table:
+    """Make the exposure_log_messages sqlalchemy table.
 
-    This is a model of the ``exposure_log_messages`` database table
-    that can be used to query the database and modify rows.
+    Return an sqlalchemy object relational model of the table
+    and optionally create the table in the database.
 
-    It can also be used to create a new table, and if you plan to
-    use it for that then you should set ``create_indices = True``
-    (the indices are only relevant when creating a new database table).
+    Parameters
+    ----------
+    engine
+        If specified and the table does not exist in the database,
+        add the table to the database.
     """
     table = sa.Table(
         "exposure_log_messages",
@@ -36,16 +41,18 @@ def create_messages_table(create_indices: bool) -> sa.Table:
         sa.Column("parent_id", sa.BigInteger(), nullable=True),
     )
 
-    if create_indices:
-        for name in (
-            "obs_id",
-            "instrument",
-            "day_obs",
-            "user_id",
-            "is_valid",
-            "exposure_flag",
-            "date_added",
-        ):
-            sa.Index(f"idx_{name}", getattr(table.c, name))
+    for name in (
+        "obs_id",
+        "instrument",
+        "day_obs",
+        "user_id",
+        "is_valid",
+        "exposure_flag",
+        "date_added",
+    ):
+        sa.Index(f"idx_{name}", getattr(table.c, name))
+
+    if engine is not None:
+        table.metadata.create_all(engine)
 
     return table

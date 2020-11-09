@@ -4,7 +4,7 @@ __all__ = ["find_messages"]
 
 import typing
 
-import sqlalchemy.sql as sql
+import sqlalchemy as sa
 
 from explog.dict_from_result_proxy import dict_from_result_proxy
 
@@ -69,15 +69,15 @@ async def find_messages(
                         column = getattr(
                             exposure_log_database.table.c, item[1:]
                         )
-                        order_by.append(sql.desc(column))
+                        order_by.append(sa.sql.desc(column))
                     else:
                         column = getattr(exposure_log_database.table.c, item)
-                        order_by.append(sql.asc(column))
+                        order_by.append(sa.sql.asc(column))
                 column = exposure_log_database.table.c.exposure_flag
 
             else:
                 raise RuntimeError(f"Bug: unrecognized key: {key}")
-        full_conditions = sql.and_(*conditions)
+        full_conditions = sa.sql.and_(*conditions)
         result_proxy = await connection.execute(
             exposure_log_database.table.select()
             .where(full_conditions)

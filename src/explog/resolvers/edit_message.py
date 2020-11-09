@@ -5,7 +5,7 @@ __all__ = ["edit_message"]
 import aiohttp
 import astropy.time
 import graphql
-import sqlalchemy
+import sqlalchemy as sa
 
 from explog.dict_from_result_proxy import dict_from_result_proxy
 
@@ -67,7 +67,7 @@ async def edit_message(
         add_result_proxy = await connection.execute(
             exposure_log_database.table.insert()
             .values(**new_data)
-            .returning(sqlalchemy.literal_column("*"))
+            .returning(sa.literal_column("*"))
         )
         add_result = await add_result_proxy.fetchone()
         await connection.execute(
