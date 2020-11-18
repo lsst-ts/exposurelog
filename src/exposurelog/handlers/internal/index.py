@@ -4,7 +4,7 @@ __all__ = ["get_index"]
 
 from aiohttp import web
 
-from explog.handlers import internal_routes
+from exposurelog.handlers import internal_routes
 
 
 @internal_routes.get("/")

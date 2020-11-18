@@ -1,15 +1,15 @@
-"""Handler for the app's external root, ``/explog/``."""
+"""Handler for the app's external root, ``/exposurelog/``."""
 
 __all__ = ["get_index"]
 
 from aiohttp import web
 
-from explog.handlers import routes
+from exposurelog.handlers import routes
 
 
 @routes.get("/")
 async def get_index(request: web.Request) -> web.Response:
-    """GET /explog/ (the app's external root).
+    """GET /exposurelog/ (the app's external root).
 
     By convention, the root of the external API includes a field called
     ``_metadata`` that provides the same metadata as the internal root

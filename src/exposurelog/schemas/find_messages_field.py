@@ -4,8 +4,8 @@ __all__ = ["find_messages_field"]
 
 import graphql
 
-from explog.resolvers.find_messages import find_messages
-from explog.schemas.message_type import ExposureFlagType, MessageType
+from exposurelog.resolvers.find_messages import find_messages
+from exposurelog.schemas.message_type import ExposureFlagType, MessageType
 
 find_messages_field = graphql.GraphQLField(
     graphql.GraphQLList(MessageType),

@@ -4,7 +4,7 @@ import typing
 
 import astropy.time
 
-from explog.schemas.message_type import MessageType
+from exposurelog.schemas.message_type import MessageType
 
 
 def convert_item(key: str, value: typing.Any) -> typing.Any:
@@ -51,7 +51,7 @@ def format_http_request(
         Dict of argument name: data.
     fields
         Names of fields to return.
-        If None then return all explog message fields.
+        If None then return all exposurelog message fields.
 
     Returns
     -------
@@ -66,9 +66,9 @@ def format_http_request(
 
         import requests
 
-        from src.explog.format_http_request import format_http_request
+        from src.exposurelog.format_http_request import format_http_request
 
-        url = "http://localhost:8000/explog/graphql"
+        url = "http://localhost:8000/exposurelog/graphql"
         find_args = dict(obs_id="HSCA90333600")
         find_data, headers = format_http_request(
             category="query", command="find_messages", args_dict=find_args

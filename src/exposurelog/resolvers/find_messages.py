@@ -6,7 +6,7 @@ import typing
 
 import sqlalchemy as sa
 
-from explog.dict_from_result_proxy import dict_from_result_proxy
+from exposurelog.dict_from_result_proxy import dict_from_result_proxy
 
 if typing.TYPE_CHECKING:
     import aiohttp
@@ -29,7 +29,7 @@ async def find_messages(
     kwargs
         Find conditions as field=value data.
     """
-    exposure_log_database = app["explog/exposure_log_database"]
+    exposure_log_database = app["exposurelog/exposure_log_database"]
 
     async with exposure_log_database.engine.acquire() as connection:
         conditions = []

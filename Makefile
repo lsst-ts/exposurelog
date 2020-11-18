@@ -20,4 +20,4 @@ update: update-deps init
 
 .PHONY: run
 run:
-	adev runserver --app-factory create_app src/explog/app.py
+	adev runserver --app-factory create_app src/exposurelog/app.py

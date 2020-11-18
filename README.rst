@@ -16,7 +16,7 @@ Configuration
 
 The following environment variables must be set in Exposure Log's runtime environment.
 
-* ``EXPOSURE_LOG_DATABASE_URL``: URL to the exposure log message database, including username and password.
+* ``EXPOSURELOG_DATABASE_URL``: URL to the exposure log message database, including username and password.
   Note that as of 2020-10 Exposure Log only supports PostgreSQL message databases,
   because it uses asyncio and no other databases have a suitable driver.
 * ``BUTLER_URI_1``: URI to an butler data repository, which is only read.
@@ -34,6 +34,6 @@ Routes
 
 * ``/``: Returns service metadata with a 200 status (used by Google Container Engine Ingress health check)
 
-* ``/explog``: Returns metadata about the Exposure Log service.
+* ``/exposurelog``: Returns metadata about the Exposure Log service.
 
-* ``/explog/graphql``: The Exposure Log service.
+* ``/exposurelog/graphql``: The Exposure Log service.

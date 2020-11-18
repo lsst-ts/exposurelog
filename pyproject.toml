@@ -23,7 +23,7 @@ commands =
     coverage run -m pytest {posargs}
 passenv =
     # Basic configuration
-    EXPOSURE_LOG_DATABASE_URL
+    EXPOSURELOG_DATABASE_URL
     BUTLER_URI_1
     BUTLER_URI_2
     # OpenSplice DDS and SAL, should this prove necessary
@@ -48,7 +48,7 @@ commands =
 [testenv:typing]
 description = Run mypy.
 commands =
-    mypy src/explog tests setup.py
+    mypy src/exposurelog tests setup.py
 
 [testenv:lint]
 description = Lint codebase by running pre-commit (Black, isort, Flake8).
@@ -60,13 +60,13 @@ commands = pre-commit run --all-files
 [testenv:run]
 description = Run the development server with auto-reload for code changes.
 usedevelop = true
-commands = adev runserver --app-factory create_app src/explog/app.py
+commands = adev runserver --app-factory create_app src/exposurelog/app.py
 """
 
 [tool.coverage.run]
 parallel = true
 branch = true
-source = ["explog"]
+source = ["exposurelog"]
 
 [tool.coverage.paths]
 source = ["src", ".tox/*/site-packages"]
@@ -106,5 +106,5 @@ exclude = '''
 [tool.isort]
 include_trailing_comma = true
 multi_line_output = 3
-known_first_party = ["explog", "tests"]
+known_first_party = ["exposurelog", "tests"]
 skip = ["docs/conf.py"]

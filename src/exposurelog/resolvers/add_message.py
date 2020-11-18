@@ -10,7 +10,7 @@ import astropy.units as u
 import lsst.daf.butler
 import sqlalchemy as sa
 
-from explog.dict_from_result_proxy import dict_from_result_proxy
+from exposurelog.dict_from_result_proxy import dict_from_result_proxy
 
 if typing.TYPE_CHECKING:
     import aiohttp
@@ -46,8 +46,8 @@ async def add_message(
     message_data
         Full data for the new message, as field=value.
     """
-    exposure_log_database = app["explog/exposure_log_database"]
-    registries = app["explog/registries"]
+    exposure_log_database = app["exposurelog/exposure_log_database"]
+    registries = app["exposurelog/registries"]
 
     data_dict = kwargs.copy()
     data_dict["is_valid"] = True

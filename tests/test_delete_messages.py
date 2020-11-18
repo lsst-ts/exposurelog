@@ -6,8 +6,8 @@ import typing
 import aiohttp
 import testing.postgresql
 
-from explog.app import create_app
-from explog.testutils import (
+from exposurelog.app import create_app
+from exposurelog.testutils import (
     MessageDictT,
     Requestor,
     assert_good_response,
@@ -56,7 +56,7 @@ async def test_delete_message(aiohttp_client: TestClient) -> None:
         name = app["safir/config"].name
 
         client = await aiohttp_client(app)
-        await app["explog/exposure_log_database"].start_task
+        await app["exposurelog/exposure_log_database"].start_task
 
         requestor = Requestor(
             client=client,

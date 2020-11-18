@@ -1,4 +1,4 @@
-"""The main application definition for explog service."""
+"""The main application definition for exposurelog service."""
 
 __all__ = ["create_app"]
 
@@ -12,10 +12,10 @@ from safir.logging import configure_logging
 from safir.metadata import setup_metadata
 from safir.middleware import bind_logger
 
-from explog.config import Configuration
-from explog.handlers import init_external_routes, init_internal_routes
-from explog.log_message_database import LogMessageDatabase
-from explog.schemas.app_schema import app_schema
+from exposurelog.config import Configuration
+from exposurelog.handlers import init_external_routes, init_internal_routes
+from exposurelog.log_message_database import LogMessageDatabase
+from exposurelog.schemas.app_schema import app_schema
 
 
 def create_app(**configs: typing.Any) -> web.Application:
@@ -41,19 +41,21 @@ def create_app(**configs: typing.Any) -> web.Application:
         cannot be created and started in the main body of this code.
         See https://docs.aiohttp.org/en/v2.3.3/web.html#background-tasks
         """
-        explog_db = LogMessageDatabase(config.exposure_log_database_url)
-        root_app["explog/exposure_log_database"] = explog_db
+        exposurelog_db = LogMessageDatabase(config.exposure_log_database_url)
+        root_app["exposurelog/exposure_log_database"] = exposurelog_db
 
     async def cleanup(app: web.Application) -> None:
-        explog_db = root_app["explog/exposure_log_database"]
-        await explog_db.close()
+        exposurelog_db = root_app["exposurelog/exposure_log_database"]
+        await exposurelog_db.close()
 
     root_app = web.Application()
     root_app.on_startup.append(startup)
     root_app.on_cleanup.append(cleanup)
     root_app["safir/config"] = config
-    root_app["explog/registries"] = [butler.registry for butler in butlers]
-    setup_metadata(package_name="explog", app=root_app)
+    root_app["exposurelog/registries"] = [
+        butler.registry for butler in butlers
+    ]
+    setup_metadata(package_name="exposurelog", app=root_app)
     setup_middleware(root_app)
     root_app.add_routes(init_internal_routes())
     root_app.cleanup_ctx.append(init_http_session)
@@ -61,7 +63,7 @@ def create_app(**configs: typing.Any) -> web.Application:
     GraphQLView.attach(
         root_app,
         schema=app_schema,
-        route_path="/explog/graphql",
+        route_path="/exposurelog/graphql",
         root_value=root_app,
         enable_async=True,
         graphiql=True,

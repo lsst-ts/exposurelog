@@ -7,7 +7,7 @@ import astropy.time
 import graphql
 import sqlalchemy as sa
 
-from explog.dict_from_result_proxy import dict_from_result_proxy
+from exposurelog.dict_from_result_proxy import dict_from_result_proxy
 
 
 async def edit_message(
@@ -35,7 +35,7 @@ async def edit_message(
     kwargs
         Find conditions as field=value data.
     """
-    exposure_log_database = app["explog/exposure_log_database"]
+    exposure_log_database = app["exposurelog/exposure_log_database"]
 
     request_data = kwargs.copy()
 

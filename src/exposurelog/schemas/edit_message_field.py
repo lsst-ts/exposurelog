@@ -4,8 +4,8 @@ __all__ = ["edit_message_field"]
 
 import graphql
 
-from explog.resolvers.edit_message import edit_message
-from explog.schemas.message_type import ExposureFlagType, MessageType
+from exposurelog.resolvers.edit_message import edit_message
+from exposurelog.schemas.message_type import ExposureFlagType, MessageType
 
 edit_message_field = graphql.GraphQLField(
     MessageType,

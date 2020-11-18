@@ -7,9 +7,9 @@ import typing
 import numpy as np
 import testing.postgresql
 
-from explog.app import create_app
-from explog.schemas.message_type import MessageType
-from explog.testutils import (
+from exposurelog.app import create_app
+from exposurelog.schemas.message_type import MessageType
+from exposurelog.testutils import (
     MessageDictT,
     Requestor,
     assert_good_response,
@@ -185,7 +185,7 @@ async def test_find_messages(aiohttp_client: TestClient) -> None:
         name = app["safir/config"].name
 
         client = await aiohttp_client(app)
-        await app["explog/exposure_log_database"].start_task
+        await app["exposurelog/exposure_log_database"].start_task
 
         requestor = Requestor(
             client=client,
