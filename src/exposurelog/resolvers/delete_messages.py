@@ -7,7 +7,7 @@ import typing
 import astropy.time
 import sqlalchemy as sa
 
-from explog.dict_from_result_proxy import dict_from_result_proxy
+from exposurelog.dict_from_result_proxy import dict_from_result_proxy
 
 if typing.TYPE_CHECKING:
     import aiohttp
@@ -31,7 +31,7 @@ async def delete_messages(
         Message field=value data.
         The only entry used is ``id``.
     """
-    exposure_log_database = app["explog/exposure_log_database"]
+    exposure_log_database = app["exposurelog/exposure_log_database"]
 
     # Validate the user data and handle defaults
     message_ids = kwargs["ids"]

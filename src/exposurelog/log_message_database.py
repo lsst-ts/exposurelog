@@ -14,7 +14,7 @@ import structlog
 if typing.TYPE_CHECKING:
     import sqlalchemy as sa
 
-from explog.create_messages_table import create_messages_table
+from exposurelog.create_messages_table import create_messages_table
 
 
 class LogMessageDatabase:

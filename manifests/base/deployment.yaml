@@ -1,27 +1,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: explog
+  name: exposurelog
   labels:
-    app: explog
+    app: exposurelog
 spec:
   replicas: 1
   selector:
     matchLabels:
-      name: explog
+      name: exposurelog
   template:
     metadata:
       labels:
-        name: explog
+        name: exposurelog
     spec:
       containers:
         - name: app
           imagePullPolicy: "Always"
           # Use images field in a Kustomization to regularly set/update image tag
-          image: "lsstsqre/explog"
+          image: "lsstsqre/exposurelog"
           ports:
             - containerPort: 8080
               name: app
           envFrom:
             - configMapRef:
-                name: explog
+                name: exposurelog

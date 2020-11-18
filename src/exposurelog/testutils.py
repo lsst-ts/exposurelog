@@ -14,9 +14,9 @@ import astropy
 import numpy as np
 import sqlalchemy as sa
 
-from explog.create_messages_table import create_messages_table
-from explog.format_http_request import format_http_request
-from explog.schemas.message_type import MessageType
+from exposurelog.create_messages_table import create_messages_table
+from exposurelog.format_http_request import format_http_request
+from exposurelog.schemas.message_type import MessageType
 
 if typing.TYPE_CHECKING:
     import aiohttp
@@ -47,7 +47,7 @@ class Requestor:
     command
         Default command.
     url_suffix
-        URL suffix for requests, e.g. explog/graphql
+        URL suffix for requests, e.g. exposurelog/graphql
     """
 
     def __init__(

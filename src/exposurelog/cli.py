@@ -8,9 +8,9 @@ import click
 import sqlalchemy as sa
 from aiohttp.web import run_app
 
-from explog.app import create_app
-from explog.config import Configuration
-from explog.create_messages_table import create_messages_table
+from exposurelog.app import create_app
+from exposurelog.config import Configuration
+from exposurelog.create_messages_table import create_messages_table
 
 # Add -h as a help shortcut option
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
