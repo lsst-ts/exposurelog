@@ -6,7 +6,6 @@ hsc_raw was generated as follows:
 
     rm -rf hsc_raw
     setup obs_subaru
-    setup -k testdata_ci_hsc
     butler create hsc_raw
     butler register-instrument hsc_raw lsst.obs.subaru.HyperSuprimeCam
     butler ingest-raws hsc_raw <path-to-testdata_ci_hsc>/raw
