@@ -67,7 +67,7 @@ async def test_add_message(aiohttp_client: TestClient) -> None:
             client=client,
             category="mutation",
             command="add_message",
-            url_suffix=f"{name}/graphql",
+            url_suffix=name,
         )
 
         # Add a message whose obs_id matches an exposure.

@@ -13,7 +13,6 @@ from safir.metadata import setup_metadata
 from safir.middleware import bind_logger
 
 from exposurelog.config import Configuration
-from exposurelog.handlers import init_external_routes, init_internal_routes
 from exposurelog.log_message_database import LogMessageDatabase
 from exposurelog.schemas.app_schema import app_schema
 
@@ -41,7 +40,9 @@ def create_app(**configs: typing.Any) -> web.Application:
         cannot be created and started in the main body of this code.
         See https://docs.aiohttp.org/en/v2.3.3/web.html#background-tasks
         """
-        exposurelog_db = LogMessageDatabase(config.exposure_log_database_url)
+        exposurelog_db = LogMessageDatabase(
+            config.exposure_log_database_url, create_table=True
+        )
         root_app["exposurelog/exposure_log_database"] = exposurelog_db
 
     async def cleanup(app: web.Application) -> None:
@@ -57,13 +58,12 @@ def create_app(**configs: typing.Any) -> web.Application:
     ]
     setup_metadata(package_name="exposurelog", app=root_app)
     setup_middleware(root_app)
-    root_app.add_routes(init_internal_routes())
     root_app.cleanup_ctx.append(init_http_session)
 
     GraphQLView.attach(
         root_app,
         schema=app_schema,
-        route_path="/exposurelog/graphql",
+        route_path="/exposurelog",
         root_value=root_app,
         enable_async=True,
         graphiql=True,
@@ -71,7 +71,6 @@ def create_app(**configs: typing.Any) -> web.Application:
 
     sub_app = web.Application()
     setup_middleware(sub_app)
-    sub_app.add_routes(init_external_routes())
     root_app.add_subapp(f'/{root_app["safir/config"].name}', sub_app)
 
     return root_app

@@ -9,7 +9,6 @@ from typing import Optional
 
 import pytest
 import requests
-import sqlalchemy as sa
 import testing.postgresql
 
 from exposurelog.format_http_request import format_http_request
@@ -38,24 +37,6 @@ async def test_cli() -> None:
 
     with testing.postgresql.Postgresql() as postgresql:
         os.environ["EXPOSURELOG_DATABASE_URL"] = postgresql.url()
-        engine = sa.create_engine(postgresql.url())
-
-        create_table_process = await asyncio.create_subprocess_exec(
-            "exposurelog",
-            "create-table",
-            stderr=subprocess.PIPE,
-        )
-
-        await asyncio.wait_for(
-            create_table_process.wait(), timeout=CREATE_TIMEOUT
-        )
-        data = await create_table_process.stderr.read()  # type: ignore
-        assert (
-            create_table_process.returncode == 0
-        ), f"exposurelog create-table failed with {data.decode()!r}"
-
-        table_names = sa.inspect(engine).get_table_names()
-        assert "exposure_log_messages" in table_names
 
         # Check `exposurelog run` with and without the --port argument
         for port, message_id in ((None, 1), (8001, 2)):
@@ -111,7 +92,7 @@ async def check_run_and_add_message(
             fields=["id"],
         )
         r = requests.post(
-            f"http://localhost:{port}/exposurelog/graphql",
+            f"http://localhost:{port}/exposurelog",
             add_data,
             headers=headers,
         )

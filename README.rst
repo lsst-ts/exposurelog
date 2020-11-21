@@ -34,6 +34,4 @@ Routes
 
 * ``/``: Returns service metadata with a 200 status (used by Google Container Engine Ingress health check)
 
-* ``/exposurelog``: Returns metadata about the Exposure Log service.
-
-* ``/exposurelog/graphql``: The Exposure Log service.
+* ``/exposurelog``: The Exposure Log service.

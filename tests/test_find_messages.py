@@ -191,7 +191,7 @@ async def test_find_messages(aiohttp_client: TestClient) -> None:
             client=client,
             category="query",
             command="find_messages",
-            url_suffix=f"{name}/graphql",
+            url_suffix=name,
         )
 
         # Make predicates to test
