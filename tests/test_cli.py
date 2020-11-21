@@ -36,7 +36,7 @@ async def test_cli() -> None:
     ), "Could not find 'exposurelog' bin script; you must build this package"
 
     with testing.postgresql.Postgresql() as postgresql:
-        os.environ["EXPOSURELOG_DATABASE_URL"] = postgresql.url()
+        os.environ["EXPOSURELOG_DB_URL"] = postgresql.url()
 
         # Check `exposurelog run` with and without the --port argument
         for port, message_id in ((None, 1), (8001, 2)):

@@ -41,12 +41,12 @@ def create_app(**configs: typing.Any) -> web.Application:
         See https://docs.aiohttp.org/en/v2.3.3/web.html#background-tasks
         """
         exposurelog_db = LogMessageDatabase(
-            config.exposure_log_database_url, create_table=True
+            config.exposurelog_db_url, create_table=True
         )
-        root_app["exposurelog/exposure_log_database"] = exposurelog_db
+        root_app["exposurelog/exposurelog_db"] = exposurelog_db
 
     async def cleanup(app: web.Application) -> None:
-        exposurelog_db = root_app["exposurelog/exposure_log_database"]
+        exposurelog_db = root_app["exposurelog/exposurelog_db"]
         await exposurelog_db.close()
 
     root_app = web.Application()

@@ -63,12 +63,12 @@ async def test_edit_message(aiohttp_client: TestClient) -> None:
         messages = create_test_database(postgresql=postgresql, num_messages=1)
 
         app = create_app(
-            exposure_log_database_url=postgresql.url(), butler_uri_1=repo_path
+            exposurelog_db_url=postgresql.url(), butler_uri_1=repo_path
         )
         name = app["safir/config"].name
 
         client = await aiohttp_client(app)
-        await app["exposurelog/exposure_log_database"].start_task
+        await app["exposurelog/exposurelog_db"].start_task
 
         requestor = Requestor(
             client=client,
