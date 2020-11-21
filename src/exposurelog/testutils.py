@@ -47,7 +47,7 @@ class Requestor:
     command
         Default command.
     url_suffix
-        URL suffix for requests, e.g. exposurelog/graphql
+        URL suffix for requests, e.g. exposurelog
     """
 
     def __init__(

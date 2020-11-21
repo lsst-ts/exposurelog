@@ -62,7 +62,7 @@ async def test_delete_message(aiohttp_client: TestClient) -> None:
             client=client,
             category="mutation",
             command="delete_messages",
-            url_suffix=f"/{name}/graphql",
+            url_suffix=name,
         )
 
         # Delete two messages plus one that does not exist.

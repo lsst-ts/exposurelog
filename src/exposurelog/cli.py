@@ -5,12 +5,9 @@ __all__ = ["main", "help", "run"]
 from typing import Any, Union
 
 import click
-import sqlalchemy as sa
 from aiohttp.web import run_app
 
 from exposurelog.app import create_app
-from exposurelog.config import Configuration
-from exposurelog.create_messages_table import create_messages_table
 
 # Add -h as a help shortcut option
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
@@ -53,15 +50,3 @@ def run(ctx: click.Context, port: int) -> None:
     """Run the application (for production)."""
     app = create_app()
     run_app(app, port=port)
-
-
-@main.command()
-@click.pass_context
-def create_table(ctx: click.Context) -> None:
-    """Create the log message table if it does not already exist.
-
-    To replace an existing table, first manually drop the old table.
-    """
-    config = Configuration()
-    engine = sa.create_engine(config.exposure_log_database_url)
-    create_messages_table(engine=engine)

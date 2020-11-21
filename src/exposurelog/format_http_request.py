@@ -68,7 +68,7 @@ def format_http_request(
 
         from src.exposurelog.format_http_request import format_http_request
 
-        url = "http://localhost:8000/exposurelog/graphql"
+        url = "http://localhost:8000/exposurelog"
         find_args = dict(obs_id="HSCA90333600")
         find_data, headers = format_http_request(
             category="query", command="find_messages", args_dict=find_args

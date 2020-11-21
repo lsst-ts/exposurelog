@@ -9,16 +9,16 @@ import typing
 
 import aiopg
 import aiopg.sa
+import sqlalchemy as sa
 import structlog
-
-if typing.TYPE_CHECKING:
-    import sqlalchemy as sa
 
 from exposurelog.create_messages_table import create_messages_table
 
 
 class LogMessageDatabase:
     """Connection to the exposure log database and message table.
+
+    Create the table if it does not exist.
 
     Parameters
     ----------
@@ -27,7 +27,7 @@ class LogMessageDatabase:
         postgresql://[user[:password]@][netloc][:port][/dbname]
     """
 
-    def __init__(self, url: str):
+    def __init__(self, url: str, create_table: bool):
         self._closed = False
         self.url = url
         self.logger = structlog.get_logger("LogMessageDatabase")
@@ -35,7 +35,11 @@ class LogMessageDatabase:
         # None until ``start_task`` is done.
         self._engine: typing.Optional[aiopg.sa.Engine] = None
         # A model of the database table.
-        self.table: sa.Table = create_messages_table()
+        sync_engine = sa.create_engine(url)
+        try:
+            self.table: sa.Table = create_messages_table(engine=sync_engine)
+        finally:
+            sync_engine.dispose()
         # Set done when the engine has been created.
         self.start_task = asyncio.create_task(self.start())
 

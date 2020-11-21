@@ -74,7 +74,7 @@ async def test_edit_message(aiohttp_client: TestClient) -> None:
             client=client,
             category="mutation",
             command="edit_message",
-            url_suffix=f"{name}/graphql",
+            url_suffix=name,
         )
 
         old_message_id = messages[0]["id"]
