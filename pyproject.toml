@@ -23,7 +23,7 @@ commands =
     coverage run -m pytest {posargs}
 passenv =
     # Basic configuration
-    EXPOSURELOG_DATABASE_URL
+    EXPOSURELOG_DB_URL
     BUTLER_URI_1
     BUTLER_URI_2
     # OpenSplice DDS and SAL, should this prove necessary

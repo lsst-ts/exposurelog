@@ -35,18 +35,18 @@ async def edit_message(
     kwargs
         Find conditions as field=value data.
     """
-    exposure_log_database = app["exposurelog/exposure_log_database"]
+    exposurelog_db = app["exposurelog/exposurelog_db"]
 
     request_data = kwargs.copy()
 
     old_message_id = request_data["id"]
 
     # Get all data for the existing message
-    async with exposure_log_database.engine.acquire() as connection:
+    async with exposurelog_db.engine.acquire() as connection:
         # async for row in conn.execute(tbl.select().where(tbl.c.val=='abc')):
         get_old_result_proxy = await connection.execute(
-            exposure_log_database.table.select().where(
-                exposure_log_database.table.c.id == old_message_id
+            exposurelog_db.table.select().where(
+                exposurelog_db.table.c.id == old_message_id
             )
         )
         if get_old_result_proxy.rowcount == 0:
@@ -63,16 +63,16 @@ async def edit_message(
 
     # Add the new message and update the old one.
     # TODO: make this a single transaction (aiopg does not support that).
-    async with exposure_log_database.engine.acquire() as connection:
+    async with exposurelog_db.engine.acquire() as connection:
         add_result_proxy = await connection.execute(
-            exposure_log_database.table.insert()
+            exposurelog_db.table.insert()
             .values(**new_data)
             .returning(sa.literal_column("*"))
         )
         add_result = await add_result_proxy.fetchone()
         await connection.execute(
-            exposure_log_database.table.update()
-            .where(exposure_log_database.table.c.id == old_message_id)
+            exposurelog_db.table.update()
+            .where(exposurelog_db.table.c.id == old_message_id)
             .values(is_valid=False, date_is_valid_changed=current_tai_iso)
         )
 

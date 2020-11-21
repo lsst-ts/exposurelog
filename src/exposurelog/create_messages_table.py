@@ -8,7 +8,7 @@ import sqlalchemy as sa
 def create_messages_table(
     engine: typing.Optional[sa.engine.Engine] = None,
 ) -> sa.Table:
-    """Make the exposure_log messages table.
+    """Make the exposurelog messages table.
 
     Create the table in the database, if it does not exist,
     and return an sqlalchemy object relational model of the table.

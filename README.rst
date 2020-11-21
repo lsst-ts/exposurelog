@@ -16,7 +16,7 @@ Configuration
 
 The following environment variables must be set in Exposure Log's runtime environment.
 
-* ``EXPOSURELOG_DATABASE_URL``: URL to the exposure log message database, including username and password.
+* ``EXPOSURELOG_DB_URL``: URL to the exposure log message database, including username and password.
   Note that as of 2020-10 Exposure Log only supports PostgreSQL message databases,
   because it uses asyncio and no other databases have a suitable driver.
 * ``BUTLER_URI_1``: URI to an butler data repository, which is only read.

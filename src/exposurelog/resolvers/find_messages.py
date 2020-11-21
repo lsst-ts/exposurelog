@@ -29,21 +29,21 @@ async def find_messages(
     kwargs
         Find conditions as field=value data.
     """
-    exposure_log_database = app["exposurelog/exposure_log_database"]
+    exposurelog_db = app["exposurelog/exposurelog_db"]
 
-    async with exposure_log_database.engine.acquire() as connection:
+    async with exposurelog_db.engine.acquire() as connection:
         conditions = []
         order_by = []
         # Handle minimums and maximums
         for key, value in kwargs.items():
             if key.startswith("min_"):
-                column = getattr(exposure_log_database.table.c, key[4:])
+                column = getattr(exposurelog_db.table.c, key[4:])
                 conditions.append(column >= value)
             elif key.startswith("max_"):
-                column = getattr(exposure_log_database.table.c, key[4:])
+                column = getattr(exposurelog_db.table.c, key[4:])
                 conditions.append(column < value)
             elif key.startswith("has_"):
-                column = getattr(exposure_log_database.table.c, key[4:])
+                column = getattr(exposurelog_db.table.c, key[4:])
                 if value:
                     conditions.append(column != None)  # noqa
                 else:
@@ -55,31 +55,29 @@ async def find_messages(
                 "exposure_flags",
             ):
                 # Value is a list; field name is key without the final "s".
-                column = getattr(exposure_log_database.table.c, key[:-1])
+                column = getattr(exposurelog_db.table.c, key[:-1])
                 conditions.append(column.in_(value))
             elif key in ("message_text", "obs_id"):
-                column = getattr(exposure_log_database.table.c, key)
+                column = getattr(exposurelog_db.table.c, key)
                 conditions.append(column.contains(value))
             elif key in ("is_human", "is_valid"):
-                column = getattr(exposure_log_database.table.c, key)
+                column = getattr(exposurelog_db.table.c, key)
                 conditions.append(column == value)
             elif key == "order_by":
                 for item in value:
                     if item.startswith("-"):
-                        column = getattr(
-                            exposure_log_database.table.c, item[1:]
-                        )
+                        column = getattr(exposurelog_db.table.c, item[1:])
                         order_by.append(sa.sql.desc(column))
                     else:
-                        column = getattr(exposure_log_database.table.c, item)
+                        column = getattr(exposurelog_db.table.c, item)
                         order_by.append(sa.sql.asc(column))
-                column = exposure_log_database.table.c.exposure_flag
+                column = exposurelog_db.table.c.exposure_flag
 
             else:
                 raise RuntimeError(f"Bug: unrecognized key: {key}")
         full_conditions = sa.sql.and_(*conditions)
         result_proxy = await connection.execute(
-            exposure_log_database.table.select()
+            exposurelog_db.table.select()
             .where(full_conditions)
             .order_by(*order_by)
         )

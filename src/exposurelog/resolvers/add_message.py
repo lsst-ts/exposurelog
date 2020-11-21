@@ -46,7 +46,7 @@ async def add_message(
     message_data
         Full data for the new message, as field=value.
     """
-    exposure_log_database = app["exposurelog/exposure_log_database"]
+    exposurelog_db = app["exposurelog/exposurelog_db"]
     registries = app["exposurelog/registries"]
 
     data_dict = kwargs.copy()
@@ -77,9 +77,9 @@ async def add_message(
     data_dict["day_obs"] = day_obs
 
     # Add the message.
-    async with exposure_log_database.engine.acquire() as connection:
+    async with exposurelog_db.engine.acquire() as connection:
         result_proxy = await connection.execute(
-            exposure_log_database.table.insert()
+            exposurelog_db.table.insert()
             .values(**data_dict)
             .returning(sa.literal_column("*"))
         )

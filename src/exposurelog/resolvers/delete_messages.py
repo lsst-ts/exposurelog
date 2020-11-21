@@ -31,17 +31,17 @@ async def delete_messages(
         Message field=value data.
         The only entry used is ``id``.
     """
-    exposure_log_database = app["exposurelog/exposure_log_database"]
+    exposurelog_db = app["exposurelog/exposurelog_db"]
 
     # Validate the user data and handle defaults
     message_ids = kwargs["ids"]
     current_tai = astropy.time.Time.now().tai.iso
 
     # Delete the messages
-    async with exposure_log_database.engine.acquire() as connection:
+    async with exposurelog_db.engine.acquire() as connection:
         result_proxy = await connection.execute(
-            exposure_log_database.table.update()
-            .where(exposure_log_database.table.c.id.in_(message_ids))
+            exposurelog_db.table.update()
+            .where(exposurelog_db.table.c.id.in_(message_ids))
             .values(is_valid=False, date_is_valid_changed=current_tai)
             .returning(sa.literal_column("*"))
         )

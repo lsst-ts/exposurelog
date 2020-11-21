@@ -34,13 +34,13 @@ class Configuration:
     Set with the ``SAFIR_LOG_LEVEL`` environment variable.
     """
 
-    exposure_log_database_url: str = os.getenv(
-        "EXPOSURELOG_DATABASE_URL",
+    exposurelog_db_url: str = os.getenv(
+        "EXPOSURELOG_DB_URL",
         "postgresql://exposurelog@localhost/postgres",
     )
     """Path to the exposure log database server containing messages.
 
-    Set with the ``EXPOSURELOG_DATABASE_URL`` environment variable.
+    Set with the ``EXPOSURELOG_DB_URL`` environment variable.
     The format is the standard postgres URL::
 
         postgresql://[user[:password]@][netloc][:port][/dbname]
