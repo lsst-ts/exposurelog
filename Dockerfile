@@ -58,6 +58,9 @@ COPY --from=install-image /opt/venv /opt/venv
 # Switch to non-root user
 USER appuser
 
+# Copy test data to allow testing the application
+COPY tests/data/hsc_raw hsc_raw
+
 EXPOSE 8080
 
 ENTRYPOINT ["exposurelog", "run", "--port", "8080"]
