@@ -8,10 +8,10 @@ import sqlalchemy as sa
 def create_messages_table(
     engine: typing.Optional[sa.engine.Engine] = None,
 ) -> sa.Table:
-    """Make the exposure_log_messages sqlalchemy table.
+    """Make the exposure_log messages table.
 
-    Return an sqlalchemy object relational model of the table
-    and optionally create the table in the database.
+    Create the table in the database, if it does not exist,
+    and return an sqlalchemy object relational model of the table.
 
     Parameters
     ----------
@@ -20,7 +20,7 @@ def create_messages_table(
         add the table to the database.
     """
     table = sa.Table(
-        "exposure_log_messages",
+        "messages",
         sa.MetaData(),
         sa.Column("id", sa.BigInteger(), primary_key=True),
         sa.Column("obs_id", sa.String(), nullable=False),
