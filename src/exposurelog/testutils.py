@@ -134,6 +134,25 @@ async def assert_good_response(
     return data
 
 
+def db_config_from_dsn(dsn: typing.Dict[str, str]) -> typing.Dict[str, str]:
+    """Get app database configuration arguments from a database dsn.
+
+    The intended usage is to configure the application
+    from an instance of testing.postgresql.Postgresql()::
+
+        with testing.postgresql.Postgresql() as postgresql:
+            create_test_database(postgresql, num_messages=0)
+
+            config_args = db_config_from_dsn(postgresql.dsn())
+            app = create_app(
+                **db_config_args,
+                butler_uri_1=repo_path
+            )
+    """
+    assert dsn.keys() <= {"port", "host", "user", "database"}
+    return {f"exposurelog_db_{key}": value for key, value in dsn.items()}
+
+
 random = np.random.RandomState(47)
 
 

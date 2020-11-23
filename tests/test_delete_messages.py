@@ -12,6 +12,7 @@ from exposurelog.testutils import (
     Requestor,
     assert_good_response,
     create_test_database,
+    db_config_from_dsn,
 )
 
 if typing.TYPE_CHECKING:
@@ -50,9 +51,8 @@ async def test_delete_message(aiohttp_client: TestClient) -> None:
     with testing.postgresql.Postgresql() as postgresql:
         create_test_database(postgresql, num_messages=num_messages)
 
-        app = create_app(
-            exposurelog_db_url=postgresql.url(), butler_uri_1=repo_path
-        )
+        db_config = db_config_from_dsn(postgresql.dsn())
+        app = create_app(**db_config, butler_uri_1=repo_path)
         name = app["safir/config"].name
 
         client = await aiohttp_client(app)

@@ -12,6 +12,7 @@ import requests
 import testing.postgresql
 
 from exposurelog.format_http_request import format_http_request
+from exposurelog.testutils import db_config_from_dsn
 
 # Time limit for `exposurelog create-table` (sec).
 CREATE_TIMEOUT = 5
@@ -36,7 +37,9 @@ async def test_cli() -> None:
     ), "Could not find 'exposurelog' bin script; you must build this package"
 
     with testing.postgresql.Postgresql() as postgresql:
-        os.environ["EXPOSURELOG_DB_URL"] = postgresql.url()
+        db_config = db_config_from_dsn(postgresql.dsn())
+        for key, value in db_config.items():
+            os.environ[key.upper()] = str(value)
 
         # Check `exposurelog run` with and without the --port argument
         for port, message_id in ((None, 1), (8001, 2)):

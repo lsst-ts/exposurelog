@@ -14,17 +14,18 @@ Exposure Log is developed with the `Safir <https://safir.lsst.io>`__ framework.
 Configuration
 -------------
 
-The following environment variables must be set in Exposure Log's runtime environment.
+The following environment variables may be set in Exposure Log's runtime environment.
+See the file ``config.py`` for details and default values.
+All are optional except the ones marked "required":
 
-* ``EXPOSURELOG_DB_URL``: URL to the exposure log message database, including username and password.
-  Note that as of 2020-10 Exposure Log only supports PostgreSQL message databases,
-  because it uses asyncio and no other databases have a suitable driver.
-* ``BUTLER_URI_1``: URI to an butler data repository, which is only read.
+* ``BUTLER_URI_1`` (required): URI to an butler data repository, which is only read.
   Note that Exposure Log only reads the registry, so the actual data files are optional.
-* ``BUTLER_URI_2`` (optional): URI to a second, optional, data repository, which is searched after the first one.
-
-The following environment variables may optionally be set to change default behavior.
-
+* ``BUTLER_URI_2``: URI to a second, optional, data repository, which is searched after the first one.
+* ``EXPOSURELOG_DB_USER``: Exposurelog database user name
+* ``EXPOSURELOG_DB_PASSWORD`` (required): Exposurelog database password.
+* ``EXPOSURELOG_DB_HOST`` (required): Exposurelog database server host.
+* ``EXPOSURELOG_DB_PORT``: Exposurelog database server port.
+* ``EXPOSURELOG_DB_DATABASE``: Exposurelog database name.
 * ``SAFIR_PROFILE``: Set to ``production`` to enable production logging
 * ``SAFIR_LOG_LEVEL``: Set to ``DEBUG``, ``INFO``, ``WARNING``, or ``ERROR`` to change the log level.
   The default is ``INFO``.

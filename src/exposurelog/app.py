@@ -3,6 +3,7 @@
 __all__ = ["create_app"]
 
 import typing
+import urllib
 
 from aiohttp import web
 from graphql_server.aiohttp import GraphQLView
@@ -19,6 +20,8 @@ from exposurelog.schemas.app_schema import app_schema
 
 def create_app(**configs: typing.Any) -> web.Application:
     """Create and configure the aiohttp.web application."""
+    # Cast all values to str to support butler URIs as pathlib.Path.
+    configs = {key: str(value) for key, value in configs.items()}
     config = Configuration(**configs)
     configure_logging(
         profile=config.profile,
@@ -26,14 +29,25 @@ def create_app(**configs: typing.Any) -> web.Application:
         name=config.logger_name,
     )
 
+    encoded_db_password = urllib.parse.quote_plus(
+        config.exposurelog_db_password
+    )
+    exposurelog_db_url = (
+        f"postgresql://{config.exposurelog_db_user}:{encoded_db_password}"
+        f"@{config.exposurelog_db_host}:{config.exposurelog_db_port}"
+        f"/{config.exposurelog_db_database}"
+    )
+
     if not config.butler_uri_1:
         raise ValueError("Must specify BUTLER_URI_1")
     # Use str(...) around the butler URIs to support pathlib.Path paths.
-    butlers = [Butler(str(config.butler_uri_1), writeable=False)]
+    butlers = [Butler(config.butler_uri_1, writeable=False)]
     if config.butler_uri_2:
-        butlers.append(Butler(str(config.butler_uri_2), writeable=False))
+        butlers.append(Butler(config.butler_uri_2, writeable=False))
 
-    async def startup(app: web.Application) -> None:
+    async def startup(
+        app: web.Application, exposurelog_db_url: str = exposurelog_db_url
+    ) -> None:
         """Create and start LogMessageDatabase.
 
         When the app is created there is no event loop, so LogMessageDatabase
@@ -41,7 +55,7 @@ def create_app(**configs: typing.Any) -> web.Application:
         See https://docs.aiohttp.org/en/v2.3.3/web.html#background-tasks
         """
         exposurelog_db = LogMessageDatabase(
-            config.exposurelog_db_url, create_table=True
+            exposurelog_db_url, create_table=True
         )
         root_app["exposurelog/exposurelog_db"] = exposurelog_db
 

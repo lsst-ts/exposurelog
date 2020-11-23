@@ -14,6 +14,7 @@ from exposurelog.testutils import (
     Requestor,
     assert_good_response,
     create_test_database,
+    db_config_from_dsn,
 )
 
 if typing.TYPE_CHECKING:
@@ -179,9 +180,8 @@ async def test_find_messages(aiohttp_client: TestClient) -> None:
             num_edited=num_edited,
         )
 
-        app = create_app(
-            exposurelog_db_url=postgresql.url(), butler_uri_1=repo_path
-        )
+        db_config = db_config_from_dsn(postgresql.dsn())
+        app = create_app(**db_config, butler_uri_1=repo_path)
         name = app["safir/config"].name
 
         client = await aiohttp_client(app)

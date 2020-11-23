@@ -13,6 +13,7 @@ from exposurelog.testutils import (
     assert_bad_response,
     assert_good_response,
     create_test_database,
+    db_config_from_dsn,
 )
 
 if TYPE_CHECKING:
@@ -62,9 +63,8 @@ async def test_edit_message(aiohttp_client: TestClient) -> None:
     with testing.postgresql.Postgresql() as postgresql:
         messages = create_test_database(postgresql=postgresql, num_messages=1)
 
-        app = create_app(
-            exposurelog_db_url=postgresql.url(), butler_uri_1=repo_path
-        )
+        db_config = db_config_from_dsn(postgresql.dsn())
+        app = create_app(**db_config, butler_uri_1=repo_path)
         name = app["safir/config"].name
 
         client = await aiohttp_client(app)
