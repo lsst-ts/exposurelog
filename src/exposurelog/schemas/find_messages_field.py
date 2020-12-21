@@ -18,6 +18,10 @@ find_messages_field = graphql.GraphQLField(
             graphql.GraphQLInt,
             description="Maximum message ID, exclusive.",
         ),
+        site_ids=graphql.GraphQLArgument(
+            graphql.GraphQLList(graphql.GraphQLString),
+            description="Site IDs.",
+        ),
         obs_id=graphql.GraphQLArgument(
             graphql.GraphQLString,
             description="Observation ID (a string) contains...",

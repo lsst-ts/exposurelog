@@ -10,6 +10,7 @@ import testing.postgresql
 from exposurelog.app import create_app
 from exposurelog.schemas.message_type import MessageType
 from exposurelog.testutils import (
+    TEST_SITE_ID,
     MessageDictT,
     Requestor,
     assert_good_response,
@@ -181,7 +182,9 @@ async def test_find_messages(aiohttp_client: TestClient) -> None:
         )
 
         db_config = db_config_from_dsn(postgresql.dsn())
-        app = create_app(**db_config, butler_uri_1=repo_path)
+        app = create_app(
+            **db_config, butler_uri_1=repo_path, site_id=TEST_SITE_ID
+        )
         name = app["safir/config"].name
 
         client = await aiohttp_client(app)

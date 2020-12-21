@@ -7,6 +7,7 @@ import testing.postgresql
 
 from exposurelog.app import create_app
 from exposurelog.testutils import (
+    TEST_SITE_ID,
     ArgDictT,
     MessageDictT,
     Requestor,
@@ -32,6 +33,7 @@ async def assert_good_edit_response(
     """
     new_message = await assert_good_response(response, command="edit_message")
     assert new_message["parent_id"] == old_message["id"]
+    assert new_message["parent_site_id"] == old_message["site_id"]
     assert new_message["is_valid"]
     assert not old_message["is_valid"]
     assert new_message["date_is_valid_changed"] is None
@@ -40,8 +42,10 @@ async def assert_good_edit_response(
         if key in set(
             (
                 "id",
+                "site_id",
                 "is_valid",
                 "parent_id",
+                "parent_site_id",
                 "date_added",
                 "is_valid",
                 "date_is_valid_changed",
@@ -64,7 +68,9 @@ async def test_edit_message(aiohttp_client: TestClient) -> None:
         messages = create_test_database(postgresql=postgresql, num_messages=1)
 
         db_config = db_config_from_dsn(postgresql.dsn())
-        app = create_app(**db_config, butler_uri_1=repo_path)
+        app = create_app(
+            **db_config, butler_uri_1=repo_path, site_id=TEST_SITE_ID
+        )
         name = app["safir/config"].name
 
         client = await aiohttp_client(app)
@@ -77,15 +83,18 @@ async def test_edit_message(aiohttp_client: TestClient) -> None:
             url_suffix=name,
         )
 
-        old_message_id = messages[0]["id"]
+        old_id = messages[0]["id"]
+        old_site_id = messages[0]["site_id"]
 
         find_old_message_args = dict(
-            min_id=old_message_id,
-            max_id=old_message_id + 1,
+            min_id=old_id,
+            max_id=old_id + 1,
+            site_ids=[old_site_id],
             is_valid=False,
         )
         full_edit_args = dict(
-            id=old_message_id,
+            id=old_id,
+            site_id=old_site_id,
             message_text="New message text",
             user_id="new user_id",
             user_agent="new user_agent",
@@ -98,8 +107,9 @@ async def test_edit_message(aiohttp_client: TestClient) -> None:
         # After each edit, find the old message and check that
         # the date_is_valid_changed has been suitably updated.
         for del_key in full_edit_args:
-            if del_key == "id":
-                continue  # id is required
+            if del_key in ("id", "site_id"):
+                # Skip required arguments
+                continue
             edit_args = full_edit_args.copy()
             del edit_args[del_key]
             edit_response = await requestor(edit_args)

@@ -8,6 +8,7 @@ import testing.postgresql
 
 from exposurelog.app import create_app
 from exposurelog.testutils import (
+    TEST_SITE_ID,
     MessageDictT,
     Requestor,
     assert_good_response,
@@ -52,7 +53,9 @@ async def test_delete_message(aiohttp_client: TestClient) -> None:
         create_test_database(postgresql, num_messages=num_messages)
 
         db_config = db_config_from_dsn(postgresql.dsn())
-        app = create_app(**db_config, butler_uri_1=repo_path)
+        app = create_app(
+            **db_config, butler_uri_1=repo_path, site_id=TEST_SITE_ID
+        )
         name = app["safir/config"].name
 
         client = await aiohttp_client(app)
@@ -67,7 +70,7 @@ async def test_delete_message(aiohttp_client: TestClient) -> None:
 
         # Delete two messages plus one that does not exist.
         message_ids = [1, 3, 999]
-        del_args = dict(ids=message_ids)
+        del_args = dict(ids=message_ids, site_id=TEST_SITE_ID)
         response = await requestor(del_args)
         deleted_messages = await assert_good_delete_response(
             response, message_ids=message_ids
@@ -88,7 +91,14 @@ async def test_delete_message(aiohttp_client: TestClient) -> None:
             )
 
         # Deleting a message that does not exist should return no entries.
-        del_args = dict(ids=[9999])
+        del_args = dict(ids=[9999], site_id=TEST_SITE_ID)
+        response = await requestor(del_args)
+        deleted_messages = await assert_good_delete_response(
+            response, message_ids=message_ids
+        )
+        assert len(deleted_messages) == 0
+
+        del_args = dict(ids=[1], site_id="nonexistent")
         response = await requestor(del_args)
         deleted_messages = await assert_good_delete_response(
             response, message_ids=message_ids

@@ -1,8 +1,11 @@
-__all__ = ["create_messages_table"]
+__all__ = ["SITE_ID_LEN", "create_messages_table"]
 
 import typing
 
 import sqlalchemy as sa
+
+# Length of the site_id field.
+SITE_ID_LEN = 16
 
 
 def create_messages_table(
@@ -22,7 +25,8 @@ def create_messages_table(
     table = sa.Table(
         "messages",
         sa.MetaData(),
-        sa.Column("id", sa.BigInteger(), primary_key=True),
+        sa.Column("id", sa.BigInteger(), autoincrement=True, primary_key=True),
+        sa.Column("site_id", sa.String(length=SITE_ID_LEN), primary_key=True),
         sa.Column("obs_id", sa.String(), nullable=False),
         sa.Column("instrument", sa.String(), nullable=False),
         sa.Column("day_obs", sa.Integer(), nullable=False),
@@ -39,6 +43,11 @@ def create_messages_table(
         sa.Column("date_added", sa.DateTime(), nullable=False),
         sa.Column("date_is_valid_changed", sa.DateTime(), nullable=True),
         sa.Column("parent_id", sa.BigInteger(), nullable=True),
+        sa.Column("parent_site_id", sa.String(length=SITE_ID_LEN)),
+        sa.ForeignKeyConstraint(
+            ["parent_id", "parent_site_id"],
+            ["messages.id", "messages.site_id"],
+        ),
     )
 
     for name in (

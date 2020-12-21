@@ -9,6 +9,7 @@ import testing.postgresql
 
 from exposurelog.app import create_app
 from exposurelog.testutils import (
+    TEST_SITE_ID,
     ArgDictT,
     MessageDictT,
     Requestor,
@@ -57,7 +58,9 @@ async def test_add_message(aiohttp_client: TestClient) -> None:
         create_test_database(postgresql, num_messages=0)
 
         db_config = db_config_from_dsn(postgresql.dsn())
-        app = create_app(**db_config, butler_uri_1=repo_path)
+        app = create_app(
+            **db_config, butler_uri_1=repo_path, site_id=TEST_SITE_ID
+        )
         name = app["safir/config"].name
 
         client = await aiohttp_client(app)

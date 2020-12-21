@@ -40,13 +40,17 @@ async def edit_message(
     request_data = kwargs.copy()
 
     old_message_id = request_data["id"]
+    old_site_id = request_data["site_id"]
 
     # Get all data for the existing message
     async with exposurelog_db.engine.acquire() as connection:
         # async for row in conn.execute(tbl.select().where(tbl.c.val=='abc')):
         get_old_result_proxy = await connection.execute(
             exposurelog_db.table.select().where(
-                exposurelog_db.table.c.id == old_message_id
+                sa.sql.and_(
+                    exposurelog_db.table.c.id == old_message_id,
+                    exposurelog_db.table.c.site_id == old_site_id,
+                )
             )
         )
         if get_old_result_proxy.rowcount == 0:
@@ -58,8 +62,10 @@ async def edit_message(
         new_data.pop(field)
     current_tai_iso = astropy.time.Time.now().tai.iso
     new_data["is_valid"] = True
+    new_data["site_id"] = app["safir/config"].site_id
     new_data["date_added"] = current_tai_iso
     new_data["parent_id"] = old_message_id
+    new_data["parent_site_id"] = old_site_id
 
     # Add the new message and update the old one.
     # TODO: make this a single transaction (aiopg does not support that).

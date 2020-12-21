@@ -12,7 +12,11 @@ delete_messages_field = graphql.GraphQLField(
     args=dict(
         ids=graphql.GraphQLArgument(
             graphql.GraphQLList(graphql.GraphQLInt),
-            description="Message IDs.",
+            description="IDs of messages to delete.",
+        ),
+        site_id=graphql.GraphQLArgument(
+            graphql.GraphQLNonNull(graphql.GraphQLString),
+            description="Site ID of messages to delete.",
         ),
     ),
     resolve=delete_messages,

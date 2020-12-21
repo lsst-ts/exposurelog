@@ -25,21 +25,33 @@ class Configuration:
     """
 
     exposurelog_db_user: str = os.getenv("EXPOSURELOG_DB_USER", "exposurelog")
-    """Exposurelog database user name."""
+    """Exposure log database user name."""
 
     exposurelog_db_password: str = os.getenv("EXPOSURELOG_DB_PASSWORD", "")
-    """Exposurelog database password."""
+    """Exposure log database password."""
 
     exposurelog_db_host: str = os.getenv("EXPOSURELOG_DB_HOST", "localhost")
-    """Exposurelog database server host."""
+    """Exposure log database server host."""
 
     exposurelog_db_port: str = os.getenv("EXPOSURELOG_DB_PORT", "5432")
-    """Exposurelog database server port."""
+    """Exposure log database server port."""
 
     exposurelog_db_database: str = os.getenv(
         "EXPOSURELOG_DB_DATABASE", "exposurelog"
     )
-    """Exposurelog database name."""
+    """Exposure log database name."""
+
+    site_id: str = os.getenv("SITE_ID", "")
+    """Site ID (required).
+
+    Requirements:
+
+    * It must be specified and not blank.
+    * It must be different for each exposure log deployment
+      (and thus each instance of the exposure log database)
+      in order for messages to be synchronized between databases.
+    * Its length must be <= exposurelog.create_messages_table.SITE_ID_LEN.
+    """
 
     name: str = os.getenv("SAFIR_NAME", "exposurelog")
     """The application's name, which doubles as the root HTTP endpoint path.

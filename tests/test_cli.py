@@ -12,7 +12,7 @@ import requests
 import testing.postgresql
 
 from exposurelog.format_http_request import format_http_request
-from exposurelog.testutils import db_config_from_dsn
+from exposurelog.testutils import TEST_SITE_ID, db_config_from_dsn
 
 # Time limit for `exposurelog create-table` (sec).
 CREATE_TIMEOUT = 5
@@ -30,6 +30,7 @@ async def test_cli() -> None:
     """Test exposurelog create-table and run command-line commands."""
     repo_path = pathlib.Path(__file__).parent / "data" / "hsc_raw"
     os.environ["BUTLER_URI_1"] = str(repo_path)
+    os.environ["SITE_ID"] = TEST_SITE_ID
 
     exe_path = shutil.which("exposurelog")
     assert (
