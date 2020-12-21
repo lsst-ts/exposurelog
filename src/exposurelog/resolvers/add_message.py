@@ -50,6 +50,7 @@ async def add_message(
     registries = app["exposurelog/registries"]
 
     data_dict = kwargs.copy()
+    data_dict["site_id"] = app["safir/config"].site_id
     data_dict["is_valid"] = True
     curr_tai = astropy.time.Time.now()
     data_dict["date_added"] = curr_tai.tai.iso

@@ -26,6 +26,10 @@ MessageType = graphql.GraphQLObjectType(
             graphql.GraphQLNonNull(graphql.GraphQLInt),
             description="Message ID.",
         ),
+        site_id=graphql.GraphQLField(
+            graphql.GraphQLNonNull(graphql.GraphQLString),
+            description="Site ID.",
+        ),
         obs_id=graphql.GraphQLField(
             graphql.GraphQLNonNull(graphql.GraphQLString),
             description="Observation ID (a string).",
@@ -77,6 +81,10 @@ MessageType = graphql.GraphQLObjectType(
         parent_id=graphql.GraphQLField(
             graphql.GraphQLInt,
             description="ID of parent message; None if no parent.",
+        ),
+        parent_site_id=graphql.GraphQLField(
+            graphql.GraphQLString,
+            description="Site ID.",
         ),
     ),
 )

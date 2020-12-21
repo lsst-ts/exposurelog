@@ -14,6 +14,7 @@ from safir.metadata import setup_metadata
 from safir.middleware import bind_logger
 
 from exposurelog.config import Configuration
+from exposurelog.create_messages_table import SITE_ID_LEN
 from exposurelog.log_message_database import LogMessageDatabase
 from exposurelog.schemas.app_schema import app_schema
 
@@ -28,6 +29,13 @@ def create_app(**configs: typing.Any) -> web.Application:
         log_level=config.log_level,
         name=config.logger_name,
     )
+
+    if not config.site_id:
+        raise ValueError("Must specify SITE_ID")
+    if len(config.site_id) > SITE_ID_LEN:
+        raise ValueError(
+            f"SITE_ID={config.site_id!r} too long; max length={SITE_ID_LEN}"
+        )
 
     encoded_db_password = urllib.parse.quote_plus(
         config.exposurelog_db_password

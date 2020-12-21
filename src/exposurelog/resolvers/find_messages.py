@@ -49,6 +49,7 @@ async def find_messages(
                 else:
                     conditions.append(column == None)  # noqa
             elif key in (
+                "site_ids",
                 "instruments",
                 "user_ids",
                 "user_agents",

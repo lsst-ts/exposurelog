@@ -28,6 +28,8 @@ if typing.TYPE_CHECKING:
 MIN_DATE_RANDOM_MESSAGE = "2021-01-01"
 MAX_DATE_RANDOM_MESSAGE = "2022-12-31"
 
+TEST_SITE_ID = "test"
+
 random = np.random.RandomState(47)
 
 # Type annotation aliases
@@ -187,8 +189,9 @@ def random_str(nchar: int) -> str:
 def random_message() -> MessageDictT:
     """Make one random message, as a dict of field: value.
 
-    All messages will have ``id=None``, ``is_valid=True``,
-    ``date_is_valid_changed=None`` and and ``parent_id=None``.
+    All messages will have ``id=None``, ``site_id=TEST_SITE_ID``,
+    ``is_valid=True``, ``date_is_valid_changed=None``,
+    ``parent_id=None``, and ``parent_site_id=None``.
 
     Fields are in the same order as MessageType and the database schema,
     to make it easier to visually compare these messages to messages in
@@ -206,6 +209,7 @@ def random_message() -> MessageDictT:
       of earlier messages, as follows:
 
       * Set edited_message["parent_id"] = parent_message["id"]
+      * Set edited_message["parent_site_id"] = parent_message["site_id"]
       * Set parent_message["is_valid"] = False
       * Set parent_message["date_is_valid_changed"] =
         edited_message["date_added"]
@@ -214,6 +218,7 @@ def random_message() -> MessageDictT:
 
     message = dict(
         id=None,
+        site_id=TEST_SITE_ID,
         obs_id=random_str(nchar=18),
         instrument=random_str(nchar=16),
         day_obs=int(random_yyyymmdd),
@@ -226,6 +231,7 @@ def random_message() -> MessageDictT:
         date_added=random_date(),
         date_is_valid_changed=None,
         parent_id=None,
+        parent_site_id=None,
     )
 
     # Check that we have set all fields (not necessarily in order).
@@ -278,6 +284,7 @@ def random_messages(
                 parent_message_id_set.add(parent_message["id"])
                 break
         message["parent_id"] = parent_message["id"]
+        message["parent_site_id"] = parent_message["site_id"]
         parent_message["is_valid"] = False
         parent_message["date_is_valid_changed"] = message["date_added"]
     return message_list

@@ -14,6 +14,10 @@ edit_message_field = graphql.GraphQLField(
             graphql.GraphQLNonNull(graphql.GraphQLInt),
             description="ID of message to edit.",
         ),
+        site_id=graphql.GraphQLArgument(
+            graphql.GraphQLNonNull(graphql.GraphQLString),
+            description="Site ID of messages to edit.",
+        ),
         message_text=graphql.GraphQLArgument(
             graphql.GraphQLString,
             description="Message text",
