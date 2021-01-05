@@ -17,8 +17,3 @@ git+git://github.com/lsst/daf_butler.git@master#daf_butler
 
 # Extra dependencies that should have been included by above packages
 jinja2~=2.11  # Needed by graphql-server
-
-# I would rather have this in dev.in but putting it here prevents a dependency issue
-# (seen 2021-01-04) where one package installs idna 3 and another demands idna < 3.
-# Thanks to Jonathan Sick for the suggestion.
-requests~=2.25

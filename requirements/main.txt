@@ -19,12 +19,8 @@ async-timeout==3.0.1
     # via aiohttp
 attrs==20.3.0
     # via aiohttp
-certifi==2020.12.5
-    # via requests
 chardet==3.0.4
-    # via
-    #   aiohttp
-    #   requests
+    # via aiohttp
 click==7.1.2
     # via
     #   -r requirements/main.in
@@ -37,10 +33,8 @@ graphql-core==3.1.2
     # via graphql-server
 graphql-server[aiohttp]==3.0.0b3
     # via -r requirements/main.in
-idna==2.10
-    # via
-    #   requests
-    #   yarl
+idna==3.1
+    # via yarl
 importlib-metadata==2.1.1
     # via -r requirements/main.in
 jinja2==2.11.2
@@ -53,7 +47,7 @@ multidict==5.1.0
     # via
     #   aiohttp
     #   yarl
-numpy==1.19.4
+numpy==1.19.5
     # via
     #   astropy
     #   lsst-sphgeom
@@ -64,8 +58,6 @@ pyerfa==1.7.1.1
     # via astropy
 pyyaml==5.3.1
     # via daf-butler
-requests==2.25.1
-    # via -r requirements/main.in
 safir==0.1.0
     # via -r requirements/main.in
 sqlalchemy==1.3.22
@@ -78,8 +70,6 @@ typing-extensions==3.7.4.3
     # via
     #   aiohttp
     #   graphql-server
-urllib3==1.26.2
-    # via requests
 wrapt==1.12.1
     # via deprecated
 yarl==1.6.3
