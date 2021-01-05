@@ -7,8 +7,8 @@ import shutil
 import subprocess
 from typing import Optional
 
+import aiohttp
 import pytest
-import requests
 import testing.postgresql
 
 from exposurelog.format_http_request import format_http_request
@@ -74,36 +74,37 @@ async def check_run_and_add_message(
         stderr=subprocess.PIPE,
     )
     try:
+        async with aiohttp.ClientSession() as session:
 
-        # Give the exposure log service time to start.
-        await asyncio.sleep(RUN_DELAY)
+            # Give the exposure log service time to start.
+            await asyncio.sleep(RUN_DELAY)
 
-        # Add a message whose obs_id matches an exposure.
-        add_args = dict(
-            obs_id="HSCA90333600",
-            instrument="HSC",
-            message_text="A sample message",
-            user_id="test_add_message",
-            user_agent="pytest",
-            is_human=False,
-            is_new=False,
-            exposure_flag="none",
-        )
-        add_data, headers = format_http_request(
-            category="mutation",
-            command="add_message",
-            args_dict=add_args,
-            fields=["id"],
-        )
-        r = requests.post(
-            f"http://localhost:{port}/exposurelog",
-            add_data,
-            headers=headers,
-        )
-        assert r.status_code == 200
-        reply_data = r.json()
-        assert "error" not in reply_data
-        assert reply_data["data"]["add_message"]["id"] == message_id
+            # Add a message whose obs_id matches an exposure.
+            add_args = dict(
+                obs_id="HSCA90333600",
+                instrument="HSC",
+                message_text="A sample message",
+                user_id="test_add_message",
+                user_agent="pytest",
+                is_human=False,
+                is_new=False,
+                exposure_flag="none",
+            )
+            add_data, headers = format_http_request(
+                category="mutation",
+                command="add_message",
+                args_dict=add_args,
+                fields=["id"],
+            )
+            r = await session.post(
+                f"http://localhost:{port}/exposurelog",
+                data=add_data,
+                headers=headers,
+            )
+            assert r.status == 200
+            reply_data = await r.json()
+            assert "error" not in reply_data
+            assert reply_data["data"]["add_message"]["id"] == message_id
 
     finally:
         if run_process.returncode is None:

@@ -4,31 +4,75 @@
 #
 #    pip-compile --output-file=requirements/main.txt requirements/main.in
 #
-aiohttp==3.7.3            # via -r requirements/main.in, graphql-server, safir
-aiopg==1.0.0              # via -r requirements/main.in
-astropy==4.1              # via -r requirements/main.in, daf-butler
-async-timeout==3.0.1      # via aiohttp
-attrs==20.3.0             # via aiohttp
-chardet==3.0.4            # via aiohttp
-click==7.1.2              # via -r requirements/main.in, daf-butler
-git+git://github.com/lsst/daf_butler.git@master#daf_butler  # via -r requirements/main.in
-deprecated==1.2.10        # via daf-butler
-graphql-core==3.1.2       # via graphql-server
-graphql-server[aiohttp]==3.0.0b2  # via -r requirements/main.in
-idna==2.10                # via yarl
-importlib-metadata==2.0.0  # via -r requirements/main.in
-jinja2==2.11.2            # via -r requirements/main.in
-git+https://github.com/lsst/sphgeom@master  # via daf-butler
-markupsafe==1.1.1         # via jinja2
-multidict==5.0.2          # via aiohttp, yarl
-numpy==1.19.4             # via astropy, lsst-sphgeom
-psycopg2-binary==2.8.6    # via aiopg
-pyyaml==5.3.1             # via daf-butler
-safir==0.1.0              # via -r requirements/main.in
-six==1.15.0               # via structlog
-sqlalchemy==1.3.20        # via -r requirements/main.in, daf-butler
-structlog==20.1.0         # via safir
-typing-extensions==3.7.4.3  # via aiohttp, graphql-server
-wrapt==1.12.1             # via deprecated
-yarl==1.6.3               # via aiohttp
-zipp==3.4.0               # via importlib-metadata
+aiohttp==3.7.3
+    # via
+    #   -r requirements/main.in
+    #   graphql-server
+    #   safir
+aiopg==1.1.0
+    # via -r requirements/main.in
+astropy==4.2
+    # via
+    #   -r requirements/main.in
+    #   daf-butler
+async-timeout==3.0.1
+    # via aiohttp
+attrs==20.3.0
+    # via aiohttp
+chardet==3.0.4
+    # via aiohttp
+click==7.1.2
+    # via
+    #   -r requirements/main.in
+    #   daf-butler
+git+git://github.com/lsst/daf_butler.git@master#daf_butler
+    # via -r requirements/main.in
+deprecated==1.2.10
+    # via daf-butler
+graphql-core==3.1.2
+    # via graphql-server
+graphql-server[aiohttp]==3.0.0b3
+    # via -r requirements/main.in
+idna==3.1
+    # via yarl
+importlib-metadata==2.1.1
+    # via -r requirements/main.in
+jinja2==2.11.2
+    # via -r requirements/main.in
+git+https://github.com/lsst/sphgeom@master
+    # via daf-butler
+markupsafe==1.1.1
+    # via jinja2
+multidict==5.1.0
+    # via
+    #   aiohttp
+    #   yarl
+numpy==1.19.5
+    # via
+    #   astropy
+    #   lsst-sphgeom
+    #   pyerfa
+psycopg2-binary==2.8.6
+    # via aiopg
+pyerfa==1.7.1.1
+    # via astropy
+pyyaml==5.3.1
+    # via daf-butler
+safir==0.1.0
+    # via -r requirements/main.in
+sqlalchemy==1.3.22
+    # via
+    #   -r requirements/main.in
+    #   daf-butler
+structlog==20.2.0
+    # via safir
+typing-extensions==3.7.4.3
+    # via
+    #   aiohttp
+    #   graphql-server
+wrapt==1.12.1
+    # via deprecated
+yarl==1.6.3
+    # via aiohttp
+zipp==3.4.0
+    # via importlib-metadata
