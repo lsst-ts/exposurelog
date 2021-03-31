@@ -41,9 +41,9 @@ class doc_str:
 
 async def assert_good_find_response(
     response: aiohttp.ClientResponse,
-    messages: typing.List[MessageDictT],
+    messages: list[MessageDictT],
     predicate: typing.Callable,
-) -> typing.List[MessageDictT]:
+) -> list[MessageDictT]:
     """Assert that the correct messages were found.
 
     Parameters
@@ -76,7 +76,7 @@ async def assert_good_find_response(
 
 
 def assert_messages_ordered(
-    messages: typing.List[MessageDictT], order_by: typing.List[str]
+    messages: list[MessageDictT], order_by: list[str]
 ) -> None:
     """Assert that a list of message is ordered as specified.
 
@@ -100,7 +100,7 @@ def assert_messages_ordered(
 
 
 def assert_two_messages_ordered(
-    message1: MessageDictT, message2: MessageDictT, order_by: typing.List[str]
+    message1: MessageDictT, message2: MessageDictT, order_by: list[str]
 ) -> None:
     """Assert that two messages are ordered as specified.
 
@@ -161,9 +161,9 @@ def cmp_message_field(field: str, val1: typing.Any, val2: typing.Any) -> int:
 
 
 def get_missing_message(
-    messages: typing.List[MessageDictT],
-    found_messages: typing.List[MessageDictT],
-) -> typing.List[MessageDictT]:
+    messages: list[MessageDictT],
+    found_messages: list[MessageDictT],
+) -> list[MessageDictT]:
     """Get messages that were not found."""
     found_ids = set(found_message["id"] for found_message in found_messages)
     return [message for message in messages if message["id"] not in found_ids]
@@ -272,7 +272,7 @@ async def test_find_messages(aiohttp_client: TestClient) -> None:
             def test_collection(
                 message: MessageDictT,
                 field: str = field,
-                values: typing.List[typing.Any] = values,
+                values: list[typing.Any] = values,
             ) -> bool:
                 return message[field] in values
 

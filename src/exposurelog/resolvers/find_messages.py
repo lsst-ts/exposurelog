@@ -16,8 +16,8 @@ if typing.TYPE_CHECKING:
 async def find_messages(
     app: aiohttp.web.Application,
     _info: graphql.GraphQLResolveInfo,
-    **kwargs,
-) -> dict:
+    **kwargs: typing.Any,
+) -> list[dict]:
     """Find messages.
 
     Parameters

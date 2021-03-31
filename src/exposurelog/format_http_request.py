@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 import json
 import typing
@@ -32,7 +34,10 @@ def convert_item(key: str, value: typing.Any) -> typing.Any:
 
 
 def format_http_request(
-    category: str, command: str, args_dict: dict, fields: list = None
+    category: str,
+    command: str,
+    args_dict: dict[str, typing.Any],
+    fields: list[str] = None,
 ) -> tuple:
     """Format data for an exposure log GraphQL POST request.
 

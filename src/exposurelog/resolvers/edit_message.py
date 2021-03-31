@@ -2,6 +2,8 @@ from __future__ import annotations
 
 __all__ = ["edit_message"]
 
+import typing
+
 import aiohttp
 import astropy.time
 import graphql
@@ -13,7 +15,7 @@ from exposurelog.dict_from_result_proxy import dict_from_result_proxy
 async def edit_message(
     app: aiohttp.web.Application,
     _info: graphql.GraphQLResolveInfo,
-    **kwargs,
+    **kwargs: typing.Any,
 ) -> dict:
     """Edit an existing message.
 
