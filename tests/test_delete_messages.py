@@ -21,8 +21,8 @@ if typing.TYPE_CHECKING:
 
 
 async def assert_good_delete_response(
-    response: aiohttp.ClientResponse, *, message_ids: typing.List[int]
-) -> typing.List[MessageDictT]:
+    response: aiohttp.ClientResponse, *, message_ids: list[int]
+) -> list[MessageDictT]:
     """Check the response from a successful delete_messages request.
 
     Parameters

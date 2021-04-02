@@ -17,8 +17,8 @@ if typing.TYPE_CHECKING:
 async def delete_messages(
     app: aiohttp.web.Application,
     _info: graphql.GraphQLResolveInfo,
-    **kwargs,
-) -> dict:
+    **kwargs: typing.Any,
+) -> list[dict]:
     """Delete a message.
 
     Parameters

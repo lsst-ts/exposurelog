@@ -67,7 +67,10 @@ class Requestor:
         self.url_suffix = url_suffix
 
     async def __call__(
-        self, args_dict: dict, category: str = None, command: str = None
+        self,
+        args_dict: dict[str, typing.Any],
+        category: str = None,
+        command: str = None,
     ) -> aiohttp.ClientResponse:
         """Issue a request.
 
@@ -136,7 +139,7 @@ async def assert_good_response(
     return data
 
 
-def db_config_from_dsn(dsn: typing.Dict[str, str]) -> typing.Dict[str, str]:
+def db_config_from_dsn(dsn: dict[str, str]) -> dict[str, str]:
     """Get app database configuration arguments from a database dsn.
 
     The intended usage is to configure the application
@@ -240,9 +243,7 @@ def random_message() -> MessageDictT:
     return message
 
 
-def random_messages(
-    num_messages: int, num_edited: int
-) -> typing.List[MessageDictT]:
+def random_messages(num_messages: int, num_edited: int) -> list[MessageDictT]:
     """Make a list of random messages, each a dict of field: value.
 
     Parameters
@@ -294,7 +295,7 @@ def create_test_database(
     postgresql: testing.postgresql.Postgresql,
     num_messages: int,
     num_edited: int = 0,
-) -> typing.List[MessageDictT]:
+) -> list[MessageDictT]:
     """Create a test database, initialize it with random messages,
     and return the messages.
 

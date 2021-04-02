@@ -21,7 +21,7 @@ async def add_message(
     app: aiohttp.web.Application,
     _info: graphql.GraphQLResolveInfo,
     is_new: bool = False,
-    **kwargs,
+    **kwargs: typing.Any,
 ) -> dict:
     """Add a message.
 
@@ -94,7 +94,7 @@ ButlerList = typing.Sequence[lsst.daf.butler.Butler]
 
 def get_day_obs_from_registries(
     registries: ButlerList, obs_id: str, instrument: str
-) -> int or None:
+) -> typing.Optional[int]:
     """Get the day of observation of an exposure, or None if not found.
 
     Parameters
