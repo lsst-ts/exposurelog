@@ -2,42 +2,32 @@
 Exposure Log
 ############
 
-Create and manage log messages associated with a particular exposure.
+Exposure log is a web service to create and manage log messages associated with a particular exposure.
+It is self-documented using OpenAPI.
+
+The service runs at _address_:80/exposurelog
+and OpenAPI docs are available at _address_:80/exposurelog/docs.
 
 Note that old log messages are never deleted or modified,
 other than the ``is_valid`` and ``date_is_valid_changed`` fields,
 which support an approximation of deletion and modification.
 
-Exposure Log is developed with the `Safir <https://safir.lsst.io>`__ framework.
-`Get started with development with the tutorial <https://safir.lsst.io/set-up-from-template.html>`__.
-
 Configuration
 -------------
 
-The following environment variables may be set in Exposure Log's runtime environment.
-See the file ``config.py`` for details and default values.
-All are optional except the ones marked "(required)":
+The service is configured via the following environment variables;
+All are optional except the few marked "(required)":
 
 * ``BUTLER_URI_1`` (required): URI to an butler data repository, which is only read.
   Note that Exposure Log only reads the registry, so the actual data files are optional.
 * ``BUTLER_URI_2``: URI to a second, optional, data repository, which is searched after the first one.
-* ``EXPOSURELOG_DB_USER``: Exposurelog database user name
-* ``EXPOSURELOG_DB_PASSWORD`` (required): Exposurelog database password.
-* ``EXPOSURELOG_DB_HOST`` (required): Exposurelog database server host.
-* ``EXPOSURELOG_DB_PORT``: Exposurelog database server port.
-* ``EXPOSURELOG_DB_DATABASE``: Exposurelog database name.
-* ``SAFIR_PROFILE``: Set to ``production`` to enable production logging
-* ``SAFIR_LOG_LEVEL``: Set to ``DEBUG``, ``INFO``, ``WARNING``, or ``ERROR`` to change the log level.
-  The default is ``INFO``.
-* ``SITE_ID``: Where this is deployed, e.g. "summit" or "ncsa".
+* ``EXPOSURELOG_DB_USER``: Exposurelog database user name: default="exposurelog".
+* ``EXPOSURELOG_DB_PASSWORD``: Exposurelog database password; default="".
+* ``EXPOSURELOG_DB_HOST``: Exposurelog database server host; default="localhost".
+* ``EXPOSURELOG_DB_PORT``: Exposurelog database server port; default="5432".
+* ``EXPOSURELOG_DB_DATABASE``: Exposurelog database name; default="exposurelog".
+* ``SITE_ID`` (required): Where this is deployed, e.g. "summit" or "base".
   The value is part of the message primary key, to support synchronizing databases.
-
-Routes
-------
-
-* ``/``: Returns service metadata with a 200 status (used by Google Container Engine Ingress health check)
-
-* ``/exposurelog``: The Exposure Log service.
 
 Developer Guide
 ---------------
@@ -49,18 +39,21 @@ Create (once) and activate a local conda environment::
 
   conda activate square
 
-If you change requirements (in requirements/dev.in or main.in) or if running the code gives a "package not found" error
+If you change requirements (in requirements/dev.in or main.in),
+or if running the code gives a "package not found" error,
 update the generated dependencies and install the new requirements using::
 
-  # It is an annoying bug that it has to be run twice
-  # but if you only run it once then `lsst.utils` is not found.
-  make update; make update
+  make update
 
-tox configuration goes in pyproject.toml (not tox.ini, as so many tox documents suggest).
+tox configuration goes in pyproject.toml (not tox.ini, as tox documentation often suggests).
 
 To run tests (including code coverage, linting and typing)::
 
   tox
+
+If that fails with a complaint about missing packages try rebuilding your environment::
+
+  tox -r
 
 To lint the code (run it twice if it reports a linting error the first time)::
 
@@ -70,14 +63,23 @@ To check type annotation with mypy::
 
   tox -e typing
 
-To run the service locally you will first need a running Postgres server with a user named ``exposurelog``.
-See Postgres Guide for instructions. Once that is running::
+To run the service, first set the configuration environment variables, then::
 
-  export BUTLER_URI_1=~/UW/LSST/tsrepos/exposurelog/tests/data/hsc_raw
-  export SITE_ID="test"
-  exposurelog run
+  uvicorn exposurelog.app:app --port n
 
-  # Then open this link in a browser: http://localhost:8080/exposurelog
+To run the service locally, you will need a running Postgres server
+with a user named ``exposurelog`` that has permission to create tables and rows,
+and a database also named ``exposurelog``.
+With the Postgres server running::
+
+  export SITE_ID=test
+  export BUTLER_URI_1=/Users/rowen/UW/LSST/tsrepos/exposurelog/tests/data/hsc_raw
+  # Also set EXPOSURELOG_DB_x environment variables as needed; see above
+
+  uvicorn exposurelog.app:app --reload
+
+  # Then open this link in a browser: http://localhost:8000/exposurelog/
+  # For documentation open http://localhost:8000/exposurelog/docs
 
 Postgres Guide
 --------------
@@ -99,7 +101,6 @@ To connect to the postgres server in order to create a new user or database::
 To create the exposurelog user and database::
 
     CREATE USER exposurelog WITH CREATEDB;
-
     CREATE DATABASE exposurelog;
 
 To connect as user exposurelog and use the exposurelog database (e.g. to see data or schema)::
