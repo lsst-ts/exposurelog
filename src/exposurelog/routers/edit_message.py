@@ -2,21 +2,46 @@ from __future__ import annotations
 
 __all__ = ["edit_message"]
 
-import typing
-
-import aiohttp
 import astropy.time
-import graphql
+import fastapi
 import sqlalchemy as sa
 
-from exposurelog.dict_from_result_proxy import dict_from_result_proxy
+from ..message import ExposureFlag, Message
+from ..shared_state import SharedState, get_shared_state
+
+router = fastapi.APIRouter(prefix="/exposurelog")
 
 
+@router.post("/edit_message/", response_model=Message)
 async def edit_message(
-    app: aiohttp.web.Application,
-    _info: graphql.GraphQLResolveInfo,
-    **kwargs: typing.Any,
-) -> dict:
+    id: int = fastapi.Form(
+        ...,
+        title="ID of message to edit",
+    ),
+    site_id: str = fastapi.Form(
+        ...,
+        title="Site ID of messages to edit",
+    ),
+    message_text: str = fastapi.Form(None, title="Message text"),
+    user_id: str = fastapi.Form(None, title="User ID"),
+    user_agent: str = fastapi.Form(
+        None, title="User agent (which app created the message)"
+    ),
+    is_human: bool = fastapi.Form(
+        None, title="Was the message created by a human being?"
+    ),
+    exposure_flag: ExposureFlag = fastapi.Form(
+        None,
+        title="Optional flag for troublesome exposures",
+        description="This flag gives users an opportunity to manually mark "
+        "an exposure as possibly bad (questionable) or likely bad (junk). "
+        "We do not expect this to be used very often, if at all; we take "
+        "far too much data to expect users to manually flag problems. "
+        "However, this flag may be useful for marking egregious problems, "
+        "such as the mount misbehaving during an exposure.",
+    ),
+    state: SharedState = fastapi.Depends(get_shared_state),
+) -> Message:
     """Edit an existing message.
 
     The process is:
@@ -27,22 +52,23 @@ async def edit_message(
     - Add a new message.
     - Set is_valid=False and timestamp_is_valid_changed=now
       on the original message.
-
-    Parameters
-    ----------
-    app
-        aiohttp application.
-    _info
-        Information about this request (ignored).
-    kwargs
-        Find conditions as field=value data.
     """
-    exposurelog_db = app["exposurelog/exposurelog_db"]
+    exposurelog_db = state.exposurelog_db
 
-    request_data = kwargs.copy()
+    old_message_id = id
+    old_site_id = site_id
 
-    old_message_id = request_data["id"]
-    old_site_id = request_data["site_id"]
+    request_data = dict(id=id, site_id=site_id)
+    for name in (
+        "message_text",
+        "user_id",
+        "user_agent",
+        "is_human",
+        "exposure_flag",
+    ):
+        value = locals()[name]
+        if value is not None:
+            request_data[name] = value
 
     # Get all data for the existing message
     async with exposurelog_db.engine.acquire() as connection:
@@ -56,7 +82,10 @@ async def edit_message(
             )
         )
         if get_old_result_proxy.rowcount == 0:
-            raise RuntimeError(f"Message with id={old_message_id} not found")
+            raise fastapi.HTTPException(
+                status_code=404,
+                detail=f"Message with id={old_message_id} not found",
+            )
         result = await get_old_result_proxy.fetchone()
     new_data = dict(result)
     new_data.update(request_data)
@@ -64,7 +93,7 @@ async def edit_message(
         new_data.pop(field)
     current_tai_iso = astropy.time.Time.now().tai.iso
     new_data["is_valid"] = True
-    new_data["site_id"] = app["safir/config"].site_id
+    new_data["site_id"] = state.site_id
     new_data["date_added"] = current_tai_iso
     new_data["parent_id"] = old_message_id
     new_data["parent_site_id"] = old_site_id
@@ -84,4 +113,4 @@ async def edit_message(
             .values(is_valid=False, date_is_valid_changed=current_tai_iso)
         )
 
-    return dict_from_result_proxy(add_result)
+    return Message(**add_result)
