@@ -26,8 +26,13 @@ apt-get update
 # Install security updates:
 apt-get -y upgrade
 
-# Example of installing a new package, without unnecessary packages:
+# Install git so we can upload the Docker image;
+# --no-install-recommends prevents installing unnecessary extras;
 apt-get -y install --no-install-recommends git
+
+# Install a modern C++ compiler, to build daf_butler dependencies;
+# Remove this when we switch to a web-based butler service:
+apt-get -y install --no-install-recommends build-essential
 
 # Delete cached files we don't need anymore:
 apt-get clean

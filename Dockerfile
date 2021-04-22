@@ -12,13 +12,14 @@
 # runtime-image
 #   - Copies the virtual environment into place.
 #   - Runs a non-root user.
-#   - Sets up the entrypoint and port.
+#   - Configures gunicorn.
 
-FROM python:3.8-buster AS base-image
+FROM tiangolo/uvicorn-gunicorn:python3.8-slim AS base-image
 
 # Update system packages
 COPY scripts/install-base-packages.sh .
 RUN ./install-base-packages.sh
+RUN rm ./install-base-packages.sh
 
 FROM base-image AS dependencies-image
 
@@ -34,12 +35,12 @@ RUN pip install --upgrade --no-cache-dir pip setuptools wheel
 COPY requirements/main.txt ./requirements.txt
 RUN pip install --quiet --no-cache-dir -r requirements.txt
 
-FROM base-image AS install-image
+FROM dependencies-image AS install-image
 
 # Use the virtualenv
-COPY --from=dependencies-image /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
+# Install the web application
 COPY . /app
 WORKDIR /app
 RUN pip install --no-cache-dir .
@@ -50,17 +51,22 @@ FROM base-image AS runtime-image
 RUN useradd --create-home appuser
 WORKDIR /home/appuser
 
-# Make sure we use the virtualenv
-ENV PATH="/opt/venv/bin:$PATH"
-
+# Copy the virtual env
 COPY --from=install-image /opt/venv /opt/venv
 
 # Switch to non-root user
 USER appuser
 
-# Copy test data to allow testing the application
+# Copy the test butler registry to allow us to run the application with it
 COPY tests/data/hsc_raw hsc_raw
 
-EXPOSE 8080
+# We use a module name other than app, so tell the base image that.  This
+# does not copy the app into /app as is recommended by the base Docker
+# image documentation and instead relies on the module search path as
+# modified by the virtualenv.
+ENV MODULE_NAME=exposurelog.app
 
-ENTRYPOINT ["exposurelog", "run", "--port", "8080"]
+# The default starts 40 workers, which exhausts the available connections
+# on a micro Cloud SQL PostgreSQL server and seems excessive since we can
+# scale with Kubernetes.  Cap the workers at 10.
+ENV MAX_WORKERS=10
