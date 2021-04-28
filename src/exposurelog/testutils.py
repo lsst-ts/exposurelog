@@ -1,28 +1,28 @@
 from __future__ import annotations
 
 __all__ = [
+    "modify_environ",
     "MessageDictT",
-    "Requestor",
-    "assert_bad_response",
     "assert_good_response",
+    "create_test_client",
     "create_test_database",
 ]
 
+import contextlib
+import os
+import pathlib
 import typing
+import unittest.mock
 
-import astropy
+import asgi_lifespan
+import astropy.time
+import httpx
 import numpy as np
 import sqlalchemy as sa
+import testing.postgresql
 
-from exposurelog.create_messages_table import create_messages_table
-from exposurelog.format_http_request import format_http_request
-from exposurelog.schemas.message_type import MessageType
-
-if typing.TYPE_CHECKING:
-    import aiohttp
-    import aiohttp.test_utils
-    import testing.postgresql
-
+from .create_messages_table import create_messages_table
+from .message import MESSAGE_FIELDS
 
 # Range of dates for random messages.
 MIN_DATE_RANDOM_MESSAGE = "2021-01-01"
@@ -37,91 +37,98 @@ MessageDictT = typing.Dict[str, typing.Any]
 ArgDictT = typing.Dict[str, typing.Any]
 
 
-class Requestor:
-    """Functor to issue GraphQL requests.
+@contextlib.asynccontextmanager
+async def create_test_client(
+    repo_path: pathlib.Path,
+    num_messages: int,
+    num_edited: int = 0,
+) -> typing.AsyncGenerator[
+    typing.Tuple[httpx.AsyncClient, typing.List[MessageDictT]], None
+]:
+    """Create the test database, test server, and httpx client."""
+    with testing.postgresql.Postgresql() as postgresql:
+        messages = create_test_database(
+            postgresql, num_messages=num_messages, num_edited=num_edited
+        )
+
+        db_config = db_config_from_dsn(postgresql.dsn())
+        with modify_environ(
+            BUTLER_URI_1=str(repo_path),
+            SITE_ID=TEST_SITE_ID,
+            **db_config,
+        ):
+            # Wait to import shared_state until the environment is configured.
+            # Note that exposurelog.app imports exposurelog.shared_state.
+            import exposurelog.app
+            import exposurelog.shared_state
+
+            assert not exposurelog.shared_state.has_shared_state()
+            async with asgi_lifespan.LifespanManager(exposurelog.app.app):
+                async with httpx.AsyncClient(
+                    app=exposurelog.app.app, base_url="http://test"
+                ) as client:
+                    assert exposurelog.shared_state.has_shared_state()
+                    yield client, messages
+
+
+@contextlib.contextmanager
+def modify_environ(**kwargs: typing.Any) -> typing.Iterator:
+    """Context manager to temporarily patch os.environ.
+
+    This calls `unittest.mock.patch` and is only intended for unit tests.
 
     Parameters
     ----------
-    client
-        aiohttp client.
-    category
-        Default request category: "mutation" or "query"
-    command
-        Default command.
-    url_suffix
-        URL suffix for requests, e.g. exposurelog
+    kwargs : `dict` [`str`, `str` or `None`]
+        Environment variables to set or clear.
+        Each key is the name of an environment variable (with correct case);
+        it need not already exist. Each value must be one of:
+
+        * A string value to set the env variable.
+        * None to delete the env variable, if present.
+
+    Raises
+    ------
+    RuntimeError
+        If any value in kwargs is not of type `str` or `None`.
+
+    Notes
+    -----
+    Example of use::
+
+        from lsst.ts import salobj
+        ...
+        def test_foo(self):
+            set_value = "Value for $ENV_TO_SET"
+            with salobj.modify_environ(
+                HOME=None,  # Delete this env var
+                ENV_TO_SET=set_value,  # Set this env var
+            ):
+                self.assertNotIn("HOME", os.environ)
+                self.assert(os.environ["ENV_TO_SET"], set_value)
     """
-
-    def __init__(
-        self,
-        client: aiohttp.test_utils.TestClient,
-        category: str,
-        command: str,
-        url_suffix: str,
-    ):
-        if category not in ("mutation", "query"):
-            raise ValueError(f"category={category} must be mutation or query")
-        self.client = client
-        self.category = category
-        self.command = command
-        self.url_suffix = url_suffix
-
-    async def __call__(
-        self,
-        args_dict: dict[str, typing.Any],
-        category: str = None,
-        command: str = None,
-    ) -> aiohttp.ClientResponse:
-        """Issue a request.
-
-        Parameters
-        ----------
-        command
-            Command to issue.
-        args_dict
-            Arguments for the command.
-
-        Returns
-        -------
-        response
-            Client response.
-        """
-        if category is None:
-            category = self.category
-        if command is None:
-            command = self.command
-        args_data, headers = format_http_request(
-            category=category,
-            command=command,
-            args_dict=args_dict,
-        )
-        return await self.client.post(
-            self.url_suffix, json=args_data, headers=headers
+    bad_value_strs = [
+        f"{name}: {value!r}"
+        for name, value in kwargs.items()
+        if not isinstance(value, str) and value is not None
+    ]
+    if bad_value_strs:
+        raise RuntimeError(
+            "The following arguments are not of type str or None: "
+            + ", ".join(bad_value_strs)
         )
 
-
-async def assert_bad_response(response: aiohttp.ClientResponse) -> dict:
-    """Check the response from an unsuccessful request.
-
-    Parameters
-    ----------
-    response
-        Response to HTTP request.
-
-    Returns
-    -------
-    data
-        The full data returned from response.json()
-    """
-    assert response.status == 200
-    data = await response.json()
-    assert "errors" in data
-    return data
+    new_environ = os.environ.copy()
+    for name, value in kwargs.items():
+        if value is None:
+            new_environ.pop(name, None)
+        else:
+            new_environ[name] = value
+    with unittest.mock.patch("os.environ", new_environ):
+        yield
 
 
-async def assert_good_response(
-    response: aiohttp.ClientResponse, command: str = None
-) -> typing.Any:
+def assert_good_response(response: httpx.Response) -> typing.Any:
     """Assert that a response is good and return the data.
 
     Parameters
@@ -131,11 +138,9 @@ async def assert_good_response(
         the response from the command (response["data"][command]) --
         a single message dict or a list of messages dicts.
     """
-    assert response.status == 200
-    data = await response.json()
+    assert response.status_code == 200
+    data = response.json()
     assert "errors" not in data, f"errors={data['errors']}"
-    if command:
-        return data["data"][command]
     return data
 
 
@@ -148,14 +153,20 @@ def db_config_from_dsn(dsn: dict[str, str]) -> dict[str, str]:
         with testing.postgresql.Postgresql() as postgresql:
             create_test_database(postgresql, num_messages=0)
 
-            config_args = db_config_from_dsn(postgresql.dsn())
-            app = create_app(
-                **db_config_args,
-                butler_uri_1=repo_path
-            )
+            with modify_environ(
+                BUTLER_URI_1=str(repo_path),
+                SITE_ID=TEST_SITE_ID,
+                **db_config,
+            ):
+                import exposurelog.app
+
+                client = fastapi.testclient.TestClient(exposurelog.app.app)
     """
     assert dsn.keys() <= {"port", "host", "user", "database"}
-    return {f"exposurelog_db_{key}": value for key, value in dsn.items()}
+    return {
+        f"exposurelog_db_{key}".upper(): str(value)
+        for key, value in dsn.items()
+    }
 
 
 random = np.random.RandomState(47)
@@ -196,7 +207,7 @@ def random_message() -> MessageDictT:
     ``is_valid=True``, ``date_is_valid_changed=None``,
     ``parent_id=None``, and ``parent_site_id=None``.
 
-    Fields are in the same order as MessageType and the database schema,
+    Fields are in the same order as `Message` and the database schema,
     to make it easier to visually compare these messages to messages in
     responses.
 
@@ -238,7 +249,7 @@ def random_message() -> MessageDictT:
     )
 
     # Check that we have set all fields (not necessarily in order).
-    assert set(message) == set(MessageType.fields)
+    assert set(message) == set(MESSAGE_FIELDS)
 
     return message
 

@@ -23,9 +23,14 @@ commands =
     coverage run -m pytest {posargs}
 passenv =
     # Basic configuration
-    EXPOSURELOG_DB_URL
     BUTLER_URI_1
     BUTLER_URI_2
+    EXPOSURELOG_DB_USER
+    EXPOSURELOG_DB_PASSWORD
+    EXPOSURELOG_DB_HOST
+    EXPOSURELOG_DB_PORT
+    EXPOSURELOG_DB_DATABASE
+    SITE_ID
     # OpenSplice DDS and SAL, should this prove necessary
     # LSST_DDS_QOS
     # OSPL_HOME
@@ -60,7 +65,7 @@ commands = pre-commit run --all-files
 [testenv:run]
 description = Run the development server with auto-reload for code changes.
 usedevelop = true
-commands = adev runserver --app-factory create_app src/exposurelog/app.py
+commands = uvicorn exposurelog.app:app --reload
 """
 
 [tool.coverage.run]

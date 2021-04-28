@@ -3,24 +3,17 @@ from __future__ import annotations
 import itertools
 import pathlib
 import typing
+import unittest
 
+import httpx
 import numpy as np
-import testing.postgresql
 
-from exposurelog.app import create_app
-from exposurelog.schemas.message_type import MessageType
+from exposurelog.message import MESSAGE_FIELDS
 from exposurelog.testutils import (
-    TEST_SITE_ID,
     MessageDictT,
-    Requestor,
     assert_good_response,
-    create_test_database,
-    db_config_from_dsn,
+    create_test_client,
 )
-
-if typing.TYPE_CHECKING:
-    import aiohttp
-    from aiohttp.pytest_plugin.test_utils import TestClient
 
 random = np.random.RandomState(820)
 
@@ -39,8 +32,8 @@ class doc_str:
         return func
 
 
-async def assert_good_find_response(
-    response: aiohttp.ClientResponse,
+def assert_good_find_response(
+    response: httpx.Response,
     messages: list[MessageDictT],
     predicate: typing.Callable,
 ) -> list[MessageDictT]:
@@ -60,9 +53,7 @@ async def assert_good_find_response(
     found_messages
         The found messages.
     """
-    found_messages = await assert_good_response(
-        response, command="find_messages"
-    )
+    found_messages = assert_good_response(response)
     for message in found_messages:
         assert predicate(
             message
@@ -88,10 +79,10 @@ def assert_messages_ordered(
         Field names by which the data should be ordered.
         Each name can be prefixed by "-" to mean descending order.
     """
-    message1 = None
+    message1: typing.Optional[dict] = None
     for message2 in messages:
         if message1 is not None:
-            assert_two_messages_ordered(  # type: ignore
+            assert_two_messages_ordered(
                 message1,
                 message2,
                 order_by,
@@ -169,247 +160,264 @@ def get_missing_message(
     return [message for message in messages if message["id"] not in found_ids]
 
 
-async def test_find_messages(aiohttp_client: TestClient) -> None:
-    """Test adding a message."""
-    repo_path = pathlib.Path(__file__).parent / "data" / "hsc_raw"
-    num_messages = 12
-    num_edited = 6  # Must be at least 4 in order to test ranges.
-    with testing.postgresql.Postgresql() as postgresql:
-        messages = create_test_database(
-            postgresql=postgresql,
+class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
+    async def test_find_messages(self) -> None:
+        """Test adding a message."""
+        num_messages = 12
+        num_edited = 6  # Must be at least 4 in order to test ranges.
+        repo_path = pathlib.Path(__file__).parent / "data" / "hsc_raw"
+        async with create_test_client(
+            repo_path=repo_path,
             num_messages=num_messages,
             num_edited=num_edited,
-        )
-
-        db_config = db_config_from_dsn(postgresql.dsn())
-        app = create_app(
-            **db_config, butler_uri_1=repo_path, site_id=TEST_SITE_ID
-        )
-        name = app["safir/config"].name
-
-        client = await aiohttp_client(app)
-        await app["exposurelog/exposurelog_db"].start_task
-
-        requestor = Requestor(
-            client=client,
-            category="query",
-            command="find_messages",
-            url_suffix=name,
-        )
-
-        # Make predicates to test
-        find_args_predicates = list()
-
-        # Range arguments: min_<field>, max_<field>.
-        for field in (
-            "id",
-            "day_obs",
-            "date_added",
-            "date_is_valid_changed",
-            "parent_id",
+        ) as (
+            client,
+            messages,
         ):
-            values = sorted(
-                message[field]
-                for message in messages
-                if message[field] is not None
-            )
-            assert len(values) >= 4, f"not enough values for {field}"
-            min_name = f"min_{field}"
-            max_name = f"max_{field}"
-            min_value = values[1]
-            max_value = values[-1]
-            assert max_value > min_value
+            # Make predicates to test
+            find_args_predicates = list()
 
-            @doc_str(f"message[{field!r}] not None and >= {min_value}.")
-            def test_min(
-                message: MessageDictT,
-                field: str = field,
-                min_value: typing.Any = min_value,
-            ) -> bool:
-                return (
-                    message[field] is not None and message[field] >= min_value
+            # Range arguments: min_<field>, max_<field>.
+            for field in (
+                "id",
+                "day_obs",
+                "date_added",
+                "date_is_valid_changed",
+                "parent_id",
+            ):
+                values = sorted(
+                    message[field]
+                    for message in messages
+                    if message[field] is not None
                 )
+                assert len(values) >= 4, f"not enough values for {field}"
+                min_name = f"min_{field}"
+                max_name = f"max_{field}"
+                min_value = values[1]
+                max_value = values[-1]
+                assert max_value > min_value
 
-            @doc_str(f"message[{field!r}] not None and < {max_value}.")
-            def test_max(
-                message: MessageDictT,
-                field: str = field,
-                max_value: typing.Any = max_value,
-            ) -> bool:
-                return (
-                    message[field] is not None and message[field] < max_value
-                )
-
-            find_args_predicates += [
-                ({min_name: min_value}, test_min),
-                ({max_name: max_value}, test_max),
-            ]
-
-            if field == "day_obs":
-                # Save these find args for later use
-                find_args_day_obs = find_args_predicates[0][0]
-
-            # Test that an empty range (max <= min) returns no messages.
-            # There is no point combining this with other tests,
-            # so test it now instead of adding it to find_args_predicates.
-            response = await requestor(
-                {min_name: min_value, max_name: min_value}
-            )
-            found_messages = await assert_good_response(
-                response, command="find_messages"
-            )
-            assert len(found_messages) == 0
-
-        # Collection arguments: <field>s, with a list of allowed values.
-        num_to_find = 2
-        for field in ("instrument", "user_id", "user_agent", "exposure_flag"):
-            messages_to_find = random.choice(
-                messages, size=num_to_find, replace=False
-            )
-            values = [message[field] for message in messages_to_find]
-
-            @doc_str(f"message[{field!r}] in {values}")
-            def test_collection(
-                message: MessageDictT,
-                field: str = field,
-                values: list[typing.Any] = values,
-            ) -> bool:
-                return message[field] in values
-
-            find_args_predicates.append(
-                ({f"{field}s": values}, test_collection)
-            )
-
-        # "Contains" arguments: these specify a substring to match.
-        # Search for two characters out of one message,
-        # in hopes more than one (though one is fine)
-        # and fewer than all messages (not a good test)
-        # will match.
-        for field in ("obs_id", "message_text"):
-            value = messages[2][field][1:2]
-
-            @doc_str(f"{value} in message[{field!r}]")
-            def test_contains(
-                message: MessageDictT, field: str = field, value: str = value
-            ) -> bool:
-                return value in message[field]
-
-            find_args_predicates.append(({field: value}, test_contains))
-
-        # has_<field> arguments (for fields that may be null).
-        for field in ("date_is_valid_changed", "parent_id"):
-            arg_name = f"has_{field}"
-
-            @doc_str(f"message[{field!r}] is not None")
-            def test_has(message: MessageDictT, field: str = field) -> bool:
-                return message[field] is not None
-
-            @doc_str(f"message[{field!r}] is None")
-            def test_has_not(
-                message: MessageDictT, field: str = field
-            ) -> bool:
-                return message[field] is None
-
-            find_args_predicates += [
-                ({arg_name: True}, test_has),
-                ({arg_name: False}, test_has_not),
-            ]
-
-        # Booleans fields.
-        for field in ("is_human", "is_valid"):
-
-            @doc_str(f"message[{field!r}] is True")
-            def test_true(message: MessageDictT, field: str = field) -> bool:
-                return message[field] is True
-
-            @doc_str(f"message[{field!r}] is False")
-            def test_false(message: MessageDictT, field: str = field) -> bool:
-                return message[field] is False
-
-            find_args_predicates += [
-                ({field: True}, test_true),
-                ({field: False}, test_false),
-            ]
-
-        # Test single requests: one entry from find_args_predicates.
-        for find_args, predicate in find_args_predicates:
-            response = await requestor(find_args)
-            if "is_valid" not in find_args:
-                # Handle the fact that is_valid defaults to True
-                @doc_str(
-                    f'{predicate.__doc__} and message["is_valid"] is True'
-                )
-                def predicate_and_is_valid(
+                @doc_str(f"message[{field!r}] not None and >= {min_value}.")
+                def test_min(
                     message: MessageDictT,
-                    predicate: typing.Callable = predicate,
+                    field: str = field,
+                    min_value: typing.Any = min_value,
                 ) -> bool:
-                    return predicate(message) and message["is_valid"] is True
+                    return (
+                        message[field] is not None
+                        and message[field] >= min_value
+                    )
 
-                predicate = predicate_and_is_valid
-            await assert_good_find_response(response, messages, predicate)
+                @doc_str(f"message[{field!r}] not None and < {max_value}.")
+                def test_max(
+                    message: MessageDictT,
+                    field: str = field,
+                    max_value: typing.Any = max_value,
+                ) -> bool:
+                    return (
+                        message[field] is not None
+                        and message[field] < max_value
+                    )
 
-        # Test pairs of requests: two entries from find_args_predicates,
-        # which are ``and``-ed together.
-        for (
-            (find_args1, predicate1),
-            (find_args2, predicate2),
-        ) in itertools.product(find_args_predicates, find_args_predicates):
-            find_args = find_args1.copy()
-            find_args.update(find_args2)
-            if len(find_args) < len(find_args1) + len(find_args):
-                # Overlapping arguments makes the predicates invalid.
-                continue
+                find_args_predicates += [
+                    ({min_name: min_value}, test_min),
+                    ({max_name: max_value}, test_max),
+                ]
 
-            @doc_str(f"{predicate1.__doc__} and {predicate2.__doc__}")
-            def and_predicates(
-                message: MessageDictT,
-                predicate1: typing.Callable,
-                predicate2: typing.Callable,
-            ) -> bool:
-                return predicate1(message) and predicate2(message)
+                if field == "day_obs":
+                    # Save these find args for later use
+                    find_args_day_obs = find_args_predicates[0][0]
 
-            response = await requestor(find_args)
-            await assert_good_find_response(response, messages, and_predicates)
+                # Test that an empty range (max <= min) returns no messages.
+                # There is no point combining this with other tests,
+                # so test it now instead of adding it to find_args_predicates.
+                empty_range_args = {min_name: min_value, max_name: min_value}
+                response = await client.get(
+                    "/exposurelog/find_messages/",
+                    params=empty_range_args,
+                )
+                found_messages = assert_good_response(response)
+                assert len(found_messages) == 0
 
-        # Test that find with no arguments finds all is_valid messages.
-        def is_valid_predicate(message: MessageDictT) -> bool:
-            """message["is_valid"] is True"""
-            return message["is_valid"] is True
+            # Collection arguments: <field>s, with a list of allowed values.
+            num_to_find = 2
+            for field in (
+                "instrument",
+                "user_id",
+                "user_agent",
+                "exposure_flag",
+            ):
+                messages_to_find = random.choice(
+                    messages, size=num_to_find, replace=False
+                )
+                values = [message[field] for message in messages_to_find]
 
-        response = await requestor(dict())
-        messages = await assert_good_response(
-            response, command="find_messages"
-        )
-        await assert_good_find_response(response, messages, is_valid_predicate)
+                @doc_str(f"message[{field!r}] in {values}")
+                def test_collection(
+                    message: MessageDictT,
+                    field: str = field,
+                    values: list[typing.Any] = values,
+                ) -> bool:
+                    return message[field] in values
 
-        # Check order_by one field
-        # Note: SQL databases sort strings differently than Python.
-        # Rather than try to mimic Postgresql's sorting in Python,
-        # I issue the order_by command but do not test the resulting
-        # order if ordering by a string field.
-        fields = list(MessageType.fields)
-        str_fields = set(
-            ("instrument", "message_text", "obs_id", "user_id", "user_agent")
-        )
-        for field in fields:
-            order_by = [field]
-            find_args = find_args_day_obs.copy()
-            find_args["order_by"] = order_by
-            response = await requestor(find_args)
-            messages = await assert_good_response(
-                response, command="find_messages"
+                find_args_predicates.append(
+                    ({f"{field}s": values}, test_collection)
+                )
+
+            # "Contains" arguments: these specify a substring to match.
+            # Search for two characters out of one message,
+            # in hopes more than one (though one is fine)
+            # and fewer than all messages (not a good test)
+            # will match.
+            for field in ("obs_id", "message_text"):
+                value = messages[2][field][1:2]
+
+                @doc_str(f"{value} in message[{field!r}]")
+                def test_contains(
+                    message: MessageDictT,
+                    field: str = field,
+                    value: str = value,
+                ) -> bool:
+                    return value in message[field]
+
+                find_args_predicates.append(({field: value}, test_contains))
+
+            # has_<field> arguments (for fields that may be null).
+            for field in ("date_is_valid_changed", "parent_id"):
+                arg_name = f"has_{field}"
+
+                @doc_str(f"message[{field!r}] is not None")
+                def test_has(
+                    message: MessageDictT, field: str = field
+                ) -> bool:
+                    return message[field] is not None
+
+                @doc_str(f"message[{field!r}] is None")
+                def test_has_not(
+                    message: MessageDictT, field: str = field
+                ) -> bool:
+                    return message[field] is None
+
+                find_args_predicates += [
+                    ({arg_name: True}, test_has),
+                    ({arg_name: False}, test_has_not),
+                ]
+
+            # Booleans fields.
+            for field in ("is_human", "is_valid"):
+
+                @doc_str(f"message[{field!r}] is True")
+                def test_true(
+                    message: MessageDictT, field: str = field
+                ) -> bool:
+                    return message[field] is True
+
+                @doc_str(f"message[{field!r}] is False")
+                def test_false(
+                    message: MessageDictT, field: str = field
+                ) -> bool:
+                    return message[field] is False
+
+                find_args_predicates += [
+                    ({field: True}, test_true),
+                    ({field: False}, test_false),
+                ]
+
+            # Test single requests: one entry from find_args_predicates.
+            for find_args, predicate in find_args_predicates:
+                response = await client.get(
+                    "/exposurelog/find_messages/", params=find_args
+                )
+                if "is_valid" not in find_args:
+                    # Handle the fact that is_valid defaults to True
+                    @doc_str(
+                        f'{predicate.__doc__} and message["is_valid"] is True'
+                    )
+                    def predicate_and_is_valid(
+                        message: MessageDictT,
+                        predicate: typing.Callable = predicate,
+                    ) -> bool:
+                        return (
+                            predicate(message) and message["is_valid"] is True
+                        )
+
+                    predicate = predicate_and_is_valid
+                assert_good_find_response(response, messages, predicate)
+
+            # Test pairs of requests: two entries from find_args_predicates,
+            # which are ``and``-ed together.
+            for (
+                (find_args1, predicate1),
+                (find_args2, predicate2),
+            ) in itertools.product(find_args_predicates, find_args_predicates):
+                find_args = find_args1.copy()
+                find_args.update(find_args2)
+                if len(find_args) < len(find_args1) + len(find_args):
+                    # Overlapping arguments makes the predicates invalid.
+                    continue
+
+                @doc_str(f"{predicate1.__doc__} and {predicate2.__doc__}")
+                def and_predicates(
+                    message: MessageDictT,
+                    predicate1: typing.Callable,
+                    predicate2: typing.Callable,
+                ) -> bool:
+                    return predicate1(message) and predicate2(message)
+
+                response = await client.get(
+                    "/exposurelog/find_messages/", params=find_args
+                )
+                assert_good_find_response(response, messages, and_predicates)
+
+            # Test that find with no arguments finds all is_valid messages.
+            def is_valid_predicate(message: MessageDictT) -> bool:
+                """message["is_valid"] is True"""
+                return message["is_valid"] is True
+
+            response = await client.get(
+                "/exposurelog/find_messages/", params=dict()
             )
-            if field not in str_fields:
-                assert_messages_ordered(messages=messages, order_by=order_by)
+            messages = assert_good_response(response)
+            assert_good_find_response(response, messages, is_valid_predicate)
 
-        # Check order_by two fields
-        for field1, field2 in itertools.product(fields, fields):
-            order_by = [field1, field2]
-            find_args = find_args_day_obs.copy()
-            find_args["order_by"] = order_by
-            response = await requestor(find_args)
-            messages = await assert_good_response(
-                response, command="find_messages"
+            # Check order_by one field
+            # Note: SQL databases sort strings differently than Python.
+            # Rather than try to mimic Postgresql's sorting in Python,
+            # I issue the order_by command but do not test the resulting
+            # order if ordering by a string field.
+            fields = list(MESSAGE_FIELDS)
+            str_fields = set(
+                (
+                    "instrument",
+                    "message_text",
+                    "obs_id",
+                    "user_id",
+                    "user_agent",
+                )
             )
-            if field1 not in str_fields and field2 not in str_fields:
-                assert_messages_ordered(messages=messages, order_by=order_by)
+            for field in fields:
+                order_by = [field]
+                find_args = find_args_day_obs.copy()
+                find_args["order_by"] = order_by
+                response = await client.get(
+                    "/exposurelog/find_messages/", params=find_args
+                )
+                messages = assert_good_response(response)
+                if field not in str_fields:
+                    assert_messages_ordered(
+                        messages=messages, order_by=order_by
+                    )
+
+            # Check order_by two fields
+            for field1, field2 in itertools.product(fields, fields):
+                order_by = [field1, field2]
+                find_args = find_args_day_obs.copy()
+                find_args["order_by"] = order_by
+                response = await client.get(
+                    "/exposurelog/find_messages/", params=find_args
+                )
+                messages = assert_good_response(response)
+                if field1 not in str_fields and field2 not in str_fields:
+                    assert_messages_ordered(
+                        messages=messages, order_by=order_by
+                    )
