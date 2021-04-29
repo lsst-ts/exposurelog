@@ -2,15 +2,13 @@
 Exposure Log
 ############
 
-Exposure log is a web service to create and manage log messages associated with a particular exposure.
-It is self-documented using OpenAPI.
+Exposure log is a REST web service to create and manage log messages that are associated with a particular exposure.
 
 The service runs at _address_:80/exposurelog
 and OpenAPI docs are available at _address_:80/exposurelog/docs.
 
-Note that old log messages are never deleted or modified,
-other than the ``is_valid`` and ``date_is_valid_changed`` fields,
-which support an approximation of deletion and modification.
+Messages are immutable, other than two fields: ``is_valid`` and ``date_invalidated``.
+These fields provide a reasonable approximation of deletion and modification.
 
 Configuration
 -------------
