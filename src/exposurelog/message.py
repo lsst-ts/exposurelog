@@ -3,6 +3,7 @@ __all__ = ["ExposureFlag", "Message", "MESSAGE_FIELDS"]
 import datetime
 import enum
 import typing
+import uuid
 
 import pydantic
 
@@ -14,9 +15,8 @@ class ExposureFlag(str, enum.Enum):
 
 
 class Message(pydantic.BaseModel):
-    id: int = pydantic.Field(
-        description="Message ID; an auto-incremented integer. "
-        "Each message has a unique (id, site_id)."
+    id: uuid.UUID = pydantic.Field(
+        description="Message ID: a UUID that is the primary key."
     )
     site_id: str = pydantic.Field(
         description="Site at which the message was created."
@@ -43,14 +43,11 @@ class Message(pydantic.BaseModel):
     date_added: datetime.datetime = pydantic.Field(
         description="TAI date at which the message was added."
     )
-    date_is_valid_changed: typing.Optional[datetime.datetime] = pydantic.Field(
+    date_invalidated: typing.Optional[datetime.datetime] = pydantic.Field(
         description="TAI date at which is_valid was last set true."
     )
-    parent_id: typing.Optional[int] = pydantic.Field(
+    parent_id: typing.Optional[uuid.UUID] = pydantic.Field(
         description="Message ID of message this is an edited version of."
-    )
-    parent_site_id: typing.Optional[str] = pydantic.Field(
-        description="Site ID of message this is an edited version of."
     )
 
 

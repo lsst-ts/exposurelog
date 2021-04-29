@@ -1,24 +1,48 @@
 from __future__ import annotations
 
 import fastapi
+import fastapi.responses
+import starlette.requests
 
 from . import shared_state
-from .routers import add_message, delete_messages, edit_message, find_messages
+from .routers import (
+    add_message,
+    delete_message,
+    edit_message,
+    find_messages,
+    get_message,
+)
 
 app = fastapi.FastAPI()
 
-app.include_router(add_message.router)
-app.include_router(delete_messages.router)
-app.include_router(edit_message.router)
-app.include_router(find_messages.router)
+subapp = fastapi.FastAPI(
+    title="Exposure log service",
+    description="A REST web service to create and manage log messages "
+    "that are associated with a particular exposure.",
+)
+app.mount("/exposurelog", subapp)
+
+subapp.include_router(add_message.router)
+subapp.include_router(delete_message.router)
+subapp.include_router(edit_message.router)
+subapp.include_router(find_messages.router)
+subapp.include_router(get_message.router)
 
 
-@app.get("/exposurelog")
-async def root() -> dict:
-    return dict(
-        message="exposurelog: create and manage log messages "
-        "associated with exposures. An OpenAPI service."
-    )
+@subapp.get("/", response_class=fastapi.responses.HTMLResponse)
+async def root(request: starlette.requests.Request) -> str:
+    return f"""<html>
+    <head>
+        <title>
+            Exposure log service
+        </title>
+    </head>
+    <body>
+        <h1>Exposure log service</h1>
+        <p>Create and manage log messages associated with exposures.</p>
+        <p><a href="{request.url}docs">Interactive OpenAPI documentation</a></p>
+    </html>
+    """
 
 
 @app.on_event("startup")

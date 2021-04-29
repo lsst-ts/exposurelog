@@ -14,27 +14,27 @@ import sqlalchemy as sa
 from ..message import ExposureFlag, Message
 from ..shared_state import SharedState, get_shared_state
 
-router = fastapi.APIRouter(prefix="/exposurelog")
+router = fastapi.APIRouter()
 
 
-@router.post("/add_message/", response_model=Message)
+@router.post("/messages/", response_model=Message)
 async def add_message(
-    obs_id: str = fastapi.Form(
+    obs_id: str = fastapi.Body(
         ...,
         title="Observation ID (a string)",
     ),
-    instrument: str = fastapi.Form(
+    instrument: str = fastapi.Body(
         ..., title="Short name of instrument (e.g. HSC)"
     ),
-    message_text: str = fastapi.Form(..., title="Message text"),
-    user_id: str = fastapi.Form(..., title="User ID"),
-    user_agent: str = fastapi.Form(
+    message_text: str = fastapi.Body(..., title="Message text"),
+    user_id: str = fastapi.Body(..., title="User ID"),
+    user_agent: str = fastapi.Body(
         ..., title="User agent (name of application creating the message)"
     ),
-    is_human: bool = fastapi.Form(
+    is_human: bool = fastapi.Body(
         ..., title="Was the message created by a human being?"
     ),
-    is_new: bool = fastapi.Form(
+    is_new: bool = fastapi.Body(
         ...,
         title="Is the exposure new (and perhaps not yet ingested)?",
         description=(
@@ -42,7 +42,7 @@ async def add_message(
             "and if it does not, then compute day_obs using the current date. "
         ),
     ),
-    exposure_flag: typing.Optional[ExposureFlag] = fastapi.Form(
+    exposure_flag: typing.Optional[ExposureFlag] = fastapi.Body(
         ExposureFlag.none,
         title="Optional flag for troublesome exposures",
         description="This flag gives users an opportunity to manually mark "
@@ -81,17 +81,18 @@ async def add_message(
 
     day_obs = day_obs
 
+    el_table = state.exposurelog_db.table
+
     # Add the message.
     async with state.exposurelog_db.engine.acquire() as connection:
         result_proxy = await connection.execute(
-            state.exposurelog_db.table.insert()
+            el_table.insert()
             .values(
                 date_added=date_added,
                 day_obs=day_obs,
                 exposure_flag=exposure_flag,
                 instrument=instrument,
                 is_human=is_human,
-                is_valid=True,
                 message_text=message_text,
                 obs_id=obs_id,
                 site_id=state.site_id,
@@ -142,5 +143,5 @@ def get_day_obs_from_registries(
             if records:
                 return records[0].day_obs
     except Exception as e:
-        print(f"Error in butler Form: {e}")
+        print(f"Error in butler query: {e}")
     return None

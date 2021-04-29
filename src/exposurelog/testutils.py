@@ -4,6 +4,7 @@ __all__ = [
     "modify_environ",
     "MessageDictT",
     "assert_good_response",
+    "assert_messages_equal",
     "create_test_client",
     "create_test_database",
 ]
@@ -13,6 +14,7 @@ import os
 import pathlib
 import typing
 import unittest.mock
+import uuid
 
 import asgi_lifespan
 import astropy.time
@@ -138,10 +140,33 @@ def assert_good_response(response: httpx.Response) -> typing.Any:
         the response from the command (response["data"][command]) --
         a single message dict or a list of messages dicts.
     """
-    assert response.status_code == 200
+    assert (
+        response.status_code == 200
+    ), f"Bad response {response.status_code}: {response.text}"
     data = response.json()
     assert "errors" not in data, f"errors={data['errors']}"
     return data
+
+
+def assert_messages_equal(
+    message1: MessageDictT, message2: MessageDictT
+) -> None:
+    """Assert that two messages are identical.
+
+    Handle the "id" field specially because it may be a uuid.UUID or a str.
+    """
+    assert message1.keys() == message2.keys()
+    for field in message1:
+        if field == "id":
+            assert str(message1[field]) == str(message2[field]), (
+                f"field {field} unequal: "
+                f"{str(message1[field])} != {str(message2[field])}"
+            )
+        else:
+            assert message1[field] == message2[field], (
+                f"field {field} unequal: "
+                f"{message1[field]} != {message2[field]}"
+            )
 
 
 def db_config_from_dsn(dsn: dict[str, str]) -> dict[str, str]:
@@ -177,11 +202,17 @@ def random_bool() -> bool:
 
 
 def random_date(precision: int = 0) -> astropy.time.Time:
+    """Return a random date formatted as an ISO string with a "T"
+
+    This is the same format as dates returned from the database.
+    """
     min_date_unix = astropy.time.Time(MIN_DATE_RANDOM_MESSAGE).unix
     max_date_unix = astropy.time.Time(MAX_DATE_RANDOM_MESSAGE).unix
     dsec = max_date_unix - min_date_unix
     unix_time = min_date_unix + random.rand() * dsec
-    return astropy.time.Time(unix_time, format="unix", precision=precision).iso
+    return astropy.time.Time(
+        unix_time, format="unix", precision=precision
+    ).isot
 
 
 def random_str(nchar: int) -> str:
@@ -204,8 +235,7 @@ def random_message() -> MessageDictT:
     """Make one random message, as a dict of field: value.
 
     All messages will have ``id=None``, ``site_id=TEST_SITE_ID``,
-    ``is_valid=True``, ``date_is_valid_changed=None``,
-    ``parent_id=None``, and ``parent_site_id=None``.
+    ``is_valid=True``, ``date_invalidated=None``, and ``parent_id=None``.
 
     Fields are in the same order as `Message` and the database schema,
     to make it easier to visually compare these messages to messages in
@@ -223,9 +253,8 @@ def random_message() -> MessageDictT:
       of earlier messages, as follows:
 
       * Set edited_message["parent_id"] = parent_message["id"]
-      * Set edited_message["parent_site_id"] = parent_message["site_id"]
       * Set parent_message["is_valid"] = False
-      * Set parent_message["date_is_valid_changed"] =
+      * Set parent_message["date_invalidated"] =
         edited_message["date_added"]
     """
     random_yyyymmdd = astropy.time.Time(random_date()).strftime("%Y%m%d")
@@ -243,9 +272,8 @@ def random_message() -> MessageDictT:
         is_valid=True,
         exposure_flag=random.choice(["none", "junk", "questionable"]),
         date_added=random_date(),
-        date_is_valid_changed=None,
+        date_invalidated=None,
         parent_id=None,
-        parent_site_id=None,
     )
 
     # Check that we have set all fields (not necessarily in order).
@@ -268,18 +296,14 @@ def random_messages(num_messages: int, num_edited: int) -> list[MessageDictT]:
     Notes
     -----
 
-    The list will be in order of increasing ``date_added``,
-    which is also the order of increasing ``id``.
-    You must delete the ``id`` field before adding the message to the
-    database, for example::
-
+    The list will be in order of increasing ``date_added``.
 
     Link about half of the messages to an older message.
     """
     message_list = [random_message() for i in range(num_messages)]
     message_list.sort(key=lambda message: message["date_added"])
     for i, message in enumerate(message_list):
-        message["id"] = i + 1
+        message["id"] = uuid.uuid4()
 
     # Create edited messages.
     parent_message_id_set = set()
@@ -287,18 +311,16 @@ def random_messages(num_messages: int, num_edited: int) -> list[MessageDictT]:
         # [1:] because there is no older message to be the parent
         random.choice(message_list[1:], size=num_edited, replace=False)
     )
-    edited_messages.sort(key=lambda message: message["id"])
-    for message in edited_messages:
-        message_id = message["id"]
+    edited_messages.sort(key=lambda message: message["date_added"])
+    for i, message in enumerate(edited_messages):
         while True:
-            parent_message = random.choice(message_list[0 : message_id - 1])
+            parent_message = random.choice(message_list[0 : i + 1])
             if parent_message["id"] not in parent_message_id_set:
                 parent_message_id_set.add(parent_message["id"])
                 break
         message["parent_id"] = parent_message["id"]
-        message["parent_site_id"] = parent_message["site_id"]
         parent_message["is_valid"] = False
-        parent_message["date_is_valid_changed"] = message["date_added"]
+        parent_message["date_invalidated"] = message["date_added"]
     return message_list
 
 
@@ -343,14 +365,14 @@ def create_test_database(
     )
     with engine.connect() as connection:
         for message in messages:
-            message_without_id = message.copy()
-            del message_without_id["id"]
+            # Do not insert the "is_valid" field
+            # because it is computed.
+            pruned_message = message.copy()
+            del pruned_message["is_valid"]
             result = connection.execute(
-                table.insert()
-                .values(**message_without_id)
-                .returning(table.c.id)
+                table.insert().values(**pruned_message).returning(table.c.id)
             )
             data = result.fetchone()
-            assert data[0] == message["id"]
+            assert message["id"] == data["id"]
 
     return messages

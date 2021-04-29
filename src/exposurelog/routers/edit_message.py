@@ -9,28 +9,22 @@ import sqlalchemy as sa
 from ..message import ExposureFlag, Message
 from ..shared_state import SharedState, get_shared_state
 
-router = fastapi.APIRouter(prefix="/exposurelog")
+router = fastapi.APIRouter()
 
 
-@router.post("/edit_message/", response_model=Message)
+@router.patch("/messages/{id}", response_model=Message)
 async def edit_message(
-    id: int = fastapi.Form(
-        ...,
-        title="ID of message to edit",
-    ),
-    site_id: str = fastapi.Form(
-        ...,
-        title="Site ID of messages to edit",
-    ),
-    message_text: str = fastapi.Form(None, title="Message text"),
-    user_id: str = fastapi.Form(None, title="User ID"),
-    user_agent: str = fastapi.Form(
+    id: str,
+    message_text: str = fastapi.Body(None, title="Message text"),
+    site_id: str = fastapi.Body(None, title="Site ID"),
+    user_id: str = fastapi.Body(None, title="User ID"),
+    user_agent: str = fastapi.Body(
         None, title="User agent (which app created the message)"
     ),
-    is_human: bool = fastapi.Form(
+    is_human: bool = fastapi.Body(
         None, title="Was the message created by a human being?"
     ),
-    exposure_flag: ExposureFlag = fastapi.Form(
+    exposure_flag: ExposureFlag = fastapi.Body(
         None,
         title="Optional flag for troublesome exposures",
         description="This flag gives users an opportunity to manually mark "
@@ -46,21 +40,22 @@ async def edit_message(
 
     The process is:
 
-    - Read the message to edit
-    - Create new data using the original message data,
-      overridden by the user-supplied data.
-    - Add a new message.
-    - Set is_valid=False and timestamp_is_valid_changed=now
-      on the original message.
+    - Read the message to edit; call this the parent message.
+    - Create a new message using the parent message data,
+      overridden by the new user-supplied data.
+      Set parent_id of the new message to the id of the parent message,
+      in order to provide a link to the parent message.
+    - Set timestamp_is_valid_changed=now on the parent message.
     """
-    exposurelog_db = state.exposurelog_db
+    el_table = state.exposurelog_db.table
 
-    old_message_id = id
+    parent_id = id
     old_site_id = site_id
 
     request_data = dict(id=id, site_id=site_id)
     for name in (
         "message_text",
+        "site_id",
         "user_id",
         "user_agent",
         "is_human",
@@ -71,46 +66,38 @@ async def edit_message(
             request_data[name] = value
 
     # Get all data for the existing message
-    async with exposurelog_db.engine.acquire() as connection:
-        # async for row in conn.execute(tbl.select().where(tbl.c.val=='abc')):
+    async with state.exposurelog_db.engine.acquire() as connection:
         get_old_result_proxy = await connection.execute(
-            exposurelog_db.table.select().where(
-                sa.sql.and_(
-                    exposurelog_db.table.c.id == old_message_id,
-                    exposurelog_db.table.c.site_id == old_site_id,
-                )
-            )
+            el_table.select().where(el_table.c.id == parent_id)
         )
         if get_old_result_proxy.rowcount == 0:
             raise fastapi.HTTPException(
                 status_code=404,
-                detail=f"Message with id={old_message_id} not found",
+                detail=f"Message with id={parent_id} not found",
             )
         result = await get_old_result_proxy.fetchone()
     new_data = dict(result)
     new_data.update(request_data)
-    for field in ("id", "date_is_valid_changed"):
+    for field in ("id", "is_valid", "date_invalidated"):
         new_data.pop(field)
     current_tai_iso = astropy.time.Time.now().tai.iso
-    new_data["is_valid"] = True
     new_data["site_id"] = state.site_id
     new_data["date_added"] = current_tai_iso
-    new_data["parent_id"] = old_message_id
-    new_data["parent_site_id"] = old_site_id
+    new_data["parent_id"] = parent_id
 
     # Add the new message and update the old one.
     # TODO: make this a single transaction (aiopg does not support that).
-    async with exposurelog_db.engine.acquire() as connection:
+    async with state.exposurelog_db.engine.acquire() as connection:
         add_result_proxy = await connection.execute(
-            exposurelog_db.table.insert()
+            el_table.insert()
             .values(**new_data)
             .returning(sa.literal_column("*"))
         )
         add_result = await add_result_proxy.fetchone()
         await connection.execute(
-            exposurelog_db.table.update()
-            .where(exposurelog_db.table.c.id == old_message_id)
-            .values(is_valid=False, date_is_valid_changed=current_tai_iso)
+            el_table.update()
+            .where(el_table.c.id == parent_id)
+            .values(date_invalidated=current_tai_iso)
         )
 
     return Message(**add_result)

@@ -1,8 +1,10 @@
 __all__ = ["SITE_ID_LEN", "create_messages_table"]
 
 import typing
+import uuid
 
 import sqlalchemy as sa
+from sqlalchemy.dialects.postgresql import UUID
 
 # Length of the site_id field.
 SITE_ID_LEN = 16
@@ -25,8 +27,11 @@ def create_messages_table(
     table = sa.Table(
         "messages",
         sa.MetaData(),
-        sa.Column("id", sa.BigInteger(), autoincrement=True, primary_key=True),
-        sa.Column("site_id", sa.String(length=SITE_ID_LEN), primary_key=True),
+        # See https://stackoverflow.com/a/49398042 for UUID:
+        sa.Column(
+            "id", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        ),
+        sa.Column("site_id", sa.String(length=SITE_ID_LEN)),
         sa.Column("obs_id", sa.String(), nullable=False),
         sa.Column("instrument", sa.String(), nullable=False),
         sa.Column("day_obs", sa.Integer(), nullable=False),
@@ -34,20 +39,21 @@ def create_messages_table(
         sa.Column("user_id", sa.String(), nullable=False),
         sa.Column("user_agent", sa.String(), nullable=False),
         sa.Column("is_human", sa.Boolean(), nullable=False),
-        sa.Column("is_valid", sa.Boolean(), nullable=False),
+        sa.Column(
+            "is_valid",
+            sa.Boolean(),
+            sa.Computed("date_invalidated is null"),
+            nullable=False,
+        ),
         sa.Column(
             "exposure_flag",
             sa.Enum("none", "junk", "questionable", name="exposure_flag_enum"),
             nullable=False,
         ),
         sa.Column("date_added", sa.DateTime(), nullable=False),
-        sa.Column("date_is_valid_changed", sa.DateTime(), nullable=True),
-        sa.Column("parent_id", sa.BigInteger(), nullable=True),
-        sa.Column("parent_site_id", sa.String(length=SITE_ID_LEN)),
-        sa.ForeignKeyConstraint(
-            ["parent_id", "parent_site_id"],
-            ["messages.id", "messages.site_id"],
-        ),
+        sa.Column("date_invalidated", sa.DateTime(), nullable=True),
+        sa.Column("parent_id", UUID(as_uuid=True), nullable=True),
+        sa.ForeignKeyConstraint(["parent_id"], ["messages.id"]),
     )
 
     for name in (

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pathlib
 import unittest
+import uuid
 
 import httpx
 
@@ -19,16 +20,13 @@ def assert_good_edit_response(
     old_message: MessageDictT,
     edit_args: ArgDictT,
 ) -> MessageDictT:
-    """Assert that an edit_message command succeeded and return the new
-    message.
-    """
+    """Assert that edit messages succeeded and return the new message."""
     new_message = assert_good_response(response)
-    assert new_message["parent_id"] == old_message["id"]
-    assert new_message["parent_site_id"] == old_message["site_id"]
+    assert str(new_message["parent_id"]) == str(old_message["id"])
     assert new_message["is_valid"]
     assert not old_message["is_valid"]
-    assert new_message["date_is_valid_changed"] is None
-    assert old_message["date_is_valid_changed"] is not None
+    assert new_message["date_invalidated"] is None
+    assert old_message["date_invalidated"] is not None
     for key in old_message:
         if key in set(
             (
@@ -36,10 +34,9 @@ def assert_good_edit_response(
                 "site_id",
                 "is_valid",
                 "parent_id",
-                "parent_site_id",
                 "date_added",
                 "is_valid",
-                "date_is_valid_changed",
+                "date_invalidated",
             )
         ):
             # These are handled above, except date_added,
@@ -61,17 +58,13 @@ class EditMessageTestCase(unittest.IsolatedAsyncioTestCase):
             messages,
         ):
             old_id = messages[0]["id"]
-            old_site_id = messages[0]["site_id"]
-
-            find_old_message_args = dict(
-                min_id=old_id,
-                max_id=old_id + 1,
-                site_ids=[old_site_id],
-                is_valid=False,
+            get_old_response = await client.get(
+                f"/exposurelog/messages/{old_id}",
             )
+            assert_good_response(get_old_response)
+
             full_edit_args = dict(
-                id=old_id,
-                site_id=old_site_id,
+                site_id="NewSite",
                 message_text="New message text",
                 user_id="new user_id",
                 user_agent="new user_agent",
@@ -82,43 +75,28 @@ class EditMessageTestCase(unittest.IsolatedAsyncioTestCase):
             # add a new version of the message with one field omitted,
             # to check that the one field is not changed from the original.
             # After each edit, find the old message and check that
-            # the date_is_valid_changed has been suitably updated.
+            # the date_invalidated has been suitably updated.
             for del_key in full_edit_args:
-                if del_key in ("id", "site_id"):
-                    # Skip required arguments
-                    continue
                 edit_args = full_edit_args.copy()
                 del edit_args[del_key]
-                edit_response = await client.post(
-                    "/exposurelog/edit_message/", data=edit_args
+                edit_response = await client.patch(
+                    f"/exposurelog/messages/{old_id}", json=edit_args
                 )
-                find_old_response = await client.get(
-                    "/exposurelog/find_messages/", params=find_old_message_args
+                assert_good_response(edit_response)
+                get_old_response = await client.get(
+                    f"/exposurelog/messages/{old_id}",
                 )
-                old_messages = assert_good_response(find_old_response)
-                assert len(old_messages) == 1
-                old_message = old_messages[0]
+                old_message = assert_good_response(get_old_response)
                 assert_good_edit_response(
                     edit_response,
                     old_message=old_message,
                     edit_args=edit_args,
                 )
 
-            # Error: must specify "id".
-            # This is a schema violation so the error code is 422,
-            # but I have not found that documented so
-            # accept anything in the 400s
-            bad_edit_args = edit_args.copy()
-            del bad_edit_args["id"]
-            response = await client.post(
-                "/exposurelog/edit_message/", data=bad_edit_args
-            )
-            assert 400 <= response.status_code < 500
-
             # Error: edit a message that does not exist.
-            bad_edit_args = edit_args.copy()
-            bad_edit_args["id"] = 9999
-            response = await client.post(
-                "/exposurelog/edit_message/", data=bad_edit_args
+            edit_args = full_edit_args.copy()
+            bad_id = uuid.uuid4()
+            response = await client.patch(
+                f"/exposurelog/messages/{bad_id}", json=edit_args
             )
             assert response.status_code == 404
