@@ -11,19 +11,11 @@ import sqlalchemy as sa
 from ..message import ExposureFlag, Message
 from ..shared_state import SharedState, get_shared_state
 
-router = fastapi.APIRouter(prefix="/exposurelog")
+router = fastapi.APIRouter()
 
 
-@router.get("/find_messages/", response_model=typing.List[Message])
+@router.get("/messages/", response_model=typing.List[Message])
 async def find_messages(
-    min_id: int = fastapi.Query(
-        None,
-        title="Minimum message ID, inclusive",
-    ),
-    max_id: int = fastapi.Query(
-        None,
-        title="Maximum message ID, exclusive",
-    ),
     site_ids: typing.List[str] = fastapi.Query(
         None,
         title="Site IDs.",
@@ -81,16 +73,16 @@ async def find_messages(
         title="Maximum date the exposure was added, exclusive; "
         "TAI as an ISO string with no timezone information",
     ),
-    has_date_is_valid_changed: bool = fastapi.Query(
+    has_date_invalidated: bool = fastapi.Query(
         None,
-        title="Does this message have a non-null " "date_is_valid_changed?",
+        title="Does this message have a non-null " "date_invalidated?",
     ),
-    min_date_is_valid_changed: datetime.datetime = fastapi.Query(
+    min_date_invalidated: datetime.datetime = fastapi.Query(
         None,
         title="Minimum date the is_valid flag was last toggled, inclusive, "
         "TAI as an ISO string with no timezone information",
     ),
-    max_date_is_valid_changed: datetime.datetime = fastapi.Query(
+    max_date_invalidated: datetime.datetime = fastapi.Query(
         None,
         title="Maximum date the is_valid flag was last toggled, exclusive, "
         "TAI as an ISO string with no timezone information",
@@ -98,14 +90,6 @@ async def find_messages(
     has_parent_id: bool = fastapi.Query(
         None,
         title="Does this message have a " "non-null parent ID?",
-    ),
-    min_parent_id: int = fastapi.Query(
-        None,
-        title="Minimum ID of parent message, inclusive",
-    ),
-    max_parent_id: int = fastapi.Query(
-        None,
-        title="Maximum ID of parent message, exclusive",
     ),
     order_by: typing.List[str] = fastapi.Query(
         None,
@@ -115,11 +99,9 @@ async def find_messages(
     state: SharedState = fastapi.Depends(get_shared_state),
 ) -> list[Message]:
     """Find messages."""
-    exposurelog_db = state.exposurelog_db
+    el_table = state.exposurelog_db.table
 
     arg_names = (
-        "min_id",
-        "max_id",
         "site_ids",
         "obs_id",
         "instruments",
@@ -133,16 +115,14 @@ async def find_messages(
         "exposure_flags",
         "min_date_added",
         "max_date_added",
-        "has_date_is_valid_changed",
-        "min_date_is_valid_changed",
-        "max_date_is_valid_changed",
+        "has_date_invalidated",
+        "min_date_invalidated",
+        "max_date_invalidated",
         "has_parent_id",
-        "min_parent_id",
-        "max_parent_id",
         "order_by",
     )
 
-    async with exposurelog_db.engine.acquire() as connection:
+    async with state.exposurelog_db.engine.acquire() as connection:
         conditions = []
         order_by_columns = []
         # Handle minimums and maximums
@@ -151,13 +131,13 @@ async def find_messages(
             if value is None:
                 continue
             if key.startswith("min_"):
-                column = getattr(exposurelog_db.table.c, key[4:])
+                column = getattr(el_table.c, key[4:])
                 conditions.append(column >= value)
             elif key.startswith("max_"):
-                column = getattr(exposurelog_db.table.c, key[4:])
+                column = getattr(el_table.c, key[4:])
                 conditions.append(column < value)
             elif key.startswith("has_"):
-                column = getattr(exposurelog_db.table.c, key[4:])
+                column = getattr(el_table.c, key[4:])
                 if value:
                     conditions.append(column != None)  # noqa
                 else:
@@ -170,29 +150,29 @@ async def find_messages(
                 "exposure_flags",
             ):
                 # Value is a list; field name is key without the final "s".
-                column = getattr(exposurelog_db.table.c, key[:-1])
+                column = getattr(el_table.c, key[:-1])
                 conditions.append(column.in_(value))
             elif key in ("message_text", "obs_id"):
-                column = getattr(exposurelog_db.table.c, key)
+                column = getattr(el_table.c, key)
                 conditions.append(column.contains(value))
             elif key in ("is_human", "is_valid"):
-                column = getattr(exposurelog_db.table.c, key)
+                column = getattr(el_table.c, key)
                 conditions.append(column == value)
             elif key == "order_by":
                 for item in value:
                     if item.startswith("-"):
-                        column = getattr(exposurelog_db.table.c, item[1:])
+                        column = getattr(el_table.c, item[1:])
                         order_by_columns.append(sa.sql.desc(column))
                     else:
-                        column = getattr(exposurelog_db.table.c, item)
+                        column = getattr(el_table.c, item)
                         order_by_columns.append(sa.sql.asc(column))
-                column = exposurelog_db.table.c.exposure_flag
+                column = el_table.c.exposure_flag
 
             else:
                 raise RuntimeError(f"Bug: unrecognized key: {key}")
         full_conditions = sa.sql.and_(*conditions)
         result_proxy = await connection.execute(
-            exposurelog_db.table.select()
+            el_table.select()
             .where(full_conditions)
             .order_by(*order_by_columns)
         )

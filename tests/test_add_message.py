@@ -33,7 +33,7 @@ def assert_good_add_response(
     message = assert_good_response(response)
     assert message["is_valid"]
     assert message["parent_id"] is None
-    assert message["date_is_valid_changed"] is None
+    assert message["date_invalidated"] is None
     for key, value in add_args.items():
         if key == "is_new":
             continue  # Not part of the message
@@ -62,7 +62,7 @@ class AddMessageTestCase(unittest.IsolatedAsyncioTestCase):
                 exposure_flag="none",
             )
             response = await client.post(
-                "/exposurelog/add_message/", data=add_args
+                "/exposurelog/messages/", json=add_args
             )
             assert_good_add_response(response=response, add_args=add_args)
 
@@ -73,8 +73,8 @@ class AddMessageTestCase(unittest.IsolatedAsyncioTestCase):
             no_obs_id_args["obs_id"] = "NO_SUCH_OBS_ID"
             no_obs_id_args["is_new"] = True
             response = await client.post(
-                "/exposurelog/add_message/",
-                data=no_obs_id_args,
+                "/exposurelog/messages/",
+                json=no_obs_id_args,
             )
             message = assert_good_add_response(
                 response=response, add_args=no_obs_id_args
@@ -85,8 +85,8 @@ class AddMessageTestCase(unittest.IsolatedAsyncioTestCase):
             # and ``is_new=False``.
             no_obs_id_args["is_new"] = False
             response = await client.post(
-                "/exposurelog/add_message/",
-                data=no_obs_id_args,
+                "/exposurelog/messages/",
+                json=no_obs_id_args,
             )
             assert response.status_code == 404
 
@@ -100,6 +100,6 @@ class AddMessageTestCase(unittest.IsolatedAsyncioTestCase):
                 bad_add_args = add_args.copy()
                 del bad_add_args[key]
                 response = await client.post(
-                    "/add_message/", data=bad_add_args
+                    "/exposurelog/messages/", json=bad_add_args
                 )
                 assert 400 <= response.status_code < 500

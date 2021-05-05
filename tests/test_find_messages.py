@@ -157,7 +157,9 @@ def get_missing_message(
 ) -> list[MessageDictT]:
     """Get messages that were not found."""
     found_ids = set(found_message["id"] for found_message in found_messages)
-    return [message for message in messages if message["id"] not in found_ids]
+    return [
+        message for message in messages if str(message["id"]) not in found_ids
+    ]
 
 
 class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
@@ -179,11 +181,9 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
 
             # Range arguments: min_<field>, max_<field>.
             for field in (
-                "id",
                 "day_obs",
                 "date_added",
-                "date_is_valid_changed",
-                "parent_id",
+                "date_invalidated",
             ):
                 values = sorted(
                     message[field]
@@ -233,7 +233,7 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                 # so test it now instead of adding it to find_args_predicates.
                 empty_range_args = {min_name: min_value, max_name: min_value}
                 response = await client.get(
-                    "/exposurelog/find_messages/",
+                    "/exposurelog/messages/",
                     params=empty_range_args,
                 )
                 found_messages = assert_good_response(response)
@@ -283,7 +283,7 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                 find_args_predicates.append(({field: value}, test_contains))
 
             # has_<field> arguments (for fields that may be null).
-            for field in ("date_is_valid_changed", "parent_id"):
+            for field in ("date_invalidated", "parent_id"):
                 arg_name = f"has_{field}"
 
                 @doc_str(f"message[{field!r}] is not None")
@@ -326,7 +326,7 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
             # Test single requests: one entry from find_args_predicates.
             for find_args, predicate in find_args_predicates:
                 response = await client.get(
-                    "/exposurelog/find_messages/", params=find_args
+                    "/exposurelog/messages/", params=find_args
                 )
                 if "is_valid" not in find_args:
                     # Handle the fact that is_valid defaults to True
@@ -365,7 +365,7 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                     return predicate1(message) and predicate2(message)
 
                 response = await client.get(
-                    "/exposurelog/find_messages/", params=find_args
+                    "/exposurelog/messages/", params=find_args
                 )
                 assert_good_find_response(response, messages, and_predicates)
 
@@ -375,7 +375,7 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                 return message["is_valid"] is True
 
             response = await client.get(
-                "/exposurelog/find_messages/", params=dict()
+                "/exposurelog/messages/", params=dict()
             )
             messages = assert_good_response(response)
             assert_good_find_response(response, messages, is_valid_predicate)
@@ -400,7 +400,7 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                 find_args = find_args_day_obs.copy()
                 find_args["order_by"] = order_by
                 response = await client.get(
-                    "/exposurelog/find_messages/", params=find_args
+                    "/exposurelog/messages/", params=find_args
                 )
                 messages = assert_good_response(response)
                 if field not in str_fields:
@@ -414,7 +414,7 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                 find_args = find_args_day_obs.copy()
                 find_args["order_by"] = order_by
                 response = await client.get(
-                    "/exposurelog/find_messages/", params=find_args
+                    "/exposurelog/messages/", params=find_args
                 )
                 messages = assert_good_response(response)
                 if field1 not in str_fields and field2 not in str_fields:
