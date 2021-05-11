@@ -67,39 +67,41 @@ async def edit_message(
         if value is not None:
             request_data[name] = value
 
-    # Get all data for the existing message
-    async with state.exposurelog_db.engine.acquire() as connection:
-        get_old_result_proxy = await connection.execute(
-            el_table.select().where(el_table.c.id == parent_id)
+    async with state.exposurelog_db.engine.begin() as connection:
+        # Find the parent message.
+        get_parent_result = await connection.execute(
+            el_table.select()
+            .where(el_table.c.id == parent_id)
+            .with_for_update()
         )
-        if get_old_result_proxy.rowcount == 0:
+        parent_row = get_parent_result.fetchone()
+        if parent_row is None:
             raise fastapi.HTTPException(
                 status_code=404,
                 detail=f"Message with id={parent_id} not found",
             )
-        result = await get_old_result_proxy.fetchone()
-    new_data = dict(result)
-    new_data.update(request_data)
-    for field in ("id", "is_valid", "date_invalidated"):
-        new_data.pop(field)
-    current_tai_iso = astropy.time.Time.now().tai.iso
-    new_data["site_id"] = state.site_id
-    new_data["date_added"] = current_tai_iso
-    new_data["parent_id"] = parent_id
 
-    # Add the new message and update the old one.
-    # TODO: make this a single transaction (aiopg does not support that).
-    async with state.exposurelog_db.engine.acquire() as connection:
-        add_result_proxy = await connection.execute(
+        # Add and get the new message.
+        new_data = dict(parent_row)
+        new_data.update(request_data)
+        for field in ("id", "is_valid", "date_invalidated"):
+            del new_data[field]
+        current_tai = astropy.time.Time.now().tai.datetime
+        new_data["site_id"] = state.site_id
+        new_data["date_added"] = current_tai
+        new_data["parent_id"] = parent_id
+        add_row = await connection.execute(
             el_table.insert()
             .values(**new_data)
             .returning(sa.literal_column("*"))
         )
-        add_result = await add_result_proxy.fetchone()
+        add_row = add_row.fetchone()
+
+        # Mark the parent message as invalid.
         await connection.execute(
             el_table.update()
             .where(el_table.c.id == parent_id)
-            .values(date_invalidated=current_tai_iso)
+            .values(date_invalidated=current_tai)
         )
 
-    return Message(**add_result)
+    return Message(**add_row)

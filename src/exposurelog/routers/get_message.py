@@ -19,17 +19,16 @@ async def get_message(
     el_table = state.exposurelog_db.table
 
     # Find the message
-    async with state.exposurelog_db.engine.acquire() as connection:
-        result_proxy = await connection.execute(
+    async with state.exposurelog_db.engine.connect() as connection:
+        result = await connection.execute(
             el_table.select().where(el_table.c.id == id)
         )
-        messages = []
-        async for row in result_proxy:
-            messages.append(Message(**row))
+        row = result.fetchone()
 
-    if len(messages) == 0:
+    if row is None:
         raise fastapi.HTTPException(
             status_code=404,
             detail=f"No message found with id={id}",
         )
-    return messages[0]
+
+    return Message(**row)

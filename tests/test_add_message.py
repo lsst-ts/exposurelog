@@ -79,7 +79,7 @@ class AddMessageTestCase(unittest.IsolatedAsyncioTestCase):
             message = assert_good_add_response(
                 response=response, add_args=no_obs_id_args
             )
-            assert message["date_added"] > current_time.tai.iso
+            assert message["date_added"] > current_time.tai.isot
 
             # Error: add a message whose obs_id does not match an exposure,
             # and ``is_new=False``.

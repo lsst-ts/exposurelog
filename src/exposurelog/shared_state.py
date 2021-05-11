@@ -110,7 +110,7 @@ async def create_shared_state() -> None:
     if _shared_state is not None:
         raise RuntimeError("Shared state already created")
     state = SharedState()
-    await state.exposurelog_db.start()
+    await state.exposurelog_db.start_task
     _shared_state = state
 
 

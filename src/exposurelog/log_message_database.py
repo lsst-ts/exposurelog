@@ -5,12 +5,9 @@ from __future__ import annotations
 __all__ = ["LogMessageDatabase"]
 
 import asyncio
-import typing
 
-import aiopg
-import aiopg.sa
-import sqlalchemy as sa
 import structlog
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from exposurelog.create_messages_table import create_messages_table
 
@@ -31,50 +28,22 @@ class LogMessageDatabase:
         self._closed = False
         self.url = url
         self.logger = structlog.get_logger("LogMessageDatabase")
-        # Asynchronous database engine;
-        # None until ``start_task`` is done.
-        self._engine: typing.Optional[aiopg.sa.Engine] = None
-        # A model of the database table.
-        sync_engine = sa.create_engine(url)
-        try:
-            self.table: sa.Table = create_messages_table(engine=sync_engine)
-        finally:
-            sync_engine.dispose()
-        # Set done when the engine has been created.
+        sa_url = sqlalchemy.engine.make_url(url)
+        sa_url = sa_url.set(drivername="postgresql+asyncpg")
+        self.engine = create_async_engine(sa_url)
+        self.table = create_message_table()
         self.start_task = asyncio.create_task(self.start())
 
     async def start(self) -> None:
-        """Create the engine used to query the database."""
-        self.logger.info("Create engine")
-        self._engine = await aiopg.sa.create_engine(self.url)
-
-    def basic_close(self) -> None:
-        """Minimal close. Call this if you have no event loop."""
-        if self._closed:
-            return
-        self._closed = True
-        self.start_task.cancel()
-        if self._engine is not None:
-            self._engine.terminate()
-
-    @property
-    def engine(self) -> aiopg.sa.Engine:
-        if self._engine is None:
-            raise RuntimeError("Not connected to the log message database.")
-        return self._engine
+        """Create the table in the database."""
+        self.logger.info("Create table")
+        async with self.engine.begin() as connection:
+            await connection.run_sync(self.table.metadata.create_all)
 
     async def close(self) -> None:
-        """Full close. Call this if you have an event loop."""
+        """Close the database engine and all connections."""
         if self._closed:
             return
         self._closed = True
         self.start_task.cancel()
-        if self._engine is not None:
-            self._engine.terminate()
-            await self._engine.wait_closed()
-
-    async def __aenter__(self) -> LogMessageDatabase:
-        return self
-
-    async def __aexit__(self, *args: typing.Any) -> None:
-        await self.close()
+        await self.engine.dispose()

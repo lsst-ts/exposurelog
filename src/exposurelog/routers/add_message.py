@@ -37,19 +37,17 @@ async def add_message(
     is_new: bool = fastapi.Body(
         default=...,
         title="Is the exposure new (and perhaps not yet ingested)?",
-        description=(
-            "If True: the exposure need not appear in either butler registry, "
-            "and if it does not, this service will compute day_obs "
-            "using the current date. "
-        ),
+        description="If True: the exposure need not appear in either "
+        "butler registry, and if it does not, this service will compute "
+        "day_obs using the current date. ",
     ),
     exposure_flag: typing.Optional[ExposureFlag] = fastapi.Body(
         default=ExposureFlag.none,
         title="Optional flag for troublesome exposures",
         description="This flag gives users an opportunity to manually mark "
         "an exposure as possibly bad (questionable) or likely bad (junk). "
-        "We do not expect this to be used very often, if at all; we take "
-        "far too much data to expect users to manually flag problems. "
+        "We do not expect this to be used very often, if at all; "
+        "we take far too much data to expect users to manually flag problems. "
         "However, this flag may be useful for marking egregious problems, "
         "such as the mount misbehaving during an exposure.",
     ),
@@ -57,7 +55,6 @@ async def add_message(
 ) -> Message:
     """Add a message to the database and return the added message."""
     curr_tai = astropy.time.Time.now()
-    date_added = curr_tai.tai.iso
 
     # Check obs_id and determine day_obs.
     loop = asyncio.get_running_loop()
@@ -85,11 +82,11 @@ async def add_message(
     el_table = state.exposurelog_db.table
 
     # Add the message.
-    async with state.exposurelog_db.engine.acquire() as connection:
-        result_proxy = await connection.execute(
+    async with state.exposurelog_db.engine.begin() as connection:
+        result = await connection.execute(
             el_table.insert()
             .values(
-                date_added=date_added,
+                date_added=curr_tai.tai.datetime,
                 day_obs=day_obs,
                 exposure_flag=exposure_flag,
                 instrument=instrument,
@@ -102,7 +99,7 @@ async def add_message(
             )
             .returning(sa.literal_column("*"))
         )
-        result = await result_proxy.fetchone()
+        result = result.fetchone()
 
     return Message(**result)
 

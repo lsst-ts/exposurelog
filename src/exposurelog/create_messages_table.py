@@ -1,6 +1,5 @@
 __all__ = ["SITE_ID_LEN", "create_messages_table"]
 
-import typing
 import uuid
 
 import sqlalchemy as sa
@@ -10,19 +9,10 @@ from sqlalchemy.dialects.postgresql import UUID
 SITE_ID_LEN = 16
 
 
-def create_messages_table(
-    engine: typing.Optional[sa.engine.Engine] = None,
-) -> sa.Table:
+def create_messages_table() -> sa.Table:
     """Make the exposurelog messages table.
 
-    Create the table in the database, if it does not exist,
-    and return an sqlalchemy object relational model of the table.
-
-    Parameters
-    ----------
-    engine
-        If specified and the table does not exist in the database,
-        add the table to the database.
+    Create an sqlalchemy object relational model of the table.
     """
     table = sa.Table(
         "messages",
@@ -66,8 +56,5 @@ def create_messages_table(
         "date_added",
     ):
         sa.Index(f"idx_{name}", getattr(table.c, name))
-
-    if engine is not None:
-        table.metadata.create_all(engine)
 
     return table

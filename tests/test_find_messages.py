@@ -13,6 +13,7 @@ from exposurelog.testutils import (
     MessageDictT,
     assert_good_response,
     assert_messages_equal,
+    cast_special,
     create_test_client,
 )
 
@@ -80,13 +81,16 @@ def assert_messages_ordered(
         Field names by which the data should be ordered.
         Each name can be prefixed by "-" to mean descending order.
     """
+    full_order_by = list(order_by)
+    if not ("id" in order_by or "-id" in order_by):
+        full_order_by.append("id")
     message1: typing.Optional[dict] = None
     for message2 in messages:
         if message1 is not None:
             assert_two_messages_ordered(
-                message1,
-                message2,
-                order_by,
+                message1=message1,
+                message2=message2,
+                order_by=full_order_by,
             )
         message1 = message2
 
@@ -204,10 +208,9 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                     field: str = field,
                     min_value: typing.Any = min_value,
                 ) -> bool:
-                    return (
-                        message[field] is not None
-                        and message[field] >= min_value
-                    )
+                    min_value = cast_special(min_value)
+                    value = cast_special(message[field])
+                    return value is not None and value >= min_value
 
                 @doc_str(f"message[{field!r}] not None and < {max_value}.")
                 def test_max(
@@ -215,10 +218,9 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                     field: str = field,
                     max_value: typing.Any = max_value,
                 ) -> bool:
-                    return (
-                        message[field] is not None
-                        and message[field] < max_value
-                    )
+                    max_value = cast_special(max_value)
+                    value = cast_special(message[field])
+                    return value is not None and value < max_value
 
                 find_args_predicates += [
                     ({min_name: min_value}, test_min),
@@ -396,8 +398,8 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                     "user_agent",
                 )
             )
-            for field in fields:
-                order_by = [field]
+            for field, prefix in itertools.product(fields, ("", "-")):
+                order_by = [prefix + field]
                 find_args = find_args_day_obs.copy()
                 find_args["order_by"] = order_by
                 response = await client.get(
@@ -432,23 +434,11 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                 no_more_paged_messages = assert_good_response(response)
                 assert len(no_more_paged_messages) == 0
 
+                assert len(messages) == len(paged_messages)
+
                 # Compare paged to unpaged messages
-                messages_dict = {
-                    message["id"]: message for message in messages
-                }
-                paged_messages_dict = {
-                    message["id"]: message for message in paged_messages
-                }
                 for message1, message2 in zip(messages, paged_messages):
-                    # Sort order may not match, but should be compatible
-                    if message1["id"] != message2["id"]:
-                        assert message1[order_by[0]] == message2[order_by[0]]
-                        id1 = message1["id"]
-                        assert_messages_equal(
-                            messages_dict[id1], paged_messages_dict[id1]
-                        )
-                    else:
-                        assert_messages_equal(message1, message2)
+                    assert_messages_equal(message1, message2)
 
             # Check order_by two fields
             for field1, field2 in itertools.product(fields, fields):
