@@ -8,11 +8,9 @@ appdirs==1.4.4
     # via
     #   black
     #   virtualenv
-asgi-lifespan==1.0.1
-    # via -r requirements/dev.in
 asn1crypto==1.4.0
     # via scramp
-attrs==20.3.0
+attrs==21.2.0
     # via pytest
 black==20.8b1
     # via -r requirements/dev.in
@@ -21,20 +19,22 @@ certifi==2020.12.5
 cfgv==3.2.0
     # via pre-commit
 click==7.1.2
-    # via black
+    # via
+    #   -r requirements/dev.in
+    #   black
 coverage[toml]==5.5
     # via -r requirements/dev.in
 distlib==0.3.1
     # via virtualenv
 filelock==3.0.12
     # via virtualenv
-flake8==3.9.1
+flake8==3.9.2
     # via -r requirements/dev.in
 h11==0.12.0
     # via httpcore
-httpcore==0.12.3
+httpcore==0.13.3
     # via httpx
-httpx==0.17
+httpx==0.18.1
     # via -r requirements/dev.in
 identify==2.2.4
     # via pre-commit
@@ -56,7 +56,7 @@ packaging==20.9
     # via pytest
 pathspec==0.8.1
     # via black
-pg8000==1.19.3
+pg8000==1.19.4
     # via testing.postgresql
 pluggy==0.13.1
     # via pytest
@@ -70,21 +70,20 @@ pyflakes==2.3.1
     # via flake8
 pyparsing==2.4.7
     # via packaging
-pytest==6.2.3
+pytest==6.2.4
     # via -r requirements/dev.in
 pyyaml==5.4.1
     # via pre-commit
 regex==2021.4.4
     # via black
-rfc3986[idna2008]==1.4.0
+rfc3986[idna2008]==1.5.0
     # via httpx
 scramp==1.4.0
     # via pg8000
-six==1.15.0
+six==1.16.0
     # via virtualenv
 sniffio==1.2.0
     # via
-    #   asgi-lifespan
     #   httpcore
     #   httpx
 testing.common.database==2.0.3
@@ -101,9 +100,9 @@ typed-ast==1.4.3
     # via
     #   black
     #   mypy
-typing-extensions==3.7.4.3
+typing-extensions==3.10.0.0
     # via
     #   black
     #   mypy
-virtualenv==20.4.4
+virtualenv==20.4.6
     # via pre-commit
