@@ -7,7 +7,8 @@ Exposure log is a REST web service to create and manage log messages that are as
 The service runs at _address_:80/exposurelog
 and OpenAPI docs are available at _address_:80/exposurelog/docs.
 
-Messages are immutable, other than two fields: ``is_valid`` and ``date_invalidated``.
+Messages are immutable, other than two fields: ``date_invalidated`` and ``is_valid``
+(which is computed from ``date_invalidated``).
 These fields provide a reasonable approximation of deletion and modification.
 
 Configuration
