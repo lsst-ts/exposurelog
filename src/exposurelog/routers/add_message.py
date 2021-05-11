@@ -19,31 +19,32 @@ router = fastapi.APIRouter()
 
 @router.post("/messages/", response_model=Message)
 async def add_message(
-    obs_id: str = fastapi.Body(
-        ...,
-        title="Observation ID (a string)",
-    ),
+    obs_id: str = fastapi.Body(default=..., title="Observation ID (a string)"),
     instrument: str = fastapi.Body(
-        ..., title="Short name of instrument (e.g. HSC)"
+        default=...,
+        title="Short name of instrument (e.g. HSC)",
     ),
     message_text: str = fastapi.Body(..., title="Message text"),
     user_id: str = fastapi.Body(..., title="User ID"),
     user_agent: str = fastapi.Body(
-        ..., title="User agent (name of application creating the message)"
+        default=...,
+        title="User agent (name of application creating the message)",
     ),
     is_human: bool = fastapi.Body(
-        ..., title="Was the message created by a human being?"
+        default=...,
+        title="Was the message created by a human being?",
     ),
     is_new: bool = fastapi.Body(
-        ...,
+        default=...,
         title="Is the exposure new (and perhaps not yet ingested)?",
         description=(
             "If True: the exposure need not appear in either butler registry, "
-            "and if it does not, then compute day_obs using the current date. "
+            "and if it does not, this service will compute day_obs "
+            "using the current date. "
         ),
     ),
     exposure_flag: typing.Optional[ExposureFlag] = fastapi.Body(
-        ExposureFlag.none,
+        default=ExposureFlag.none,
         title="Optional flag for troublesome exposures",
         description="This flag gives users an opportunity to manually mark "
         "an exposure as possibly bad (questionable) or likely bad (junk). "

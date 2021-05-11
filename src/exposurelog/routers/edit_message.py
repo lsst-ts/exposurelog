@@ -15,17 +15,19 @@ router = fastapi.APIRouter()
 @router.patch("/messages/{id}", response_model=Message)
 async def edit_message(
     id: str,
-    message_text: str = fastapi.Body(None, title="Message text"),
-    site_id: str = fastapi.Body(None, title="Site ID"),
-    user_id: str = fastapi.Body(None, title="User ID"),
+    message_text: str = fastapi.Body(default=None, title="Message text"),
+    site_id: str = fastapi.Body(default=None, title="Site ID"),
+    user_id: str = fastapi.Body(default=None, title="User ID"),
     user_agent: str = fastapi.Body(
-        None, title="User agent (which app created the message)"
+        default=None,
+        title="User agent (which app created the message)",
     ),
     is_human: bool = fastapi.Body(
-        None, title="Was the message created by a human being?"
+        default=None,
+        title="Was the message created by a human being?",
     ),
     exposure_flag: ExposureFlag = fastapi.Body(
-        None,
+        default=None,
         title="Optional flag for troublesome exposures",
         description="This flag gives users an opportunity to manually mark "
         "an exposure as possibly bad (questionable) or likely bad (junk). "
