@@ -1,29 +1,31 @@
 from __future__ import annotations
 
 __all__ = [
-    "modify_environ",
     "MessageDictT",
     "assert_good_response",
     "assert_messages_equal",
+    "cast_special",
     "create_test_client",
-    "create_test_database",
+    "modify_environ",
 ]
 
 import contextlib
+import datetime
 import os
 import pathlib
 import typing
 import unittest.mock
 import uuid
 
-import asgi_lifespan
 import astropy.time
 import httpx
 import numpy as np
-import sqlalchemy as sa
+import sqlalchemy.engine
 import testing.postgresql
+from sqlalchemy.ext.asyncio import create_async_engine
 
-from .create_messages_table import create_messages_table
+from . import app, shared_state
+from .create_message_table import create_message_table
 from .message import MESSAGE_FIELDS
 
 # Range of dates for random messages.
@@ -49,7 +51,7 @@ async def create_test_client(
 ]:
     """Create the test database, test server, and httpx client."""
     with testing.postgresql.Postgresql() as postgresql:
-        messages = create_test_database(
+        messages = await create_test_database(
             postgresql, num_messages=num_messages, num_edited=num_edited
         )
 
@@ -59,18 +61,20 @@ async def create_test_client(
             SITE_ID=TEST_SITE_ID,
             **db_config,
         ):
-            # Wait to import shared_state until the environment is configured.
-            # Note that exposurelog.app imports exposurelog.shared_state.
-            import exposurelog.app
-            import exposurelog.shared_state
-
-            assert not exposurelog.shared_state.has_shared_state()
-            async with asgi_lifespan.LifespanManager(exposurelog.app.app):
+            # Note: httpx.AsyncClient does not trigger startup and shutdown
+            # events. We could use asgi-lifespan's LifespanManager,
+            # but it does not trigger the shutdown event if there is
+            # an exception, so it does not seem worth the bother.
+            assert not shared_state.has_shared_state()
+            await app.startup_event()
+            try:
                 async with httpx.AsyncClient(
-                    app=exposurelog.app.app, base_url="http://test"
+                    app=app.app, base_url="http://test"
                 ) as client:
-                    assert exposurelog.shared_state.has_shared_state()
+                    assert shared_state.has_shared_state()
                     yield client, messages
+            finally:
+                await app.shutdown_event()
 
 
 @contextlib.contextmanager
@@ -138,7 +142,7 @@ def assert_good_response(response: httpx.Response) -> typing.Any:
     command
         The command. If None then return the whole response, else return
         the response from the command (response["data"][command]) --
-        a single message dict or a list of messages dicts.
+        a single message dict or a list of message dicts.
     """
     assert (
         response.status_code == 200
@@ -154,19 +158,35 @@ def assert_messages_equal(
     """Assert that two messages are identical.
 
     Handle the "id" field specially because it may be a uuid.UUID or a str.
+    Handle the "date_added" and "date_invalidated" fields specially
+    because they may be datetime.datetime or ISOT strings.
     """
     assert message1.keys() == message2.keys()
     for field in message1:
-        if field == "id":
-            assert str(message1[field]) == str(message2[field]), (
-                f"field {field} unequal: "
-                f"{str(message1[field])} != {str(message2[field])}"
-            )
-        else:
-            assert message1[field] == message2[field], (
-                f"field {field} unequal: "
-                f"{message1[field]} != {message2[field]}"
-            )
+        values = [
+            cast_special(value) for value in (message1[field], message2[field])
+        ]
+        assert (
+            values[0] == values[1]
+        ), f"field {field} unequal: {values[0]} != {values[1]}"
+
+
+def cast_special(value: typing.Any) -> typing.Any:
+    """Cast special types (not plain old types) to str.
+
+    This allows comparison between values in the database
+    and values returned by the web API.
+
+    The special types are:
+
+    * datetime.datetime: converted to an ISO string with "T" separator.
+    * uuid.UUID: convert to a string.
+    """
+    if isinstance(value, datetime.datetime):
+        return value.isoformat(sep="T")
+    elif isinstance(value, uuid.UUID):
+        return str(value)
+    return value
 
 
 def db_config_from_dsn(dsn: dict[str, str]) -> dict[str, str]:
@@ -201,8 +221,8 @@ def random_bool() -> bool:
     return random.rand() > 0.5
 
 
-def random_date(precision: int = 0) -> astropy.time.Time:
-    """Return a random date formatted as an ISO string with a "T"
+def random_date(precision: int = 0) -> datetime.datetime:
+    """Return a random date
 
     This is the same format as dates returned from the database.
     """
@@ -212,7 +232,7 @@ def random_date(precision: int = 0) -> astropy.time.Time:
     unix_time = min_date_unix + random.rand() * dsec
     return astropy.time.Time(
         unix_time, format="unix", precision=precision
-    ).isot
+    ).datetime
 
 
 def random_str(nchar: int) -> str:
@@ -308,7 +328,7 @@ def random_messages(num_messages: int, num_edited: int) -> list[MessageDictT]:
     # Create edited messages.
     parent_message_id_set = set()
     edited_messages = list(
-        # [1:] because there is no older message to be the parent
+        # [1:] because there is no older message to be the parent.
         random.choice(message_list[1:], size=num_edited, replace=False)
     )
     edited_messages.sort(key=lambda message: message["date_added"])
@@ -324,7 +344,7 @@ def random_messages(num_messages: int, num_edited: int) -> list[MessageDictT]:
     return message_list
 
 
-def create_test_database(
+async def create_test_database(
     postgresql: testing.postgresql.Postgresql,
     num_messages: int,
     num_edited: int = 0,
@@ -355,24 +375,27 @@ def create_test_database(
             f"num_edited={num_edited} must be zero or "
             f"less than num_messages={num_messages}"
         )
-    engine = sa.create_engine(postgresql.url())
+    sa_url = sqlalchemy.engine.make_url(postgresql.url())
+    sa_url = sa_url.set(drivername="postgresql+asyncpg")
+    engine = create_async_engine(sa_url, future=True)
 
-    table = create_messages_table(engine=engine)
-    table.metadata.create_all(engine)
+    table = create_message_table()
+    async with engine.begin() as connection:
+        await connection.run_sync(table.metadata.create_all)
 
     messages = random_messages(
         num_messages=num_messages, num_edited=num_edited
     )
-    with engine.connect() as connection:
+    async with engine.begin() as connection:
         for message in messages:
             # Do not insert the "is_valid" field
             # because it is computed.
             pruned_message = message.copy()
             del pruned_message["is_valid"]
-            result = connection.execute(
+            result = await connection.execute(
                 table.insert().values(**pruned_message).returning(table.c.id)
             )
             data = result.fetchone()
-            assert message["id"] == data["id"]
+            assert message["id"] == data.id
 
     return messages

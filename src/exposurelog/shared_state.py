@@ -9,7 +9,7 @@ import urllib
 
 import lsst.daf.butler
 
-from . import create_messages_table, log_message_database
+from . import create_message_table, log_message_database
 
 _shared_state: typing.Optional[SharedState] = None
 
@@ -62,10 +62,10 @@ class SharedState:
 
     def __init__(self):  # type: ignore
         site_id = get_env("SITE_ID")
-        if len(site_id) > create_messages_table.SITE_ID_LEN:
+        if len(site_id) > create_message_table.SITE_ID_LEN:
             raise ValueError(
                 f"SITE_ID={site_id!r} too long; "
-                f"max length={create_messages_table.SITE_ID_LEN}"
+                f"max length={create_message_table.SITE_ID_LEN}"
             )
 
         butler_uri_1 = get_env("BUTLER_URI_1")
@@ -110,7 +110,7 @@ async def create_shared_state() -> None:
     if _shared_state is not None:
         raise RuntimeError("Shared state already created")
     state = SharedState()
-    await state.exposurelog_db.start()
+    await state.exposurelog_db.start_task
     _shared_state = state
 
 

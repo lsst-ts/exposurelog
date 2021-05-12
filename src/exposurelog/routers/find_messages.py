@@ -131,22 +131,23 @@ async def find_messages(
         "order_by",
     )
 
-    async with state.exposurelog_db.engine.acquire() as connection:
+    async with state.exposurelog_db.engine.connect() as connection:
         conditions = []
         order_by_columns = []
+        order_by_id = False
         # Handle minimums and maximums
         for key in select_arg_names:
             value = locals()[key]
             if value is None:
                 continue
             if key.startswith("min_"):
-                column = getattr(el_table.c, key[4:])
+                column = el_table.columns[key[4:]]
                 conditions.append(column >= value)
             elif key.startswith("max_"):
-                column = getattr(el_table.c, key[4:])
+                column = el_table.columns[key[4:]]
                 conditions.append(column < value)
             elif key.startswith("has_"):
-                column = getattr(el_table.c, key[4:])
+                column = el_table.columns[key[4:]]
                 if value:
                     conditions.append(column != None)  # noqa
                 else:
@@ -159,36 +160,44 @@ async def find_messages(
                 "exposure_flags",
             ):
                 # Value is a list; field name is key without the final "s".
-                column = getattr(el_table.c, key[:-1])
+                column = el_table.columns[key[:-1]]
                 conditions.append(column.in_(value))
             elif key in ("message_text", "obs_id"):
-                column = getattr(el_table.c, key)
+                column = el_table.columns[key]
                 conditions.append(column.contains(value))
             elif key in ("is_human", "is_valid"):
-                column = getattr(el_table.c, key)
+                column = el_table.columns[key]
                 conditions.append(column == value)
             elif key == "order_by":
                 for item in value:
                     if item.startswith("-"):
-                        column = getattr(el_table.c, item[1:])
+                        column_name = item[1:]
+                        column = el_table.columns[column_name]
                         order_by_columns.append(sa.sql.desc(column))
                     else:
-                        column = getattr(el_table.c, item)
+                        column_name = item
+                        column = el_table.columns[column_name]
                         order_by_columns.append(sa.sql.asc(column))
+                    if column_name == "id":
+                        order_by_id = True
                 column = el_table.c.exposure_flag
 
             else:
                 raise RuntimeError(f"Bug: unrecognized key: {key}")
+
+        # If order_by does not include "id" then append it, to make the order
+        # repeatable. Otherwise different calls can return data in different
+        # orders, which is a disaster when using limit and offset.
+        if not order_by_id:
+            order_by_columns.append(sa.sql.asc(el_table.c.id))
         full_conditions = sa.sql.and_(*conditions)
-        result_proxy = await connection.execute(
+        result = await connection.execute(
             el_table.select()
             .where(full_conditions)
             .order_by(*order_by_columns)
             .limit(limit)
             .offset(offset)
         )
-        messages = []
-        async for row in result_proxy:
-            messages.append(Message(**row))
+        rows = result.fetchall()
 
-    return messages
+    return [Message.from_orm(row) for row in rows]

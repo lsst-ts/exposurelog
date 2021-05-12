@@ -16,39 +16,42 @@ class ExposureFlag(str, enum.Enum):
 
 class Message(pydantic.BaseModel):
     id: uuid.UUID = pydantic.Field(
-        description="Message ID: a UUID that is the primary key."
+        title="Message ID: a UUID that is the primary key."
     )
     site_id: str = pydantic.Field(
-        description="Site at which the message was created."
+        title="Site at which the message was created."
     )
-    obs_id: str = pydantic.Field(description="Observation ID.")
+    obs_id: str = pydantic.Field(title="Observation ID.")
     instrument: str = pydantic.Field(
-        description="Short name of instrument, e.g. HSC."
+        title="Short name of instrument, e.g. HSC."
     )
-    day_obs: int = pydantic.Field(description="Observation day.")
-    message_text: str = pydantic.Field(description="Message.")
-    user_id: str = pydantic.Field(description="User ID.")
+    day_obs: int = pydantic.Field(title="Observation day.")
+    message_text: str = pydantic.Field(title="Message.")
+    user_id: str = pydantic.Field(title="User ID.")
     user_agent: str = pydantic.Field(
-        description="User agent: the application that created the message."
+        title="User agent: the application that created the message."
     )
     is_human: bool = pydantic.Field(
-        description="Was it a human who created the message?"
+        title="Was it a human who created the message?"
     )
     is_valid: bool = pydantic.Field(
-        description="Is this message still valid (false if deleted or edited)."
+        title="Is this message still valid (false if deleted or edited)."
     )
     exposure_flag: ExposureFlag = pydantic.Field(
-        description="Flag indicating exposure may have problems."
+        title="Flag indicating exposure may have problems."
     )
     date_added: datetime.datetime = pydantic.Field(
-        description="TAI date at which the message was added."
+        title="TAI date at which the message was added."
     )
     date_invalidated: typing.Optional[datetime.datetime] = pydantic.Field(
-        description="TAI date at which is_valid was last set true."
+        title="TAI date at which is_valid was last set true."
     )
     parent_id: typing.Optional[uuid.UUID] = pydantic.Field(
-        description="Message ID of message this is an edited version of."
+        title="Message ID of message this is an edited version of."
     )
+
+    class Config:
+        orm_mode = True
 
 
 MESSAGE_FIELDS = tuple(Message.schema()["properties"].keys())
