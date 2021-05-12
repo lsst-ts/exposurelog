@@ -6,9 +6,9 @@
 #     make update-deps
 
 asyncpg~=0.22
+astropy~=4.2
 fastapi<2
 importlib_metadata~=2.0
-python-multipart==0.0.5
 sqlalchemy~=1.4, <1.5
 structlog~=21.1
 uvicorn==0.13.4
