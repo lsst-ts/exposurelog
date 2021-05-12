@@ -5,7 +5,9 @@
 #    pip-compile --output-file=requirements/main.txt requirements/main.in
 #
 astropy==4.2.1
-    # via daf-butler
+    # via
+    #   -r requirements/main.in
+    #   daf-butler
 asyncpg==0.22.0
     # via -r requirements/main.in
 click==7.1.2
@@ -35,12 +37,8 @@ pydantic==1.8.2
     # via fastapi
 pyerfa==1.7.3
     # via astropy
-python-multipart==0.0.5
-    # via -r requirements/main.in
 pyyaml==5.4.1
     # via daf-butler
-six==1.16.0
-    # via python-multipart
 sqlalchemy==1.4.15
     # via
     #   -r requirements/main.in
