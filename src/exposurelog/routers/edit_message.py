@@ -82,7 +82,7 @@ async def edit_message(
             )
 
         # Add and get the new message.
-        new_data = dict(parent_row)
+        new_data = dict(parent_row._mapping).copy()
         new_data.update(request_data)
         for field in ("id", "is_valid", "date_invalidated"):
             del new_data[field]
@@ -104,4 +104,4 @@ async def edit_message(
             .values(date_invalidated=current_tai)
         )
 
-    return Message(**add_row)
+    return Message.from_orm(add_row)

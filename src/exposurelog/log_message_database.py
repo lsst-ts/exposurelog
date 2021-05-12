@@ -31,7 +31,7 @@ class LogMessageDatabase:
         self.logger = structlog.get_logger("LogMessageDatabase")
         sa_url = sqlalchemy.engine.make_url(url)
         sa_url = sa_url.set(drivername="postgresql+asyncpg")
-        self.engine = create_async_engine(sa_url)
+        self.engine = create_async_engine(sa_url, future=True)
         self.table = create_message_table()
         self.start_task = asyncio.create_task(self.start())
 

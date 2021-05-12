@@ -50,5 +50,8 @@ class Message(pydantic.BaseModel):
         title="Message ID of message this is an edited version of."
     )
 
+    class Config:
+        orm_mode = True
+
 
 MESSAGE_FIELDS = tuple(Message.schema()["properties"].keys())

@@ -377,7 +377,7 @@ async def create_test_database(
         )
     sa_url = sqlalchemy.engine.make_url(postgresql.url())
     sa_url = sa_url.set(drivername="postgresql+asyncpg")
-    engine = create_async_engine(sa_url)
+    engine = create_async_engine(sa_url, future=True)
 
     table = create_message_table()
     async with engine.begin() as connection:
@@ -396,6 +396,6 @@ async def create_test_database(
                 table.insert().values(**pruned_message).returning(table.c.id)
             )
             data = result.fetchone()
-            assert message["id"] == data["id"]
+            assert message["id"] == data.id
 
     return messages

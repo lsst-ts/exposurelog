@@ -101,7 +101,7 @@ async def add_message(
         )
         result = result.fetchone()
 
-    return Message(**result)
+    return Message.from_orm(result)
 
 
 RegistryList = typing.Sequence[lsst.daf.butler.Registry]

@@ -31,4 +31,4 @@ async def get_message(
             detail=f"No message found with id={id}",
         )
 
-    return Message(**row)
+    return Message.from_orm(row)

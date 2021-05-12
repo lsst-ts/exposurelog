@@ -200,4 +200,4 @@ async def find_messages(
         )
         rows = result.fetchall()
 
-    return [Message(**row) for row in rows]
+    return [Message.from_orm(row) for row in rows]
