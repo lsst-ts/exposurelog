@@ -16,7 +16,6 @@ import typing
 import unittest.mock
 import uuid
 
-import asgi_lifespan
 import astropy.time
 import httpx
 import numpy as np
@@ -64,13 +63,20 @@ async def create_test_client(
             import exposurelog.app
             import exposurelog.shared_state
 
+            # Note: httpx.AsyncClient does not trigger startup and shutdown
+            # events. We could use asgi-lifespan's LifespanManager,
+            # but it does not trigger the shutdown event if there is
+            # an exception, so it does not seem worth the bother.
             assert not exposurelog.shared_state.has_shared_state()
-            async with asgi_lifespan.LifespanManager(exposurelog.app.app):
+            await exposurelog.app.startup_event()
+            try:
                 async with httpx.AsyncClient(
                     app=exposurelog.app.app, base_url="http://test"
                 ) as client:
                     assert exposurelog.shared_state.has_shared_state()
                     yield client, messages
+            finally:
+                await exposurelog.app.shutdown_event()
 
 
 @contextlib.contextmanager
