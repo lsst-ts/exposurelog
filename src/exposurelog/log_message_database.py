@@ -6,10 +6,11 @@ __all__ = ["LogMessageDatabase"]
 
 import asyncio
 
+import sqlalchemy.engine
 import structlog
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from exposurelog.create_messages_table import create_messages_table
+from exposurelog.create_message_table import create_message_table
 
 
 class LogMessageDatabase:

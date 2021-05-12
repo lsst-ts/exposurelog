@@ -1,4 +1,4 @@
-__all__ = ["SITE_ID_LEN", "create_messages_table"]
+__all__ = ["SITE_ID_LEN", "create_message_table"]
 
 import uuid
 
@@ -9,13 +9,10 @@ from sqlalchemy.dialects.postgresql import UUID
 SITE_ID_LEN = 16
 
 
-def create_messages_table() -> sa.Table:
-    """Make the exposurelog messages table.
-
-    Create an sqlalchemy object relational model of the table.
-    """
+def create_message_table() -> sa.Table:
+    """Make a model of the exposurelog message table."""
     table = sa.Table(
-        "messages",
+        "message",
         sa.MetaData(),
         # See https://stackoverflow.com/a/49398042 for UUID:
         sa.Column(
@@ -43,7 +40,7 @@ def create_messages_table() -> sa.Table:
         sa.Column("date_added", sa.DateTime(), nullable=False),
         sa.Column("date_invalidated", sa.DateTime(), nullable=True),
         sa.Column("parent_id", UUID(as_uuid=True), nullable=True),
-        sa.ForeignKeyConstraint(["parent_id"], ["messages.id"]),
+        sa.ForeignKeyConstraint(["parent_id"], ["message.id"]),
     )
 
     for name in (
@@ -55,6 +52,6 @@ def create_messages_table() -> sa.Table:
         "exposure_flag",
         "date_added",
     ):
-        sa.Index(f"idx_{name}", getattr(table.c, name))
+        sa.Index(f"idx_{name}", table.columns[name])
 
     return table

@@ -6,7 +6,7 @@ import unittest
 import asyncpg.exceptions
 import testing.postgresql
 
-from exposurelog.create_messages_table import SITE_ID_LEN
+from exposurelog.create_message_table import SITE_ID_LEN
 from exposurelog.shared_state import (
     create_shared_state,
     delete_shared_state,

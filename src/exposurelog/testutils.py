@@ -25,7 +25,7 @@ import testing.postgresql
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from . import app, shared_state
-from .create_messages_table import create_messages_table
+from .create_message_table import create_message_table
 from .message import MESSAGE_FIELDS
 
 # Range of dates for random messages.
@@ -142,7 +142,7 @@ def assert_good_response(response: httpx.Response) -> typing.Any:
     command
         The command. If None then return the whole response, else return
         the response from the command (response["data"][command]) --
-        a single message dict or a list of messages dicts.
+        a single message dict or a list of message dicts.
     """
     assert (
         response.status_code == 200
@@ -379,7 +379,7 @@ async def create_test_database(
     sa_url = sa_url.set(drivername="postgresql+asyncpg")
     engine = create_async_engine(sa_url)
 
-    table = create_messages_table()
+    table = create_message_table()
     async with engine.begin() as connection:
         await connection.run_sync(table.metadata.create_all)
 
