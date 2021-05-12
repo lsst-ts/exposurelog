@@ -22,6 +22,7 @@ import numpy as np
 import sqlalchemy as sa
 import testing.postgresql
 
+from . import app, shared_state
 from .create_messages_table import create_messages_table
 from .message import MESSAGE_FIELDS
 
@@ -58,25 +59,20 @@ async def create_test_client(
             SITE_ID=TEST_SITE_ID,
             **db_config,
         ):
-            # Wait to import shared_state until the environment is configured.
-            # Note that exposurelog.app imports exposurelog.shared_state.
-            import exposurelog.app
-            import exposurelog.shared_state
-
             # Note: httpx.AsyncClient does not trigger startup and shutdown
             # events. We could use asgi-lifespan's LifespanManager,
             # but it does not trigger the shutdown event if there is
             # an exception, so it does not seem worth the bother.
-            assert not exposurelog.shared_state.has_shared_state()
-            await exposurelog.app.startup_event()
+            assert not shared_state.has_shared_state()
+            await app.startup_event()
             try:
                 async with httpx.AsyncClient(
-                    app=exposurelog.app.app, base_url="http://test"
+                    app=app.app, base_url="http://test"
                 ) as client:
-                    assert exposurelog.shared_state.has_shared_state()
+                    assert shared_state.has_shared_state()
                     yield client, messages
             finally:
-                await exposurelog.app.shutdown_event()
+                await app.shutdown_event()
 
 
 @contextlib.contextmanager
