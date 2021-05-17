@@ -70,3 +70,7 @@ ENV MODULE_NAME=exposurelog.app
 # on a micro Cloud SQL PostgreSQL server and seems excessive since we can
 # scale with Kubernetes.  Cap the workers at 10.
 ENV MAX_WORKERS=10
+
+# Our Kubernetes does not allow serving on the default port 80.
+ENV PORT=8080
+EXPOSE 8080
