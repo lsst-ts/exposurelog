@@ -19,7 +19,6 @@ FROM tiangolo/uvicorn-gunicorn:python3.8-slim AS base-image
 # Update system packages
 COPY scripts/install-base-packages.sh .
 RUN ./install-base-packages.sh
-RUN rm ./install-base-packages.sh
 
 FROM base-image AS dependencies-image
 
