@@ -64,7 +64,7 @@ To check type annotation with mypy::
 
 To run the service, first set the configuration environment variables, then::
 
-  uvicorn exposurelog.app:app --port n
+  uvicorn exposurelog.main:app --port n
 
 To run the service locally, you will need a running Postgres server
 with a user named ``exposurelog`` that has permission to create tables and rows,
@@ -75,7 +75,7 @@ With the Postgres server running::
   export BUTLER_URI_1=/Users/rowen/UW/LSST/tsrepos/exposurelog/tests/data/hsc_raw
   # Also set EXPOSURELOG_DB_x environment variables as needed; see above
 
-  uvicorn exposurelog.app:app --reload
+  uvicorn exposurelog.main:app --reload
 
   # Then open this link in a browser: http://localhost:8000/exposurelog/
   # For documentation open http://localhost:8000/exposurelog/docs
