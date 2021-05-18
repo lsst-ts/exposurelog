@@ -24,7 +24,7 @@ import sqlalchemy.engine
 import testing.postgresql
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from . import app, shared_state
+from . import main, shared_state
 from .create_message_table import create_message_table
 from .message import MESSAGE_FIELDS
 
@@ -66,15 +66,15 @@ async def create_test_client(
             # but it does not trigger the shutdown event if there is
             # an exception, so it does not seem worth the bother.
             assert not shared_state.has_shared_state()
-            await app.startup_event()
+            await main.startup_event()
             try:
                 async with httpx.AsyncClient(
-                    app=app.app, base_url="http://test"
+                    app=main.app, base_url="http://test"
                 ) as client:
                     assert shared_state.has_shared_state()
                     yield client, messages
             finally:
-                await app.shutdown_event()
+                await main.shutdown_event()
 
 
 @contextlib.contextmanager
@@ -205,7 +205,7 @@ def db_config_from_dsn(dsn: dict[str, str]) -> dict[str, str]:
             ):
                 import exposurelog.app
 
-                client = fastapi.testclient.TestClient(exposurelog.app.app)
+                client = fastapi.testclient.TestClient(exposurelog.main.app)
     """
     assert dsn.keys() <= {"port", "host", "user", "database"}
     return {
