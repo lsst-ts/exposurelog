@@ -19,14 +19,10 @@ FROM tiangolo/uvicorn-gunicorn:python3.8-slim AS base-image
 # Update system packages
 COPY scripts/install-base-packages.sh .
 RUN ./install-base-packages.sh
+RUN rm ./install-base-packages.sh
 
 FROM base-image AS dependencies-image
 
-# Create a Python virtual environment
-ENV VIRTUAL_ENV=/opt/venv
-RUN python -m venv $VIRTUAL_ENV
-# Make sure we use the virtualenv
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 # Put the latest pip and setuptools in the virtualenv
 RUN pip install --upgrade --no-cache-dir pip setuptools wheel
 
@@ -34,36 +30,27 @@ RUN pip install --upgrade --no-cache-dir pip setuptools wheel
 COPY requirements/main.txt ./requirements.txt
 RUN pip install --quiet --no-cache-dir -r requirements.txt
 
-FROM dependencies-image AS install-image
-
-# Use the virtualenv
-ENV PATH="/opt/venv/bin:$PATH"
+FROM dependencies-image AS runtime-image
 
 # Install the web application
 COPY . /app
-WORKDIR /app
-RUN pip install --no-cache-dir .
-
-FROM base-image AS runtime-image
+RUN pip install --no-cache-dir /app
 
 # Create a non-root user
 RUN useradd --create-home appuser
 WORKDIR /home/appuser
 
-# Copy the virtual env
-COPY --from=install-image /opt/venv /opt/venv
-
 # Switch to non-root user
 USER appuser
-
-# Use the virtualenv
-ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy the test butler registry to allow us to run the application with it
 COPY tests/data/hsc_raw hsc_raw
 
-# Specify the app module
-ENV MODULE_NAME=exposurelog.app
+# We use a module name other than app, so tell the base image that.  This
+# does not copy the app into /app as is recommended by the base Docker
+# image documentation and instead relies on the module search path as
+# modified by the virtualenv.
+ENV MODULE_NAME=exposurelog.main
 
 # The default starts 40 workers, which exhausts the available connections
 # on a micro Cloud SQL PostgreSQL server and seems excessive since we can
