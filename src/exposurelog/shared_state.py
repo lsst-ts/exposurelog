@@ -68,8 +68,8 @@ class SharedState:
                 f"max length={create_message_table.SITE_ID_LEN}"
             )
 
-        butler_uri_1 = get_env("BUTLER_URI_1")
-        butler_uri_2 = get_env("BUTLER_URI_2", "")
+        self.butler_uri_1 = get_env("BUTLER_URI_1")
+        self.butler_uri_2 = get_env("BUTLER_URI_2", "")
         exposurelog_db_user = get_env("EXPOSURELOG_DB_USER", "exposurelog")
         exposurelog_db_password = get_env("EXPOSURELOG_DB_PASSWORD", "")
         exposurelog_db_host = get_env("EXPOSURELOG_DB_HOST", "localhost")
@@ -84,10 +84,10 @@ class SharedState:
             f"/{exposurelog_db_database}"
         )
 
-        butlers = [lsst.daf.butler.Butler(butler_uri_1, writeable=False)]
-        if butler_uri_2:
+        butlers = [lsst.daf.butler.Butler(self.butler_uri_1, writeable=False)]
+        if self.butler_uri_2:
             butlers.append(
-                lsst.daf.butler.Butler(butler_uri_2, writeable=False)
+                lsst.daf.butler.Butler(self.butler_uri_2, writeable=False)
             )
 
         self.log = logging.getLogger("exposurelog")
