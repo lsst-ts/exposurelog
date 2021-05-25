@@ -19,32 +19,34 @@ router = fastapi.APIRouter()
 
 @router.post("/messages/", response_model=Message)
 async def add_message(
-    obs_id: str = fastapi.Body(default=..., title="Observation ID (a string)"),
+    obs_id: str = fastapi.Body(
+        default=..., description="Observation ID (a string)"
+    ),
     instrument: str = fastapi.Body(
         default=...,
-        title="Short name of instrument (e.g. HSC)",
+        description="Short name of instrument (e.g. HSC)",
     ),
-    message_text: str = fastapi.Body(..., title="Message text"),
-    user_id: str = fastapi.Body(..., title="User ID"),
+    message_text: str = fastapi.Body(..., description="Message text"),
+    user_id: str = fastapi.Body(..., description="User ID"),
     user_agent: str = fastapi.Body(
         default=...,
-        title="User agent (name of application creating the message)",
+        description="User agent (name of application creating the message)",
     ),
     is_human: bool = fastapi.Body(
         default=...,
-        title="Was the message created by a human being?",
+        description="Was the message created by a human being?",
     ),
     is_new: bool = fastapi.Body(
         default=...,
-        title="Is the exposure new (and perhaps not yet ingested)?",
-        description="If True: the exposure need not appear in either "
+        description="Is the exposure new (and perhaps not yet ingested)?"
+        "If True: the exposure need not appear in either "
         "butler registry, and if it does not, this service will compute "
         "day_obs using the current date. ",
     ),
     exposure_flag: typing.Optional[ExposureFlag] = fastapi.Body(
         default=ExposureFlag.none,
-        title="Optional flag for troublesome exposures",
-        description="This flag gives users an opportunity to manually mark "
+        description="Optional flag for troublesome exposures"
+        "This flag gives users an opportunity to manually mark "
         "an exposure as possibly bad (questionable) or likely bad (junk). "
         "We do not expect this to be used very often, if at all; "
         "we take far too much data to expect users to manually flag problems. "
@@ -104,11 +106,10 @@ async def add_message(
     return Message.from_orm(result)
 
 
-RegistryList = typing.Sequence[lsst.daf.butler.Registry]
-
-
 def get_day_obs_from_registries(
-    registries: RegistryList, obs_id: str, instrument: str
+    registries: typing.Sequence[lsst.daf.butler.Registry],
+    obs_id: str,
+    instrument: str,
 ) -> typing.Optional[int]:
     """Get the day of observation of an exposure, or None if not found.
 

@@ -18,91 +18,91 @@ router = fastapi.APIRouter()
 async def find_messages(
     site_ids: typing.List[str] = fastapi.Query(
         default=None,
-        title="Site IDs.",
+        description="Site IDs.",
     ),
     obs_id: str = fastapi.Query(
         default=None,
-        title="Observation ID (a string) contains...",
+        description="Observation ID (a string) contains...",
     ),
     instruments: typing.List[str] = fastapi.Query(
         default=None,
-        title="Names of instruments (e.g. HSC)",
+        description="Names of instruments (e.g. HSC)",
     ),
     min_day_obs: int = fastapi.Query(
         default=None,
-        title="Minimum day of observation, inclusive; "
+        description="Minimum day of observation, inclusive; "
         "an integer of the form YYYYMMDD",
     ),
     max_day_obs: int = fastapi.Query(
         default=None,
-        title="Maximum day of observation, exclusive; "
+        description="Maximum day of observation, exclusive; "
         "an integer of the form YYYYMMDD",
     ),
     message_text: str = fastapi.Query(
         default=None,
-        title="Message text contains...",
+        description="Message text contains...",
     ),
     user_ids: typing.List[str] = fastapi.Query(
         default=None,
-        title="User IDs",
+        description="User IDs",
     ),
     user_agents: typing.List[str] = fastapi.Query(
         default=None,
-        title="User agent (which app created the message)",
+        description="User agent (which app created the message)",
     ),
     is_human: bool = fastapi.Query(
         default=None,
-        title="Was the message created by a human being?",
+        description="Was the message created by a human being?",
     ),
     is_valid: bool = fastapi.Query(
         default=True,
-        title="Is the message valid? (False if deleted or superseded)",
+        description="Is the message valid? (False if deleted or superseded)",
         default_value=True,
     ),
     exposure_flags: typing.List[ExposureFlag] = fastapi.Query(
         default=None,
-        title="List of exposure flag values",
+        description="List of exposure flag values",
     ),
     min_date_added: datetime.datetime = fastapi.Query(
         default=None,
-        title="Minimum date the exposure was added, inclusive; "
+        description="Minimum date the exposure was added, inclusive; "
         "TAI as an ISO string with no timezone information",
     ),
     max_date_added: datetime.datetime = fastapi.Query(
         default=None,
-        title="Maximum date the exposure was added, exclusive; "
+        description="Maximum date the exposure was added, exclusive; "
         "TAI as an ISO string with no timezone information",
     ),
     has_date_invalidated: bool = fastapi.Query(
         default=None,
-        title="Does this message have a non-null " "date_invalidated?",
+        description="Does this message have a non-null " "date_invalidated?",
     ),
     min_date_invalidated: datetime.datetime = fastapi.Query(
         default=None,
-        title="Minimum date the is_valid flag was last toggled, inclusive, "
+        description="Minimum date the is_valid flag was last toggled, inclusive, "
         "TAI as an ISO string with no timezone information",
     ),
     max_date_invalidated: datetime.datetime = fastapi.Query(
         default=None,
-        title="Maximum date the is_valid flag was last toggled, exclusive, "
+        description="Maximum date the is_valid flag was last toggled, exclusive, "
         "TAI as an ISO string with no timezone information",
     ),
     has_parent_id: bool = fastapi.Query(
         default=None,
-        title="Does this message have a " "non-null parent ID?",
+        description="Does this message have a " "non-null parent ID?",
     ),
     order_by: typing.List[str] = fastapi.Query(
         default=None,
-        title="Fields to sort by. "
+        description="Fields to sort by. "
         "Prefix a name with - for descending order, e.g. -id.",
     ),
     offset: int = fastapi.Query(
         default=0,
-        title="The number of messages to skip.",
+        description="The number of messages to skip.",
     ),
     limit: int = fastapi.Query(
         default=50,
-        title="The maximum number of number of messages to return.",
+        description="The maximum number of number of messages to return.",
     ),
     state: SharedState = fastapi.Depends(get_shared_state),
 ) -> list[Message]:
