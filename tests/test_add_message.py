@@ -43,7 +43,6 @@ def assert_good_add_response(
 
 class AddMessageTestCase(unittest.IsolatedAsyncioTestCase):
     async def test_add_message(self) -> None:
-        """Test adding a message."""
         repo_path = pathlib.Path(__file__).parent / "data" / "hsc_raw"
         async with create_test_client(repo_path=repo_path, num_messages=0) as (
             client,

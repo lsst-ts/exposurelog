@@ -13,7 +13,6 @@ from exposurelog.testutils import (
 
 class GetMessageTestCase(unittest.IsolatedAsyncioTestCase):
     async def test_get_message(self) -> None:
-        """Test get_message."""
         repo_path = pathlib.Path(__file__).parent / "data" / "hsc_raw"
         async with create_test_client(repo_path=repo_path, num_messages=5) as (
             client,
