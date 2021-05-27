@@ -44,7 +44,8 @@ ArgDictT = typing.Dict[str, typing.Any]
 @contextlib.asynccontextmanager
 async def create_test_client(
     repo_path: pathlib.Path,
-    num_messages: int,
+    repo_path_2: typing.Optional[pathlib.Path] = None,
+    num_messages: int = 0,
     num_edited: int = 0,
 ) -> typing.AsyncGenerator[
     typing.Tuple[httpx.AsyncClient, typing.List[MessageDictT]], None
@@ -58,6 +59,7 @@ async def create_test_client(
         db_config = db_config_from_dsn(postgresql.dsn())
         with modify_environ(
             BUTLER_URI_1=str(repo_path),
+            BUTLER_URI_2=None if repo_path_2 is None else str(repo_path_2),
             SITE_ID=TEST_SITE_ID,
             **db_config,
         ):
