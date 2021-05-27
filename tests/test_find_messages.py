@@ -453,3 +453,15 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                     assert_messages_ordered(
                         messages=messages, order_by=order_by
                     )
+
+            # Check that limit must be positive
+            response = await client.get(
+                "/exposurelog/messages/", params={"limit": 0}
+            )
+            assert response.status_code == 422
+
+            # Check that offset must be >= 0
+            response = await client.get(
+                "/exposurelog/messages/", params={"offset": -1}
+            )
+            assert response.status_code == 422

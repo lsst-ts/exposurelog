@@ -103,10 +103,12 @@ async def find_messages(
     offset: int = fastapi.Query(
         default=0,
         description="The number of messages to skip.",
+        ge=0,
     ),
     limit: int = fastapi.Query(
         default=50,
         description="The maximum number of number of messages to return.",
+        gt=1,
     ),
     state: SharedState = fastapi.Depends(get_shared_state),
 ) -> list[Message]:
