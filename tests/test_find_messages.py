@@ -180,8 +180,14 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
             client,
             messages,
         ):
-            # Make predicates to test
-            find_args_predicates = list()
+            # Make a list of find arguments and associated predicates.
+            # Each entry is a tuple of:
+            # * dict of find arg name: value
+            # * predicate: function that takes an exposure dict
+            #   and returns True if the exposure matches the query
+            find_args_predicates: typing.List[
+                typing.Tuple[typing.Dict[str, typing.Any], typing.Callable]
+            ] = list()
 
             # Range arguments: min_<field>, max_<field>.
             for field in (
