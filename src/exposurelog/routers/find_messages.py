@@ -26,7 +26,8 @@ async def find_messages(
     ),
     instruments: typing.List[str] = fastapi.Query(
         default=None,
-        description="Names of instruments (e.g. HSC)",
+        description="Names of instruments (e.g. HSC). "
+        "Repeat the parameter for each value.",
     ),
     min_day_obs: int = fastapi.Query(
         default=None,
@@ -44,11 +45,12 @@ async def find_messages(
     ),
     user_ids: typing.List[str] = fastapi.Query(
         default=None,
-        description="User IDs",
+        description="User IDs. Repeat the parameter for each value.",
     ),
     user_agents: typing.List[str] = fastapi.Query(
         default=None,
-        description="User agent (which app created the message)",
+        description="User agents (which app created the message). "
+        "Repeat the parameter for each value.",
     ),
     is_human: bool = fastapi.Query(
         default=None,
@@ -61,7 +63,8 @@ async def find_messages(
     ),
     exposure_flags: typing.List[ExposureFlag] = fastapi.Query(
         default=None,
-        description="List of exposure flag values",
+        description="List of exposure flag values. "
+        "Repeat the parameter for each value.",
     ),
     min_date_added: datetime.datetime = fastapi.Query(
         default=None,
@@ -94,7 +97,8 @@ async def find_messages(
     order_by: typing.List[str] = fastapi.Query(
         default=None,
         description="Fields to sort by. "
-        "Prefix a name with - for descending order, e.g. -id.",
+        "Prefix a name with - for descending order, e.g. -id. "
+        "Repeat the parameter for each value.",
     ),
     offset: int = fastapi.Query(
         default=0,
@@ -160,6 +164,8 @@ async def find_messages(
                 "exposure_flags",
             ):
                 # Value is a list; field name is key without the final "s".
+                # Note: the list cannot be empty, because the array is passed
+                # by listing the parameter once per value.
                 column = el_table.columns[key[:-1]]
                 conditions.append(column.in_(value))
             elif key in ("message_text", "obs_id"):
