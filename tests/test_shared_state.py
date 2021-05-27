@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pathlib
+import typing
 import unittest
 
 import asyncpg.exceptions
@@ -32,7 +33,7 @@ class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
                 with self.assertRaises(RuntimeError):
                     get_shared_state()
 
-                required_kwargs = dict(
+                required_kwargs: typing.Dict[str, typing.Any] = dict(
                     BUTLER_URI_1=str(repo_path),
                     SITE_ID=TEST_SITE_ID,
                 )
