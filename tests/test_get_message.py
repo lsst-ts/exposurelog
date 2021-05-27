@@ -19,7 +19,6 @@ class GetMessageTestCase(unittest.IsolatedAsyncioTestCase):
             messages,
         ):
             id = messages[2]["id"]
-            print("get message with id=", id)
             response = await client.get(f"/exposurelog/messages/{id}")
             message = assert_good_response(response)
             assert_messages_equal(message, messages[2])
