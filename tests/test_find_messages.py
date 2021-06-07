@@ -306,7 +306,7 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                     ({arg_name: False}, test_has_not),
                 ]
 
-            # Booleans fields.
+            # Tre-state boolean fields.
             for field in ("is_human", "is_valid"):
 
                 @doc_str(f"message[{field!r}] is True")
@@ -321,9 +321,16 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                 ) -> bool:
                     return message[field] is False
 
+                @doc_str(f"message[{field!r}] is either")
+                def test_either(
+                    message: MessageDictT, field: str = field
+                ) -> bool:
+                    return True
+
                 find_args_predicates += [
-                    ({field: True}, test_true),
-                    ({field: False}, test_false),
+                    ({field: "true"}, test_true),
+                    ({field: "false"}, test_false),
+                    ({field: "either"}, test_either),
                 ]
 
             # Test single requests: one entry from find_args_predicates.

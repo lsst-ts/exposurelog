@@ -3,6 +3,7 @@ from __future__ import annotations
 __all__ = ["find_messages"]
 
 import datetime
+import enum
 import typing
 
 import fastapi
@@ -12,6 +13,12 @@ from ..message import ExposureFlag, Message
 from ..shared_state import SharedState, get_shared_state
 
 router = fastapi.APIRouter()
+
+
+class TriState(str, enum.Enum):
+    either = "either"
+    true = "true"
+    false = "false"
 
 
 @router.get("/messages/", response_model=typing.List[Message])
@@ -52,14 +59,13 @@ async def find_messages(
         description="User agents (which app created the message). "
         "Repeat the parameter for each value.",
     ),
-    is_human: bool = fastapi.Query(
-        default=None,
+    is_human: TriState = fastapi.Query(
+        default=TriState.either,
         description="Was the message created by a human being?",
     ),
-    is_valid: bool = fastapi.Query(
-        default=True,
+    is_valid: TriState = fastapi.Query(
+        default=TriState.true,
         description="Is the message valid? (False if deleted or superseded)",
-        default_value=True,
     ),
     exposure_flags: typing.List[ExposureFlag] = fastapi.Query(
         default=None,
@@ -174,8 +180,10 @@ async def find_messages(
                 column = el_table.columns[key]
                 conditions.append(column.contains(value))
             elif key in ("is_human", "is_valid"):
-                column = el_table.columns[key]
-                conditions.append(column == value)
+                if value != TriState.either:
+                    logical_value = value == TriState.true
+                    column = el_table.columns[key]
+                    conditions.append(column == logical_value)
             elif key == "order_by":
                 for item in value:
                     if item.startswith("-"):
