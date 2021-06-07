@@ -11,6 +11,7 @@ __all__ = [
 
 import contextlib
 import datetime
+import http
 import os
 import pathlib
 import typing
@@ -147,7 +148,7 @@ def assert_good_response(response: httpx.Response) -> typing.Any:
         a single message dict or a list of message dicts.
     """
     assert (
-        response.status_code == 200
+        response.status_code == http.HTTPStatus.OK
     ), f"Bad response {response.status_code}: {response.text}"
     data = response.json()
     assert "errors" not in data, f"errors={data['errors']}"

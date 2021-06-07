@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import http
 import pathlib
 import unittest
 import uuid
@@ -24,7 +25,7 @@ class DeleteMessageTestCase(unittest.IsolatedAsyncioTestCase):
 
             # Delete the message
             response = await client.delete(f"/exposurelog/messages/{id}")
-            assert response.status_code == 204
+            assert response.status_code == http.HTTPStatus.NO_CONTENT
 
             response = await client.get(f"/exposurelog/messages/{id}")
             deleted_message1 = assert_good_response(response)
@@ -33,13 +34,13 @@ class DeleteMessageTestCase(unittest.IsolatedAsyncioTestCase):
 
             # Delete the same messages again. This should have no effect.
             response = await client.delete(f"/exposurelog/messages/{id}")
-            assert response.status_code == 204
+            assert response.status_code == http.HTTPStatus.NO_CONTENT
 
             response = await client.get(f"/exposurelog/messages/{id}")
             deleted_message2 = assert_good_response(response)
             assert_messages_equal(deleted_message1, deleted_message2)
 
-            # Test that a non-existent message returns 404
+            # Test that a non-existent message returns NOT_FOUND
             bad_id = uuid.uuid4()
             response = await client.delete(f"/exposurelog/messages/{bad_id}")
-            assert response.status_code == 404
+            assert response.status_code == http.HTTPStatus.NOT_FOUND

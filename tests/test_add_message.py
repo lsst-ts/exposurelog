@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import http
 import pathlib
 import unittest
 
@@ -87,7 +88,7 @@ class AddMessageTestCase(unittest.IsolatedAsyncioTestCase):
                 "/exposurelog/messages/",
                 json=no_obs_id_args,
             )
-            assert response.status_code == 404
+            assert response.status_code == http.HTTPStatus.NOT_FOUND
 
             # Error: add a message that is missing a required field.
             # This is a schema violation so the error code is 422,

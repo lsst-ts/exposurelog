@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import http
 import pathlib
 import unittest
 import uuid
@@ -98,4 +99,4 @@ class EditMessageTestCase(unittest.IsolatedAsyncioTestCase):
             response = await client.patch(
                 f"/exposurelog/messages/{bad_id}", json=edit_args
             )
-            assert response.status_code == 404
+            assert response.status_code == http.HTTPStatus.NOT_FOUND

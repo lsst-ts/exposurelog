@@ -4,6 +4,7 @@ __all__ = ["dict_from_exposure", "find_exposures"]
 
 import asyncio
 import datetime
+import http
 import typing
 
 import astropy.time
@@ -237,6 +238,7 @@ def find_exposures_in_registries(
                     break
         except Exception as e:
             raise fastapi.HTTPException(
-                status_code=404, detail=f"Error in butler query: {e!r}"
+                status_code=http.HTTPStatus.NOT_FOUND,
+                detail=f"Error in butler query: {e!r}",
             )
     return record_dict.values()
