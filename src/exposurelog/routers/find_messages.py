@@ -59,7 +59,6 @@ async def find_messages(
     is_valid: bool = fastapi.Query(
         default=True,
         description="Is the message valid? (False if deleted or superseded)",
-        default_value=True,
     ),
     exposure_flags: typing.List[ExposureFlag] = fastapi.Query(
         default=None,
