@@ -13,14 +13,12 @@ from exposurelog.testutils import (
 
 class GetMessageTestCase(unittest.IsolatedAsyncioTestCase):
     async def test_get_message(self) -> None:
-        """Test get_message."""
         repo_path = pathlib.Path(__file__).parent / "data" / "hsc_raw"
         async with create_test_client(repo_path=repo_path, num_messages=5) as (
             client,
             messages,
         ):
             id = messages[2]["id"]
-            print("get message with id=", id)
             response = await client.get(f"/exposurelog/messages/{id}")
             message = assert_good_response(response)
             assert_messages_equal(message, messages[2])

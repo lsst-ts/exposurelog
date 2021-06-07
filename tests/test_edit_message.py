@@ -51,7 +51,6 @@ def assert_good_edit_response(
 
 class EditMessageTestCase(unittest.IsolatedAsyncioTestCase):
     async def test_edit_message(self) -> None:
-        """Test editing a message."""
         repo_path = pathlib.Path(__file__).parent / "data" / "hsc_raw"
         async with create_test_client(repo_path=repo_path, num_messages=1) as (
             client,

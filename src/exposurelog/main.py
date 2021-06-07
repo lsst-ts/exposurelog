@@ -9,7 +9,9 @@ from .routers import (
     add_message,
     delete_message,
     edit_message,
+    find_exposures,
     find_messages,
+    get_configuration,
     get_message,
 )
 
@@ -26,6 +28,8 @@ subapp.include_router(add_message.router)
 subapp.include_router(delete_message.router)
 subapp.include_router(edit_message.router)
 subapp.include_router(find_messages.router)
+subapp.include_router(find_exposures.router)
+subapp.include_router(get_configuration.router)
 subapp.include_router(get_message.router)
 
 

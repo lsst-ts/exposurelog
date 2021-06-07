@@ -169,7 +169,6 @@ def get_missing_message(
 
 class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
     async def test_find_messages(self) -> None:
-        """Test adding a message."""
         num_messages = 12
         num_edited = 6  # Must be at least 4 in order to test ranges.
         repo_path = pathlib.Path(__file__).parent / "data" / "hsc_raw"
@@ -181,8 +180,14 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
             client,
             messages,
         ):
-            # Make predicates to test
-            find_args_predicates = list()
+            # Make a list of find arguments and associated predicates.
+            # Each entry is a tuple of:
+            # * dict of find arg name: value
+            # * predicate: function that takes an exposure dict
+            #   and returns True if the exposure matches the query
+            find_args_predicates: typing.List[
+                typing.Tuple[typing.Dict[str, typing.Any], typing.Callable]
+            ] = list()
 
             # Range arguments: min_<field>, max_<field>.
             for field in (
@@ -306,7 +311,7 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                     ({arg_name: False}, test_has_not),
                 ]
 
-            # Booleans fields.
+            # Tre-state boolean fields.
             for field in ("is_human", "is_valid"):
 
                 @doc_str(f"message[{field!r}] is True")
@@ -321,9 +326,16 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                 ) -> bool:
                     return message[field] is False
 
+                @doc_str(f"message[{field!r}] is either")
+                def test_either(
+                    message: MessageDictT, field: str = field
+                ) -> bool:
+                    return True
+
                 find_args_predicates += [
-                    ({field: True}, test_true),
-                    ({field: False}, test_false),
+                    ({field: "true"}, test_true),
+                    ({field: "false"}, test_false),
+                    ({field: "either"}, test_either),
                 ]
 
             # Test single requests: one entry from find_args_predicates.
@@ -453,3 +465,15 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                     assert_messages_ordered(
                         messages=messages, order_by=order_by
                     )
+
+            # Check that limit must be positive
+            response = await client.get(
+                "/exposurelog/messages/", params={"limit": 0}
+            )
+            assert response.status_code == 422
+
+            # Check that offset must be >= 0
+            response = await client.get(
+                "/exposurelog/messages/", params={"offset": -1}
+            )
+            assert response.status_code == 422
