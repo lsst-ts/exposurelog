@@ -217,7 +217,7 @@ def find_exposures_in_registries(
     # Keep records in a dict to avoid duplicates
     # (which will only be a problem if we have two registries).
     record_dict: typing.Dict[
-        str, lsst.daf.butler.core.DimensionRecord
+        int, lsst.daf.butler.core.DimensionRecord
     ] = dict()
     for registry in registries:
         if len(record_dict) >= limit:
@@ -229,13 +229,14 @@ def find_exposures_in_registries(
                 bind=bind,
                 where=where,
             )
+            for record in record_iter:
+                # Use dict.setdefault so the first instance "wins",
+                # though the records should match in each registry.
+                record_dict.setdefault(record.id, record)
+                if len(record_dict) >= limit:
+                    break
         except Exception as e:
             raise fastapi.HTTPException(
                 status_code=404, detail=f"Error in butler query: {e!r}"
             )
-        # Note: next(record_iter) can hang
-        for record in record_iter:
-            record_dict[record.id] = record
-            if len(record_dict) >= limit:
-                break
     return record_dict.values()
