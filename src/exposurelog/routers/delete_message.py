@@ -15,7 +15,7 @@ router = fastapi.APIRouter()
 async def delete_message(
     id: str,
     state: SharedState = fastapi.Depends(get_shared_state),
-) -> None:
+) -> fastapi.Response:
     """Delete a message by marking it invalid.
 
     A no-op if already the message is already marked invalid.
@@ -46,4 +46,4 @@ async def delete_message(
             status_code=404,
             detail=f"No message found with id={id}",
         )
-    return None
+    return fastapi.Response(status_code=204)
