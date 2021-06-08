@@ -2,6 +2,8 @@ from __future__ import annotations
 
 __all__ = ["get_message"]
 
+import http
+
 import fastapi
 
 from ..message import Message
@@ -27,7 +29,7 @@ async def get_message(
 
     if row is None:
         raise fastapi.HTTPException(
-            status_code=404,
+            status_code=http.HTTPStatus.NOT_FOUND,
             detail=f"No message found with id={id}",
         )
 

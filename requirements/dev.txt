@@ -14,9 +14,9 @@ attrs==21.2.0
     # via pytest
 black==20.8b1
     # via -r requirements/dev.in
-certifi==2020.12.5
+certifi==2021.5.30
     # via httpx
-cfgv==3.2.0
+cfgv==3.3.0
     # via pre-commit
 click==7.1.2
     # via
@@ -24,7 +24,7 @@ click==7.1.2
     #   black
 coverage[toml]==5.5
     # via -r requirements/dev.in
-distlib==0.3.1
+distlib==0.3.2
     # via virtualenv
 filelock==3.0.12
     # via virtualenv
@@ -36,9 +36,9 @@ httpcore==0.13.3
     # via httpx
 httpx==0.18.1
     # via -r requirements/dev.in
-identify==2.2.4
+identify==2.2.10
     # via pre-commit
-idna==3.1
+idna==3.2
     # via rfc3986
 iniconfig==1.1.1
     # via pytest
@@ -56,11 +56,11 @@ packaging==20.9
     # via pytest
 pathspec==0.8.1
     # via black
-pg8000==1.19.4
+pg8000==1.19.5
     # via testing.postgresql
 pluggy==0.13.1
     # via pytest
-pre-commit==2.12.1
+pre-commit==2.13.0
     # via -r requirements/dev.in
 py==1.10.0
     # via pytest
@@ -104,5 +104,5 @@ typing-extensions==3.10.0.0
     # via
     #   black
     #   mypy
-virtualenv==20.4.6
+virtualenv==20.4.7
     # via pre-commit

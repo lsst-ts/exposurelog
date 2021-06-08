@@ -2,6 +2,8 @@ from __future__ import annotations
 
 __all__ = ["edit_message"]
 
+import http
+
 import astropy.time
 import fastapi
 import sqlalchemy as sa
@@ -77,7 +79,7 @@ async def edit_message(
         parent_row = get_parent_result.fetchone()
         if parent_row is None:
             raise fastapi.HTTPException(
-                status_code=404,
+                status_code=http.HTTPStatus.NOT_FOUND,
                 detail=f"Message with id={parent_id} not found",
             )
 

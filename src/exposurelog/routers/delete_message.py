@@ -2,6 +2,8 @@ from __future__ import annotations
 
 __all__ = ["delete_message"]
 
+import http
+
 import astropy.time
 import fastapi
 import sqlalchemy as sa
@@ -11,11 +13,11 @@ from ..shared_state import SharedState, get_shared_state
 router = fastapi.APIRouter()
 
 
-@router.delete("/messages/{id}", status_code=204)
+@router.delete("/messages/{id}", status_code=http.HTTPStatus.NOT_FOUND)
 async def delete_message(
     id: str,
     state: SharedState = fastapi.Depends(get_shared_state),
-) -> None:
+) -> fastapi.Response:
     """Delete a message by marking it invalid.
 
     A no-op if already the message is already marked invalid.
@@ -43,7 +45,7 @@ async def delete_message(
 
     if result.rowcount == 0:
         raise fastapi.HTTPException(
-            status_code=404,
+            status_code=http.HTTPStatus.NOT_FOUND,
             detail=f"No message found with id={id}",
         )
-    return None
+    return fastapi.Response(status_code=http.HTTPStatus.NO_CONTENT)

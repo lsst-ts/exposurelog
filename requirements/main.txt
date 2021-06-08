@@ -8,7 +8,7 @@ astropy==4.2.1
     # via
     #   -r requirements/main.in
     #   daf-butler
-asyncpg==0.22.0
+asyncpg==0.23.0
     # via -r requirements/main.in
 click==7.1.2
     # via
@@ -35,11 +35,11 @@ numpy==1.20.3
     #   pyerfa
 pydantic==1.8.2
     # via fastapi
-pyerfa==1.7.3
+pyerfa==2.0.0
     # via astropy
 pyyaml==5.4.1
     # via daf-butler
-sqlalchemy==1.4.15
+sqlalchemy==1.4.17
     # via
     #   -r requirements/main.in
     #   daf-butler

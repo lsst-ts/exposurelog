@@ -3,6 +3,7 @@ from __future__ import annotations
 __all__ = ["add_message"]
 
 import asyncio
+import http
 import typing
 
 import astropy.time
@@ -75,7 +76,7 @@ async def add_message(
             day_obs = int(day_obs_full.strftime("%Y%m%d"))
         else:
             raise fastapi.HTTPException(
-                status_code=404,
+                status_code=http.HTTPStatus.NOT_FOUND,
                 detail=f"Exposure obs_id={obs_id} not found and is_new is false",
             )
 

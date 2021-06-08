@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import http
 import pathlib
 import unittest
 
@@ -14,7 +15,7 @@ class GetRootTestCase(unittest.IsolatedAsyncioTestCase):
             messages,
         ):
             response = await client.get("/exposurelog")
-            assert response.status_code == 200
+            assert response.status_code == http.HTTPStatus.OK
             assert "Exposure log" in response.text
             assert "/exposurelog/docs" in response.text
             assert "OpenAPI" in response.text
