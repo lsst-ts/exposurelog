@@ -13,7 +13,7 @@ from ..shared_state import SharedState, get_shared_state
 router = fastapi.APIRouter()
 
 
-@router.delete("/messages/{id}", status_code=http.HTTPStatus.NOT_FOUND)
+@router.delete("/messages/{id}", status_code=http.HTTPStatus.NO_CONTENT)
 async def delete_message(
     id: str,
     state: SharedState = fastapi.Depends(get_shared_state),
