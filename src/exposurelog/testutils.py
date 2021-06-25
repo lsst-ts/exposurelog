@@ -251,7 +251,7 @@ def random_str(nchar: int) -> str:
         "¡™£¢∞§¶•ªº–≠“‘”’«»…ÚæÆ≤¯≥˘÷¿"
         "œŒ∑„®‰†ˇ¥ÁüîøØπ∏åÅßÍ∂ÎƒÏ©˝˙Ó∆Ô˚¬ÒΩ¸≈˛çÇ√◊∫ıñµÂ"
     )
-    return "".join(random.choice(chars, size=(20,)))
+    return "".join(random.choice(chars, size=(nchar,)))
 
 
 def random_message() -> MessageDictT:
