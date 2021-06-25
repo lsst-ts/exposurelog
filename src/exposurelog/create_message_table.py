@@ -18,13 +18,13 @@ def create_message_table() -> sa.Table:
         sa.Column(
             "id", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
         ),
-        sa.Column("site_id", sa.String(length=SITE_ID_LEN)),
-        sa.Column("obs_id", sa.String(), nullable=False),
-        sa.Column("instrument", sa.String(), nullable=False),
+        sa.Column("site_id", sa.Unicode(length=SITE_ID_LEN)),
+        sa.Column("obs_id", sa.Unicode(), nullable=False),
+        sa.Column("instrument", sa.Unicode(), nullable=False),
         sa.Column("day_obs", sa.Integer(), nullable=False),
-        sa.Column("message_text", sa.Text(), nullable=False),
-        sa.Column("user_id", sa.String(), nullable=False),
-        sa.Column("user_agent", sa.String(), nullable=False),
+        sa.Column("message_text", sa.UnicodeText(), nullable=False),
+        sa.Column("user_id", sa.Unicode(), nullable=False),
+        sa.Column("user_agent", sa.Unicode(), nullable=False),
         sa.Column("is_human", sa.Boolean(), nullable=False),
         sa.Column(
             "is_valid",
