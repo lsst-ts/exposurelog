@@ -48,7 +48,7 @@ async def add_message(
         "butler registry, and if it does not, this service will compute "
         "day_obs using the current date. ",
     ),
-    exposure_flag: typing.Optional[ExposureFlag] = fastapi.Body(
+    exposure_flag: ExposureFlag = fastapi.Body(
         default=ExposureFlag.none,
         description="Optional flag for troublesome exposures"
         "This flag gives users an opportunity to manually mark "

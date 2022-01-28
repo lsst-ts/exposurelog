@@ -3,6 +3,7 @@ from __future__ import annotations
 __all__ = ["edit_message"]
 
 import http
+import typing
 
 import astropy.time
 import fastapi
@@ -17,18 +18,24 @@ router = fastapi.APIRouter()
 @router.patch("/messages/{id}", response_model=Message)
 async def edit_message(
     id: str,
-    message_text: str = fastapi.Body(default=None, description="Message text"),
-    site_id: str = fastapi.Body(default=None, description="Site ID"),
-    user_id: str = fastapi.Body(default=None, description="User ID"),
-    user_agent: str = fastapi.Body(
+    message_text: typing.Optional[str] = fastapi.Body(
+        default=None, description="Message text"
+    ),
+    site_id: typing.Optional[str] = fastapi.Body(
+        default=None, description="Site ID"
+    ),
+    user_id: typing.Optional[str] = fastapi.Body(
+        default=None, description="User ID"
+    ),
+    user_agent: typing.Optional[str] = fastapi.Body(
         default=None,
         description="User agent (which app created the message)",
     ),
-    is_human: bool = fastapi.Body(
+    is_human: typing.Optional[bool] = fastapi.Body(
         default=None,
         description="Was the message created by a human being?",
     ),
-    exposure_flag: ExposureFlag = fastapi.Body(
+    exposure_flag: typing.Optional[ExposureFlag] = fastapi.Body(
         default=None,
         description="Optional flag for troublesome exposures"
         "This flag gives users an opportunity to manually mark "
