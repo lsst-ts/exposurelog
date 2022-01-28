@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import itertools
 import pathlib
+import random
 import typing
 import unittest
 
 import httpx
-import numpy as np
 
 from exposurelog.message import MESSAGE_FIELDS
 from exposurelog.testutils import (
@@ -17,7 +17,7 @@ from exposurelog.testutils import (
     create_test_client,
 )
 
-random = np.random.RandomState(820)
+random.seed(820)
 
 
 class doc_str:
@@ -254,9 +254,7 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                 "user_agent",
                 "exposure_flag",
             ):
-                messages_to_find = random.choice(
-                    messages, size=num_to_find, replace=False
-                )
+                messages_to_find = random.sample(messages, num_to_find)
                 values = [message[field] for message in messages_to_find]
 
                 @doc_str(f"message[{field!r}] in {values}")

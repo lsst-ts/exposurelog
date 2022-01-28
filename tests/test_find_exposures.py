@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import itertools
 import pathlib
+import random
 import typing
 import unittest
 
 import httpx
 import lsst.daf.butler
-import numpy as np
 
 from exposurelog.routers.find_exposures import dict_from_exposure
 from exposurelog.shared_state import get_shared_state
@@ -19,7 +19,7 @@ from exposurelog.testutils import (
 
 ExposureDictT = typing.Dict[str, typing.Any]
 
-random = np.random.RandomState(32)
+random.seed(32)
 
 
 class doc_str:
@@ -248,9 +248,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
                 "observation_reason",
                 "observation_type",
             ):
-                exposures_to_find = random.choice(
-                    exposures, size=num_to_find, replace=False
-                )
+                exposures_to_find = random.sample(exposures, num_to_find)
                 values = [exposure[field] for exposure in exposures_to_find]
 
                 @doc_str(f"exposure[{field!r}] in {values}")
