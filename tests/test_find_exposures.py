@@ -132,7 +132,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
         ):
             # Test that instrument is required
             response = await client.get(
-                "/exposurelog/exposures/",
+                "/exposurelog/exposures",
                 params={"limit": 1},
             )
             assert response.status_code == 422
@@ -145,7 +145,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
                 full_find_args = find_args.copy()
                 full_find_args["instrument"] = instrument
                 response = await client.get(
-                    "/exposurelog/exposures/",
+                    "/exposurelog/exposures",
                     params=full_find_args,
                 )
                 return response
@@ -363,7 +363,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
                 full_find_args = find_args.copy()
                 full_find_args["instrument"] = instrument
                 response = await client.get(
-                    "/exposurelog/exposures/",
+                    "/exposurelog/exposures",
                     params=full_find_args,
                 )
                 return response

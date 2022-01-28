@@ -183,8 +183,8 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
             # Make a list of find arguments and associated predicates.
             # Each entry is a tuple of:
             # * dict of find arg name: value
-            # * predicate: function that takes an exposure dict
-            #   and returns True if the exposure matches the query
+            # * predicate: function that takes a message dict
+            #   and returns True if the message matches the query
             find_args_predicates: typing.List[
                 typing.Tuple[typing.Dict[str, typing.Any], typing.Callable]
             ] = list()
@@ -241,8 +241,7 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                 # so test it now instead of adding it to find_args_predicates.
                 empty_range_args = {min_name: min_value, max_name: min_value}
                 response = await client.get(
-                    "/exposurelog/messages/",
-                    params=empty_range_args,
+                    "/exposurelog/messages", params=empty_range_args
                 )
                 found_messages = assert_good_response(response)
                 assert len(found_messages) == 0
@@ -341,7 +340,7 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
             # Test single requests: one entry from find_args_predicates.
             for find_args, predicate in find_args_predicates:
                 response = await client.get(
-                    "/exposurelog/messages/", params=find_args
+                    "/exposurelog/messages", params=find_args
                 )
                 if "is_valid" not in find_args:
                     # Handle the fact that is_valid defaults to True
@@ -380,7 +379,7 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                     return predicate1(message) and predicate2(message)
 
                 response = await client.get(
-                    "/exposurelog/messages/", params=find_args
+                    "/exposurelog/messages", params=find_args
                 )
                 assert_good_find_response(response, messages, and_predicates)
 
@@ -389,9 +388,7 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                 """message["is_valid"] is True"""
                 return message["is_valid"] is True
 
-            response = await client.get(
-                "/exposurelog/messages/", params=dict()
-            )
+            response = await client.get("/exposurelog/messages", params=dict())
             messages = assert_good_response(response)
             assert_good_find_response(response, messages, is_valid_predicate)
 
@@ -415,7 +412,7 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                 find_args = find_args_day_obs.copy()
                 find_args["order_by"] = order_by
                 response = await client.get(
-                    "/exposurelog/messages/", params=find_args
+                    "/exposurelog/messages", params=find_args
                 )
                 messages = assert_good_response(response)
                 if field not in str_fields:
@@ -430,7 +427,7 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                     num_remaining = len(messages) - len(paged_messages)
                     # Check limit and offset
                     response = await client.get(
-                        "/exposurelog/messages/", params=find_args
+                        "/exposurelog/messages", params=find_args
                     )
                     new_paged_messages = assert_good_response(response)
                     paged_messages += new_paged_messages
@@ -441,7 +438,7 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
 
                 # Run one more find that should return no messages
                 response = await client.get(
-                    "/exposurelog/messages/", params=find_args
+                    "/exposurelog/messages", params=find_args
                 )
                 no_more_paged_messages = assert_good_response(response)
                 assert len(no_more_paged_messages) == 0
@@ -458,7 +455,7 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                 find_args = find_args_day_obs.copy()
                 find_args["order_by"] = order_by
                 response = await client.get(
-                    "/exposurelog/messages/", params=find_args
+                    "/exposurelog/messages", params=find_args
                 )
                 messages = assert_good_response(response)
                 if field1 not in str_fields and field2 not in str_fields:
@@ -468,12 +465,12 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
 
             # Check that limit must be positive
             response = await client.get(
-                "/exposurelog/messages/", params={"limit": 0}
+                "/exposurelog/messages", params={"limit": 0}
             )
             assert response.status_code == 422
 
             # Check that offset must be >= 0
             response = await client.get(
-                "/exposurelog/messages/", params={"offset": -1}
+                "/exposurelog/messages", params={"offset": -1}
             )
             assert response.status_code == 422

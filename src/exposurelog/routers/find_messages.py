@@ -21,7 +21,10 @@ class TriState(str, enum.Enum):
     false = "false"
 
 
-@router.get("/messages/", response_model=typing.List[Message])
+@router.get("/messages", response_model=typing.List[Message])
+@router.get(
+    "/messages/", response_model=typing.List[Message], include_in_schema=False
+)
 async def find_messages(
     site_ids: typing.List[str] = fastapi.Query(
         default=None,

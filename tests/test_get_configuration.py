@@ -15,11 +15,14 @@ class GetRootTestCase(unittest.IsolatedAsyncioTestCase):
             messages,
         ):
             shared_state = get_shared_state()
-            response = await client.get("/exposurelog/configuration")
-            data = assert_good_response(response)
-            assert data["site_id"] == shared_state.site_id
-            assert data["butler_uri_1"] == shared_state.butler_uri_1
-            assert data["butler_uri_2"] == ""
+            for suffix in ("", "/"):
+                response = await client.get(
+                    "/exposurelog/configuration" + suffix
+                )
+                data = assert_good_response(response)
+                assert data["site_id"] == shared_state.site_id
+                assert data["butler_uri_1"] == shared_state.butler_uri_1
+                assert data["butler_uri_2"] == ""
 
     async def test_multiple_repos(self) -> None:
         """Test a server that has two repositories.

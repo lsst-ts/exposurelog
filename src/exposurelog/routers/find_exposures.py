@@ -20,7 +20,12 @@ router = fastapi.APIRouter()
 DEFAULT_LIMIIT = 50
 
 
-@router.get("/exposures/", response_model=typing.List[Exposure])
+@router.get("/exposures", response_model=typing.List[Exposure])
+@router.get(
+    "/exposures/",
+    response_model=typing.List[Exposure],
+    include_in_schema=False,
+)
 async def find_exposures(
     instrument: str = fastapi.Query(
         default=...,
