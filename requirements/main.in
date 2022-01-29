@@ -5,11 +5,14 @@
 # After editing, update requirements/main.txt by running:
 #     make update-deps
 
-asyncpg~=0.22
-astropy~=4.2
-fastapi<2
-importlib_metadata~=2.0
+# prevent a resolution conflict by preventing h11 0.13.0
+# uvicorn (many verisons) gets 0.13.0, but httpcore 0.14.5 demands h11 0.12.0
+h11==0.12.0
+asyncpg~=0.25
+astropy~=5.0
+fastapi<1
+importlib_metadata~=4.10
 sqlalchemy~=1.4, <1.5
-structlog~=21.1
-uvicorn==0.13.4
-git+git://github.com/lsst/daf_butler.git@master#daf_butler
+structlog~=21.5
+uvicorn~=0.17.1
+git+git://github.com/lsst/daf_butler.git@main#daf_butler

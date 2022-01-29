@@ -14,13 +14,13 @@ import datetime
 import http
 import os
 import pathlib
+import random
 import typing
 import unittest.mock
 import uuid
 
 import astropy.time
 import httpx
-import numpy as np
 import sqlalchemy.engine
 import testing.postgresql
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -35,11 +35,11 @@ MAX_DATE_RANDOM_MESSAGE = "2022-12-31"
 
 TEST_SITE_ID = "test"
 
-random = np.random.RandomState(47)
-
 # Type annotation aliases
 MessageDictT = typing.Dict[str, typing.Any]
 ArgDictT = typing.Dict[str, typing.Any]
+
+random.seed(47)
 
 
 @contextlib.asynccontextmanager
@@ -217,11 +217,8 @@ def db_config_from_dsn(dsn: dict[str, str]) -> dict[str, str]:
     }
 
 
-random = np.random.RandomState(47)
-
-
 def random_bool() -> bool:
-    return random.rand() > 0.5
+    return random.random() > 0.5
 
 
 def random_date(precision: int = 0) -> datetime.datetime:
@@ -232,7 +229,7 @@ def random_date(precision: int = 0) -> datetime.datetime:
     min_date_unix = astropy.time.Time(MIN_DATE_RANDOM_MESSAGE).unix
     max_date_unix = astropy.time.Time(MAX_DATE_RANDOM_MESSAGE).unix
     dsec = max_date_unix - min_date_unix
-    unix_time = min_date_unix + random.rand() * dsec
+    unix_time = min_date_unix + random.random() * dsec
     return astropy.time.Time(
         unix_time, format="unix", precision=precision
     ).datetime
@@ -252,7 +249,7 @@ def random_str(nchar: int) -> str:
         "œŒ∑„®‰†ˇ¥ÁüîøØπ∏åÅßÍ∂ÎƒÏ©˝˙Ó∆Ô˚¬ÒΩ¸≈˛çÇ√◊∫ıñµÂ"
         "✅😀⭐️🌈🌎1️⃣🟢❖🍏🪐💫🥕🥑🌮🥗🚠🚞🚀⚓️🚁🚄🏝🧭🕰📡🗝📅🖋🔎❤️☮️"
     )
-    return "".join(random.choice(chars, size=(nchar,)))
+    return "".join(random.sample(chars, nchar))
 
 
 def random_message() -> MessageDictT:
@@ -330,10 +327,10 @@ def random_messages(num_messages: int, num_edited: int) -> list[MessageDictT]:
         message["id"] = uuid.uuid4()
 
     # Create edited messages.
-    parent_message_id_set = set()
+    parent_message_id_set: typing.Set[uuid.UUID] = set()
     edited_messages = list(
         # [1:] because there is no older message to be the parent.
-        random.choice(message_list[1:], size=num_edited, replace=False)
+        random.sample(message_list[1:], num_edited)
     )
     edited_messages.sort(key=lambda message: message["date_added"])
     for i, message in enumerate(edited_messages):

@@ -20,11 +20,16 @@ router = fastapi.APIRouter()
 DEFAULT_LIMIIT = 50
 
 
-@router.get("/exposures/", response_model=typing.List[Exposure])
+@router.get("/exposures", response_model=typing.List[Exposure])
+@router.get(
+    "/exposures/",
+    response_model=typing.List[Exposure],
+    include_in_schema=False,
+)
 async def find_exposures(
     instrument: str = fastapi.Query(
         default=...,
-        description="Names of instrument (e.g. HSC)",
+        description="Name of instrument (e.g. HSC)",
     ),
     min_day_obs: typing.Optional[int] = fastapi.Query(
         default=None,
@@ -44,17 +49,17 @@ async def find_exposures(
         default=None,
         description="Maximum sequence number",
     ),
-    group_names: typing.List[str] = fastapi.Query(
+    group_names: typing.Optional[typing.List[str]] = fastapi.Query(
         default=None,
         description="String group identifiers associated with exposures "
         "by the acquisition system. Repeat the parameter for each value.",
     ),
-    observation_reasons: typing.List[str] = fastapi.Query(
+    observation_reasons: typing.Optional[typing.List[str]] = fastapi.Query(
         default=None,
         description="Observation types (e.g. dark, bias, science). "
         "Repeat the parameter for each value.",
     ),
-    observation_types: typing.List[str] = fastapi.Query(
+    observation_types: typing.Optional[typing.List[str]] = fastapi.Query(
         default=None,
         description="Reasons the exposure was taken "
         "(e.g. science, filter scan, unknown). "

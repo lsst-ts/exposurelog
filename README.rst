@@ -26,7 +26,6 @@ All are optional except the few marked "(required)":
 * ``EXPOSURELOG_DB_PORT``: Exposurelog database server port; default="5432".
 * ``EXPOSURELOG_DB_DATABASE``: Exposurelog database name; default="exposurelog".
 * ``SITE_ID`` (required): Where this is deployed, e.g. "summit" or "base".
-  The value is part of the message primary key, to support synchronizing databases.
 
 Developer Guide
 ---------------

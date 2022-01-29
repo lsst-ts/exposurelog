@@ -35,7 +35,7 @@ class SharedState:
         Values include: "summit" and "base".
     registries : [lsst.daf.butler.Registry]
         List of one or two butler registries.
-    exposure_log_db : sa.Table
+    exposurelog_db : sa.Table
 
     Notes
     -----

@@ -61,10 +61,11 @@ class AddMessageTestCase(unittest.IsolatedAsyncioTestCase):
                 is_new=False,
                 exposure_flag="none",
             )
-            response = await client.post(
-                "/exposurelog/messages/", json=add_args
-            )
-            assert_good_add_response(response=response, add_args=add_args)
+            for suffix in ("", "/"):
+                response = await client.post(
+                    "/exposurelog/messages" + suffix, json=add_args
+                )
+                assert_good_add_response(response=response, add_args=add_args)
 
             # Add a message whose obs_id does not match an exposure,
             # and ``is_new=True``. This should succeed, with data_added = now.
@@ -73,7 +74,7 @@ class AddMessageTestCase(unittest.IsolatedAsyncioTestCase):
             no_obs_id_args["obs_id"] = "NO_SUCH_OBS_ID"
             no_obs_id_args["is_new"] = True
             response = await client.post(
-                "/exposurelog/messages/",
+                "/exposurelog/messages",
                 json=no_obs_id_args,
             )
             message = assert_good_add_response(
@@ -85,7 +86,7 @@ class AddMessageTestCase(unittest.IsolatedAsyncioTestCase):
             # and ``is_new=False``.
             no_obs_id_args["is_new"] = False
             response = await client.post(
-                "/exposurelog/messages/",
+                "/exposurelog/messages",
                 json=no_obs_id_args,
             )
             assert response.status_code == http.HTTPStatus.NOT_FOUND
@@ -100,6 +101,6 @@ class AddMessageTestCase(unittest.IsolatedAsyncioTestCase):
                 bad_add_args = add_args.copy()
                 del bad_add_args[key]
                 response = await client.post(
-                    "/exposurelog/messages/", json=bad_add_args
+                    "/exposurelog/messages", json=bad_add_args
                 )
                 assert 400 <= response.status_code < 500

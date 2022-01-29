@@ -18,7 +18,11 @@ from ..shared_state import SharedState, get_shared_state
 router = fastapi.APIRouter()
 
 
-@router.post("/messages/", response_model=Message)
+# The pair of decorators avoids a redirect from uvicorn if the trailing "/"
+# is not as expected. include_in_schema=False hides one from the API docs.
+# https://github.com/tiangolo/fastapi/issues/2060
+@router.post("/messages", response_model=Message)
+@router.post("/messages/", response_model=Message, include_in_schema=False)
 async def add_message(
     obs_id: str = fastapi.Body(
         default=..., description="Observation ID (a string)"
@@ -44,7 +48,7 @@ async def add_message(
         "butler registry, and if it does not, this service will compute "
         "day_obs using the current date. ",
     ),
-    exposure_flag: typing.Optional[ExposureFlag] = fastapi.Body(
+    exposure_flag: ExposureFlag = fastapi.Body(
         default=ExposureFlag.none,
         description="Optional flag for troublesome exposures"
         "This flag gives users an opportunity to manually mark "

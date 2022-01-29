@@ -19,7 +19,8 @@ class Config(pydantic.BaseModel):
         orm_mode = True
 
 
-@router.get("/configuration/", response_model=Config)
+@router.get("/configuration", response_model=Config)
+@router.get("/configuration/", response_model=Config, include_in_schema=False)
 async def get_config(
     state: SharedState = fastapi.Depends(get_shared_state),
 ) -> Config:

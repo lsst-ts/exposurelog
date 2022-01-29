@@ -14,7 +14,7 @@ class GetRootTestCase(unittest.IsolatedAsyncioTestCase):
             client,
             messages,
         ):
-            response = await client.get("/exposurelog")
+            response = await client.get("/exposurelog/")
             assert response.status_code == http.HTTPStatus.OK
             assert "Exposure log" in response.text
             assert "/exposurelog/docs" in response.text

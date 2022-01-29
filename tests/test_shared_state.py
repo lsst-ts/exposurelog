@@ -24,7 +24,7 @@ from exposurelog.testutils import (
 
 
 class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
-    async def test_bad_environment(self) -> None:
+    async def test_shared_state(self) -> None:
         repo_path = pathlib.Path(__file__).parent / "data" / "hsc_raw"
         with testing.postgresql.Postgresql() as postgresql:
             try:
@@ -58,7 +58,7 @@ class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
                 # Test missing required env variables.
                 for key in required_kwargs:
                     missing_required_kwargs = required_kwargs.copy()
-                    del missing_required_kwargs[key]
+                    missing_required_kwargs[key] = None
                     with modify_environ(
                         **missing_required_kwargs,
                         **db_config,
@@ -103,7 +103,7 @@ class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
                         with self.assertRaises(expected_error):
                             await create_shared_state()
 
-                # Create the shared state and test it
+                # Test a valid shared state
                 with modify_environ(
                     **required_kwargs,
                     **db_config,
@@ -111,13 +111,13 @@ class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
                     await create_shared_state()
                     assert has_shared_state()
 
-                    # Cannot create shared state once it is created
-                    with self.assertRaises(RuntimeError):
-                        await create_shared_state()
-
                     state = get_shared_state()
                     assert len(state.registries) == 1
                     assert state.site_id == required_kwargs["SITE_ID"]
+
+                    # Cannot create shared state once it is created
+                    with self.assertRaises(RuntimeError):
+                        await create_shared_state()
 
                 await delete_shared_state()
                 assert not has_shared_state()

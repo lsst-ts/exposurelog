@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import itertools
 import pathlib
+import random
 import typing
 import unittest
 
 import httpx
 import lsst.daf.butler
-import numpy as np
 
 from exposurelog.routers.find_exposures import dict_from_exposure
 from exposurelog.shared_state import get_shared_state
@@ -19,7 +19,7 @@ from exposurelog.testutils import (
 
 ExposureDictT = typing.Dict[str, typing.Any]
 
-random = np.random.RandomState(32)
+random.seed(32)
 
 
 class doc_str:
@@ -132,7 +132,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
         ):
             # Test that instrument is required
             response = await client.get(
-                "/exposurelog/exposures/",
+                "/exposurelog/exposures",
                 params={"limit": 1},
             )
             assert response.status_code == 422
@@ -145,7 +145,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
                 full_find_args = find_args.copy()
                 full_find_args["instrument"] = instrument
                 response = await client.get(
-                    "/exposurelog/exposures/",
+                    "/exposurelog/exposures",
                     params=full_find_args,
                 )
                 return response
@@ -248,9 +248,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
                 "observation_reason",
                 "observation_type",
             ):
-                exposures_to_find = random.choice(
-                    exposures, size=num_to_find, replace=False
-                )
+                exposures_to_find = random.sample(exposures, num_to_find)
                 values = [exposure[field] for exposure in exposures_to_find]
 
                 @doc_str(f"exposure[{field!r}] in {values}")
@@ -363,7 +361,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
                 full_find_args = find_args.copy()
                 full_find_args["instrument"] = instrument
                 response = await client.get(
-                    "/exposurelog/exposures/",
+                    "/exposurelog/exposures",
                     params=full_find_args,
                 )
                 return response
