@@ -2,7 +2,7 @@
 Release Notes
 =============
 
-0.6.0
+0.7.0
 -----
 
 Modernize the code:
@@ -15,6 +15,13 @@ Modernize the code:
   Hide the version with a final "/" from the API docs.
   Expand the unit tests to test both versions of each of these endpoints.
 * Fix a new sqlachemy warning about empty ``and_`` clauses.
+
+0.6.0
+-----
+
+* Support unicode in message text and enhance the tests to check it.
+* delete messages/id: fix the declared status code.
+  (It didn't cause problems, but it was confusing.)
 
 0.5.1
 -----
