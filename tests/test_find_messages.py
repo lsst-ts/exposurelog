@@ -275,9 +275,13 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
             # and fewer than all messages (not a good test)
             # will match.
             for field in ("obs_id", "message_text"):
-                value = messages[2][field][1:2]
+                value = messages[2][field][0:2]
+                if value.endswith("\\") and value != "\\\\":
+                    # A backslash escapes the next character,
+                    # so include that character, as well.
+                    value = messages[2][field][0:3]
 
-                @doc_str(f"{value} in message[{field!r}]")
+                @doc_str(f"{value!r} in message[{field!r}]")
                 def test_contains(
                     message: MessageDictT,
                     field: str = field,
