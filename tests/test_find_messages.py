@@ -17,8 +17,6 @@ from exposurelog.testutils import (
     create_test_client,
 )
 
-random.seed(820)
-
 
 class doc_str:
     """Decorator to add a doc string to a function.
@@ -176,6 +174,7 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
             repo_path=repo_path,
             num_messages=num_messages,
             num_edited=num_edited,
+            random_seed=820,
         ) as (
             client,
             messages,
@@ -275,9 +274,13 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
             # and fewer than all messages (not a good test)
             # will match.
             for field in ("obs_id", "message_text"):
-                value = messages[2][field][1:2]
+                value = messages[2][field][0:2]
+                if value.endswith("\\") and value != "\\\\":
+                    # A backslash escapes the next character,
+                    # so include that character, as well.
+                    value = messages[2][field][0:3]
 
-                @doc_str(f"{value} in message[{field!r}]")
+                @doc_str(f"{value!r} in message[{field!r}]")
                 def test_contains(
                     message: MessageDictT,
                     field: str = field,

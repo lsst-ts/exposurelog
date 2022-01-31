@@ -71,7 +71,7 @@ and a database also named ``exposurelog``.
 With the Postgres server running::
 
   export SITE_ID=test
-  export BUTLER_URI_1=/Users/rowen/UW/LSST/tsrepos/exposurelog/tests/data/hsc_raw
+  export BUTLER_URI_1=.../exposurelog/tests/data/hsc_raw
   # Also set EXPOSURELOG_DB_x environment variables as needed; see above
 
   uvicorn exposurelog.main:app --reload

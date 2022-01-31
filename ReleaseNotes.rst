@@ -2,6 +2,14 @@
 Release Notes
 =============
 
+0.7.1
+-----
+
+* Fix a bug in tests/test_find_messages.py: it could search for "\", which is not a valid search.
+* Improve random seeding in unit tests.
+* Use description instead of title for the metadata for returned objects.
+  This improves the appearance of the interactive UI (especially redoc).
+
 0.7.0
 -----
 

@@ -39,8 +39,6 @@ TEST_SITE_ID = "test"
 MessageDictT = typing.Dict[str, typing.Any]
 ArgDictT = typing.Dict[str, typing.Any]
 
-random.seed(47)
-
 
 @contextlib.asynccontextmanager
 async def create_test_client(
@@ -48,10 +46,12 @@ async def create_test_client(
     repo_path_2: typing.Optional[pathlib.Path] = None,
     num_messages: int = 0,
     num_edited: int = 0,
+    random_seed: int = 47,
 ) -> typing.AsyncGenerator[
     typing.Tuple[httpx.AsyncClient, typing.List[MessageDictT]], None
 ]:
     """Create the test database, test server, and httpx client."""
+    random.seed(random_seed)
     with testing.postgresql.Postgresql() as postgresql:
         messages = await create_test_database(
             postgresql, num_messages=num_messages, num_edited=num_edited

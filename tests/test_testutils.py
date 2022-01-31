@@ -1,9 +1,8 @@
 import datetime
 import os
 import pathlib
+import random
 import unittest
-
-import numpy as np
 
 from exposurelog.testutils import create_test_client, modify_environ
 
@@ -15,12 +14,15 @@ class TestUtilsTestCase(unittest.IsolatedAsyncioTestCase):
         # num_edited must be < num_messages (unless both are 0)
         with self.assertRaises(ValueError):
             async with create_test_client(
-                repo_path=repo_path, num_messages=5, num_edited=5
+                repo_path=repo_path,
+                num_messages=5,
+                num_edited=5,
+                random_seed=31,
             ):
                 pass
 
     def test_modify_environ(self) -> None:
-        rng = np.random.default_rng(seed=45)
+        random.seed(45)
         original_environ = os.environ.copy()
         n_to_delete = 3
         self.assertGreater(len(original_environ), n_to_delete)
@@ -29,7 +31,7 @@ class TestUtilsTestCase(unittest.IsolatedAsyncioTestCase):
         new_key1 = "_another_long_key_name_" + curr_time
         self.assertNotIn(new_key0, os.environ)
         self.assertNotIn(new_key1, os.environ)
-        some_keys = rng.choice(list(original_environ.keys()), 3)
+        some_keys = random.sample(list(original_environ.keys()), 3)
         kwargs = {
             some_keys[0]: None,
             some_keys[1]: None,
