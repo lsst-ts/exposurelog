@@ -17,8 +17,6 @@ from exposurelog.testutils import (
     create_test_client,
 )
 
-random.seed(820)
-
 
 class doc_str:
     """Decorator to add a doc string to a function.
@@ -176,6 +174,7 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
             repo_path=repo_path,
             num_messages=num_messages,
             num_edited=num_edited,
+            random_seed=820,
         ) as (
             client,
             messages,

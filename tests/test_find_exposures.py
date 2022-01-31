@@ -19,8 +19,6 @@ from exposurelog.testutils import (
 
 ExposureDictT = typing.Dict[str, typing.Any]
 
-random.seed(32)
-
 
 class doc_str:
     """Decorator to add a doc string to a function.
