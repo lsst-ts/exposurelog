@@ -5,6 +5,7 @@ __all__ = ["dict_from_exposure", "find_exposures"]
 import asyncio
 import datetime
 import http
+import re
 import typing
 
 import astropy.time
@@ -90,7 +91,6 @@ async def find_exposures(
     Registry does not. It does, however, support ``limit``, in order to avoid
     performance issues for overly broad queries.
     """
-    registries = state.registries
 
     # Names of selection arguments;
     # note that min_date and max_date are handled separately.
@@ -104,9 +104,18 @@ async def find_exposures(
         "observation_types",
     )
 
-    conditions = []
+    # Work around two daf_butler registry.queryDimensionRecords bugs:
+    # * Specifying the instrument argument results in a LookupError
+    #   if the instrument is unknown. Specifying the instrument in ``where``
+    #   correctly returns no records, instead.
+    # * ``instrument`` cannot be specified in the ``bind`` argument.
+    if not re.match(r"^[a-zA-Z][a-zA-Z0-9-_]+$", instrument):
+        raise fastapi.HTTPException(
+            status_code=http.HTTPStatus.NOT_FOUND,
+            detail=f"Invalid instrument name {instrument!r}",
+        )
+    conditions = [f"instrument = '{instrument}'"]
     bind = dict()
-    date_search = None
     for key in select_arg_names:
         value = locals()[key]
         if value is None:
@@ -142,9 +151,6 @@ async def find_exposures(
         )
         conditions.append("exposure.timespan OVERLAPS date_span")
 
-    # If order_by does not include "id" then append it, to make the order
-    # repeatable. Otherwise different calls can return data in different
-    # orders, which is a disaster when using limit and offset.
     where = " and ".join(conditions)
 
     loop = asyncio.get_running_loop()
@@ -152,7 +158,6 @@ async def find_exposures(
         None,
         find_exposures_in_registries,
         state.registries,
-        instrument,
         bind,
         where,
         limit,
@@ -186,7 +191,6 @@ def dict_from_exposure(
 
 def find_exposures_in_registries(
     registries: typing.Sequence[lsst.daf.butler.Registry],
-    instrument: str,
     bind: dict,
     where: str,
     limit: int = 50,
@@ -200,8 +204,6 @@ def find_exposures_in_registries(
     registries
         One or more data registries.
         They are searched in order.
-    instrument
-        Name of instrument.
     bind
         bind argument to `lsst.daf.butler.Registry.queryDimensionRecords`.
     where
@@ -231,7 +233,6 @@ def find_exposures_in_registries(
         try:
             record_iter = registry.queryDimensionRecords(
                 "exposure",
-                instrument=instrument,
                 bind=bind,
                 where=where,
             )
