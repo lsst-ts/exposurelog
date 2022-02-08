@@ -24,12 +24,10 @@ cycler==0.11.0
 daf-butler @ git+git://github.com/lsst/daf_butler.git@main
     # via -r requirements/main.in
 deprecated==1.2.13
-    # via
-    #   daf-butler
-    #   lsst-utils
+    # via daf-butler
 fastapi==0.73.0
     # via -r requirements/main.in
-fonttools==4.29.0
+fonttools==4.29.1
     # via matplotlib
 greenlet==1.1.2
     # via sqlalchemy
@@ -55,12 +53,11 @@ lsst-utils @ git+https://github.com/lsst/utils@main
     #   lsst-resources
 matplotlib==3.5.1
     # via healpy
-numpy==1.22.1
+numpy==1.22.2
     # via
     #   astropy
     #   healpy
     #   lsst-sphgeom
-    #   lsst-utils
     #   matplotlib
     #   pyerfa
     #   scipy
@@ -68,10 +65,8 @@ packaging==21.3
     # via
     #   astropy
     #   matplotlib
-pillow==9.0.0
+pillow==9.0.1
     # via matplotlib
-psutil==5.9.0
-    # via lsst-utils
 pydantic==1.9.0
     # via
     #   daf-butler
@@ -88,7 +83,7 @@ pyyaml==6.0
     # via
     #   astropy
     #   daf-butler
-scipy==1.7.3
+scipy==1.8.0
     # via healpy
 six==1.16.0
     # via python-dateutil
@@ -104,7 +99,7 @@ structlog==21.5.0
     # via -r requirements/main.in
 typing-extensions==4.0.1
     # via pydantic
-uvicorn==0.17.1
+uvicorn==0.17.4
     # via -r requirements/main.in
 wrapt==1.13.3
     # via deprecated
