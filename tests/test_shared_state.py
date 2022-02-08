@@ -28,7 +28,7 @@ class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
         repo_path = pathlib.Path(__file__).parent / "data" / "hsc_raw"
         with testing.postgresql.Postgresql() as postgresql:
             try:
-                await create_test_database(postgresql, num_messages=0)
+                await create_test_database(postgresql.url(), num_messages=0)
                 assert not has_shared_state()
                 with self.assertRaises(RuntimeError):
                     get_shared_state()
@@ -43,8 +43,8 @@ class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
                 # that results if that one item is bad.
                 db_bad_config_error = dict(
                     EXPOSURELOG_DB_PORT=("54321", OSError),
-                    # An invalid EXPOSURELOG_DB_HOST takes a long time to time out
-                    # so don't bother.
+                    # An invalid EXPOSURELOG_DB_HOST takes a long time
+                    # to time out, so don't bother.
                     EXPOSURELOG_DB_USER=(
                         "invalid_user",
                         asyncpg.exceptions.PostgresError,
