@@ -6,7 +6,7 @@
 #     make update-deps
 
 click~=8.0
-black==21.12b0
+black~=22.1.0
 coverage[toml]~=6.3
 flake8~=4.0
 httpx~=0.22
