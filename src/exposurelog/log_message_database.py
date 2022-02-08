@@ -25,7 +25,7 @@ class LogMessageDatabase:
         postgresql://[user[:password]@][netloc][:port][/dbname]
     """
 
-    def __init__(self, url: str, create_table: bool):
+    def __init__(self, url: str):
         self._closed = False
         self.url = url
         self.logger = structlog.get_logger("LogMessageDatabase")

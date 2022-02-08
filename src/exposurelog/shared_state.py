@@ -94,7 +94,7 @@ class SharedState:
         self.site_id = site_id
         self.registries = [butler.registry for butler in butlers]
         self.exposurelog_db = log_message_database.LogMessageDatabase(
-            url=exposurelog_db_url, create_table=True
+            url=exposurelog_db_url
         )
 
 
