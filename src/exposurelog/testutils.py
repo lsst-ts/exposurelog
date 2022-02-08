@@ -54,7 +54,9 @@ async def create_test_client(
     random.seed(random_seed)
     with testing.postgresql.Postgresql() as postgresql:
         messages = await create_test_database(
-            postgresql, num_messages=num_messages, num_edited=num_edited
+            postgres_url=postgresql.url(),
+            num_messages=num_messages,
+            num_edited=num_edited,
         )
 
         db_config = db_config_from_dsn(postgresql.dsn())
@@ -346,7 +348,7 @@ def random_messages(num_messages: int, num_edited: int) -> list[MessageDictT]:
 
 
 async def create_test_database(
-    postgresql: testing.postgresql.Postgresql,
+    postgres_url: str,
     num_messages: int,
     num_edited: int = 0,
 ) -> list[MessageDictT]:
@@ -355,10 +357,11 @@ async def create_test_database(
 
     Parameters
     ----------
-    postgresql
-        Test database. Typically created using::
+    postgresql_url
+        URL to database. Typically created using::
 
             with testing.postgresql.Postgresql() as postgresql:
+                postgres_url = postgresql.url()
     num_messages
         Number of messages
     num_edited, optional
@@ -376,7 +379,7 @@ async def create_test_database(
             f"num_edited={num_edited} must be zero or "
             f"less than num_messages={num_messages}"
         )
-    sa_url = sqlalchemy.engine.make_url(postgresql.url())
+    sa_url = sqlalchemy.engine.make_url(postgres_url)
     sa_url = sa_url.set(drivername="postgresql+asyncpg")
     engine = create_async_engine(sa_url, future=True)
 
