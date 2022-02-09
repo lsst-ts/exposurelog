@@ -14,7 +14,7 @@ from exposurelog.testutils import (
 
 class GetMessageTestCase(unittest.IsolatedAsyncioTestCase):
     async def test_get_message(self) -> None:
-        repo_path = pathlib.Path(__file__).parent / "data" / "hsc_raw"
+        repo_path = pathlib.Path(__file__).parent / "data" / "LSSTCam"
         async with create_test_client(
             repo_path=repo_path, num_messages=5, random_seed=76
         ) as (

@@ -169,7 +169,7 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
     async def test_find_messages(self) -> None:
         num_messages = 12
         num_edited = 6  # Must be at least 4 in order to test ranges.
-        repo_path = pathlib.Path(__file__).parent / "data" / "hsc_raw"
+        repo_path = pathlib.Path(__file__).parent / "data" / "LSSTCam"
         async with create_test_client(
             repo_path=repo_path,
             num_messages=num_messages,

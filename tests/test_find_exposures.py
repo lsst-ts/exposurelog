@@ -75,7 +75,9 @@ def get_range_values(
     assert len(values) >= 4, f"not enough values for {field}"
     min_value = values[1]
     max_value = values[-1]
-    assert max_value > min_value
+    if max_value == min_value:
+        assert isinstance(max_value, int)
+        max_value = min_value + 1
     return min_value, max_value
 
 
@@ -96,8 +98,8 @@ def get_missing_exposure(
 
 class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
     async def test_find_exposures(self) -> None:
-        repo_path = pathlib.Path(__file__).parent / "data" / "hsc_raw"
-        instrument = "HSC"
+        instrument = "LATISS"
+        repo_path = pathlib.Path(__file__).parent / "data" / instrument
 
         # Find all exposures in the registry,
         # and save as a list of dicts
@@ -158,15 +160,16 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
             ] = list()
 
             # Range arguments: min_<field>, max_<field>
-            # except min/max date, which is handled above.
             for field in ("day_obs", "seq_num", "date"):
                 min_name = f"min_{field}"
                 max_name = f"max_{field}"
 
                 if field == "date":
-                    # min_date and max_date need special handling
-                    # because they are compared to a time span,
-                    # rather than a scalar
+                    # min_date and max_date need special handling, because
+                    # they are compared to a time span, rather than a scalar.
+                    # The match rules are: timespan_end > min_date
+                    # and timespan_beg <= max_date. This matches how
+                    # daf_butler's Registry performs a timespan overlap search.
                     min_field = "timespan_end"
                     max_field = "timespan_begin"
                     min_value, __ = get_range_values(
@@ -186,7 +189,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
                         value = cast_special(exposure[field])
                         return value > min_value
 
-                    @doc_str(f"exposure[{max_field!r}] < {max_value}.")
+                    @doc_str(f"exposure[{max_field!r}] <= {max_value}.")
                     def test_max(
                         exposure: ExposureDictT,
                         field: str = max_field,
@@ -194,7 +197,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
                     ) -> bool:
                         max_value = cast_special(max_value)
                         value = cast_special(exposure[field])
-                        return value < max_value
+                        return value <= max_value
 
                 else:
                     min_field = field
@@ -316,17 +319,16 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
             assert response.status_code == 422
 
     async def test_duplicate_registries(self) -> None:
-        """Test a server that has two repositories.
+        """Test a server that has two repositories."""
+        repo_path = pathlib.Path(__file__).parent / "data" / "LSSTCam"
+        repo_path_2 = pathlib.Path(__file__).parent / "data" / "LATISS"
+        instrument = "LATISS"
 
-        Unfortunately I only have one test repo (and it's hard enough
-        maintaining that as daf_butler evolves) so I just connect to it twice.
-        """
-        repo_path = pathlib.Path(__file__).parent / "data" / "hsc_raw"
-        instrument = "HSC"
-
-        # Find all exposures in the registry,
-        # and save as a list of dicts
-        butler = lsst.daf.butler.Butler(str(repo_path), writeable=False)
+        # The first repo is for LSSTCam and the second for LATISS,
+        # thus searches only return exposures from one registry.
+        # Use instrument=LATISS to search the second registry
+        # in order to test DM-33601
+        butler = lsst.daf.butler.Butler(str(repo_path_2), writeable=False)
         registry = butler.registry
         exposure_iter = registry.queryDimensionRecords(
             "exposure",
@@ -343,7 +345,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
 
         async with create_test_client(
             repo_path=repo_path,
-            repo_path_2=repo_path,
+            repo_path_2=repo_path_2,
         ) as (
             client,
             messages,

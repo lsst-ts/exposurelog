@@ -25,7 +25,7 @@ from exposurelog.testutils import (
 
 class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
     async def test_shared_state(self) -> None:
-        repo_path = pathlib.Path(__file__).parent / "data" / "hsc_raw"
+        repo_path = pathlib.Path(__file__).parent / "data" / "LSSTCam"
         with testing.postgresql.Postgresql() as postgresql:
             try:
                 await create_test_database(postgresql.url(), num_messages=0)

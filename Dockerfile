@@ -43,8 +43,9 @@ WORKDIR /home/appuser
 # Switch to non-root user
 USER appuser
 
-# Copy the test butler registry to allow us to run the application with it
-COPY tests/data/hsc_raw hsc_raw
+# Copy the test butler registrues to allow us to run the application with it
+COPY tests/data/LSSTCam LSSTCam
+COPY tests/data/LATISS LATISS
 
 # We use a module name other than app, so tell the base image that.  This
 # does not copy the app into /app as is recommended by the base Docker

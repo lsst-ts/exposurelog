@@ -44,7 +44,7 @@ def assert_good_add_response(
 
 class AddMessageTestCase(unittest.IsolatedAsyncioTestCase):
     async def test_add_message(self) -> None:
-        repo_path = pathlib.Path(__file__).parent / "data" / "hsc_raw"
+        repo_path = pathlib.Path(__file__).parent / "data" / "LSSTCam"
         async with create_test_client(repo_path=repo_path, num_messages=0) as (
             client,
             messages,
@@ -52,8 +52,8 @@ class AddMessageTestCase(unittest.IsolatedAsyncioTestCase):
 
             # Add a message whose obs_id matches an exposure.
             add_args = dict(
-                obs_id="HSCA90333600",
-                instrument="HSC",
+                obs_id="MC_C_20190322_000002",
+                instrument="LSSTCam",
                 message_text="A sample message",
                 user_id="test_add_message",
                 user_agent="pytest",

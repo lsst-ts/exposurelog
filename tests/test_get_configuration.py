@@ -9,7 +9,7 @@ from exposurelog.testutils import assert_good_response, create_test_client
 
 class GetRootTestCase(unittest.IsolatedAsyncioTestCase):
     async def test_get_root(self) -> None:
-        repo_path = pathlib.Path(__file__).parent / "data" / "hsc_raw"
+        repo_path = pathlib.Path(__file__).parent / "data" / "LSSTCam"
         async with create_test_client(repo_path=repo_path, num_messages=0) as (
             client,
             messages,
@@ -30,7 +30,7 @@ class GetRootTestCase(unittest.IsolatedAsyncioTestCase):
         Unfortunately I only have one test repo (and it's hard enough
         maintaining that as daf_butler evolves) so I just connect to it twice.
         """
-        repo_path = pathlib.Path(__file__).parent / "data" / "hsc_raw"
+        repo_path = pathlib.Path(__file__).parent / "data" / "LSSTCam"
         async with create_test_client(
             repo_path=repo_path,
             repo_path_2=repo_path,
