@@ -2,6 +2,24 @@
 Release Notes
 =============
 
+0.8.0
+-----
+
+* Add a "tags" field to messages.
+  Tags must be at least two letters long, contain only ASCII letters. digits, and _ (underscore), and start with a letter.
+  Tags are transformed to lowercase.
+* find_exposures: add ``registry``, ``offset``, and ``order_by`` parameters.
+  It is no longer possible to search both registries at the same time,
+  because that does not work well with ``order_by`` and ``offset``.
+* Add get_instruments to show which instruments each butler registry supports.
+* Work around a bug in the butler that made the service fail
+  when run with two registries that contained data for different cameras.
+* Replace the old test registry with two registries, each with data for a different camera.
+* Include the raw images used to generate the registries (in a highly compressed form,
+  with 0 for all pixel values) in order to simplify creating new versions of the registries.
+* Add a hack to work around test failures on github: open Butlers with writeable=True when running tests.
+  Undo this hack using DM-33642 once it's safe to do so.
+
 0.7.1
 -----
 
