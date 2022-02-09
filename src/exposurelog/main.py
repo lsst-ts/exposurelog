@@ -43,8 +43,13 @@ async def root(request: starlette.requests.Request) -> str:
     </head>
     <body>
         <h1>Exposure log service</h1>
+
         <p>Create and manage log messages associated with exposures.</p>
-        <p><a href="{request.url}docs">Interactive OpenAPI documentation</a></p>
+
+        <p>OpenAPI documentation is available in two flavors:
+        <a href="{request.url}redoc">redoc</a>, which is easy to read, and
+        <a href="{request.url}docs">docs</a> (swagger), which is interactive,
+        but harder to read.
     </html>
     """
 
