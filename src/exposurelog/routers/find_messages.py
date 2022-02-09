@@ -36,7 +36,7 @@ async def find_messages(
     ),
     instruments: typing.Optional[typing.List[str]] = fastapi.Query(
         default=None,
-        description="Names of instruments (e.g. HSC). "
+        description="Names of instruments (e.g. LSSTCam). "
         "Repeat the parameter for each value.",
     ),
     min_day_obs: typing.Optional[int] = fastapi.Query(

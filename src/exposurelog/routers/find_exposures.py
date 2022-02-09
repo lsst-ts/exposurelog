@@ -30,7 +30,7 @@ DEFAULT_LIMIIT = 50
 async def find_exposures(
     instrument: str = fastapi.Query(
         default=...,
-        description="Name of instrument (e.g. HSC)",
+        description="Name of instrument (e.g. LSSTCam)",
     ),
     min_day_obs: typing.Optional[int] = fastapi.Query(
         default=None,
@@ -68,13 +68,17 @@ async def find_exposures(
     ),
     min_date: typing.Optional[datetime.datetime] = fastapi.Query(
         default=None,
-        description="Minimum date during the time the exposure was taken, *exclusive*; "
-        "TAI as an ISO string with no timezone information",
+        description="Minimum date during the time the exposure was taken, exclusive "
+        "(because that is how daf_butler performs a timespan overlap search). "
+        "TAI as an ISO string with no timezone information. "
+        "The date and time portions may be separated with a space or a T.",
     ),
     max_date: typing.Optional[datetime.datetime] = fastapi.Query(
         default=None,
-        description="Maximum date during the time the exposure was taken, exclusive; "
-        "TAI as an ISO string with no timezone information",
+        description="Maximum date during the time the exposure was taken, inclusive "
+        "(because that is how daf_butler performs a timespan overlap search). "
+        "TAI as an ISO string (with or without a T) with no timezone information. "
+        "The date and time portions may be separated with a space or a T.",
     ),
     limit: int = fastapi.Query(
         default=DEFAULT_LIMIIT,
