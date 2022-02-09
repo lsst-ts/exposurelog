@@ -2,6 +2,20 @@
 Release Notes
 =============
 
+0.8.0
+-----
+
+* find_exposures: add ``registry``, ``offset``, and ``order_by`` parameters.
+  Note that it is no longer possible to search both registries at the same time,
+  because that does not play well with ``order_by`` and ``offset``.
+* Add get_instruments to show which instruments each butler registry supports.
+* Work around a bug in the butler that made the service fail
+  when run with two registries that contained data for different cameras.
+* Replace the old test registry with two registries, each with data for a different camera,
+  in order to test the bug just mentioned.
+* Include the raw images used to generate the registries (in a highly compressed form,
+  with 0 for all pixel values) in order to simplify creating new versions of the registries.
+
 0.7.1
 -----
 
