@@ -23,7 +23,7 @@ class Message(pydantic.BaseModel):
     )
     obs_id: str = pydantic.Field(description="Observation ID.")
     instrument: str = pydantic.Field(
-        description="Short name of instrument, e.g. HSC."
+        description="Short name of instrument, e.g. LSSTCam."
     )
     day_obs: int = pydantic.Field(description="Observation day.")
     message_text: str = pydantic.Field(description="Message.")

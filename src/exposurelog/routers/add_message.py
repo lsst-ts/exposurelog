@@ -29,7 +29,7 @@ async def add_message(
     ),
     instrument: str = fastapi.Body(
         default=...,
-        description="Short name of instrument (e.g. HSC)",
+        description="Short name of instrument (e.g. LSSTCam)",
     ),
     message_text: str = fastapi.Body(..., description="Message text"),
     user_id: str = fastapi.Body(..., description="User ID"),
