@@ -9,7 +9,7 @@ from exposurelog.testutils import create_test_client, modify_environ
 
 class TestUtilsTestCase(unittest.IsolatedAsyncioTestCase):
     async def test_create_client_errors(self) -> None:
-        repo_path = pathlib.Path(__file__).parent / "data" / "hsc_raw"
+        repo_path = pathlib.Path(__file__).parent / "data" / "LSSTCam"
 
         # num_edited must be < num_messages (unless both are 0)
         with self.assertRaises(ValueError):
