@@ -26,6 +26,7 @@ from exposurelog.testutils import (
 class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
     async def test_shared_state(self) -> None:
         repo_path = pathlib.Path(__file__).parent / "data" / "LSSTCam"
+        repo_path_2 = pathlib.Path(__file__).parent / "data" / "LATISS"
         with testing.postgresql.Postgresql() as postgresql:
             try:
                 await create_test_database(postgresql.url(), num_messages=0)
@@ -111,9 +112,9 @@ class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
                     await create_shared_state()
                     assert has_shared_state()
 
-                    state = get_shared_state()
-                    assert len(state.registries) == 1
-                    assert state.site_id == required_kwargs["SITE_ID"]
+                    shared_state = get_shared_state()
+                    assert len(shared_state.registries) == 1
+                    assert shared_state.site_id == required_kwargs["SITE_ID"]
 
                     # Cannot create shared state once it is created
                     with self.assertRaises(RuntimeError):
@@ -125,16 +126,15 @@ class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
                     get_shared_state()
 
                 # Closing the database again should be a no-op
-                await state.exposurelog_db.close()
+                await shared_state.exposurelog_db.close()
 
                 # Deleting shared state again should be a no-op
                 await delete_shared_state()
                 assert not has_shared_state()
 
-                # Create two butler registries (both identical,
-                # since we only have one).
+                # Create two butler registries
                 with modify_environ(
-                    BUTLER_URI_2=str(repo_path),
+                    BUTLER_URI_2=str(repo_path_2),
                     **required_kwargs,
                     **db_config,
                 ):

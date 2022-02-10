@@ -39,13 +39,14 @@ class SharedState:
 
     Notes
     -----
-    Reads the following env variables:
+    Reads the following env variables; all are optional,
+    unless otherwise noted:
 
-    site_id
+    site_id (required)
         String identifying where the exposurelog service is running.
         Values include: "summit" and "base".
-    butler_uri1
-        URI for a butler registry. Required.
+    butler_uri1 (required)
+        URI for a butler registry.
     butler_uri2
         URI for a second butler registry, or "" if none.
     exposurelog_db_user
