@@ -64,6 +64,9 @@ async def create_test_client(
 
         db_config = db_config_from_dsn(postgresql.dsn())
         with modify_environ(
+            # TODO DM-33642: get rid of BUTLER_WRITEABLE_HACK
+            # when safe to do so.
+            BUTLER_WRITEABLE_HACK="true",
             BUTLER_URI_1=str(repo_path),
             BUTLER_URI_2=None if repo_path_2 is None else str(repo_path_2),
             SITE_ID=TEST_SITE_ID,

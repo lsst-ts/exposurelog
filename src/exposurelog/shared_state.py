@@ -44,7 +44,7 @@ class SharedState:
 
     site_id (required)
         String identifying where the exposurelog service is running.
-        Values include: "summit" and "base".
+        Standard values include: "summit" and "base".
     butler_uri1 (required)
         URI for a butler registry.
     butler_uri2
@@ -69,6 +69,16 @@ class SharedState:
                 f"max length={create_message_table.SITE_ID_LEN}"
             )
 
+        # TODO DM-33642: get rid of BUTLER_WRITEABLE_HACK support
+        # and construct Butlers with writeable=False, when safe to do so.
+        butler_writeable_hack_str = get_env("BUTLER_WRITEABLE_HACK", "")
+        if butler_writeable_hack_str not in ("true", ""):
+            raise ValueError(
+                f"BUTLER_WRITEABLE_HACK={butler_writeable_hack_str} "
+                "must be 'true' or ''"
+            )
+        butler_writeable_hack = butler_writeable_hack_str == "true"
+        del butler_writeable_hack_str
         self.butler_uri_1 = get_env("BUTLER_URI_1")
         self.butler_uri_2 = get_env("BUTLER_URI_2", "")
         exposurelog_db_user = get_env("EXPOSURELOG_DB_USER", "exposurelog")
@@ -85,10 +95,16 @@ class SharedState:
             f"/{exposurelog_db_database}"
         )
 
-        butlers = [lsst.daf.butler.Butler(self.butler_uri_1, writeable=False)]
+        butlers = [
+            lsst.daf.butler.Butler(
+                self.butler_uri_1, writeable=butler_writeable_hack
+            )
+        ]
         if self.butler_uri_2:
             butlers.append(
-                lsst.daf.butler.Butler(self.butler_uri_2, writeable=False)
+                lsst.daf.butler.Butler(
+                    self.butler_uri_2, writeable=butler_writeable_hack
+                )
             )
 
         self.log = logging.getLogger("exposurelog")
