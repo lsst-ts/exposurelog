@@ -36,7 +36,7 @@ class doc_str:
 
 def assert_good_find_response(
     response: httpx.Response,
-    exposures: list[ExposureDictT],
+    exposures: typing.Iterable[ExposureDictT],
     predicate: typing.Callable,
 ) -> list[ExposureDictT]:
     """Assert that the correct exposures were found.
@@ -82,8 +82,8 @@ def get_range_values(
 
 
 def get_missing_exposure(
-    exposures: list[ExposureDictT],
-    found_exposures: list[ExposureDictT],
+    exposures: typing.Iterable[ExposureDictT],
+    found_exposures: typing.Iterable[ExposureDictT],
 ) -> list[ExposureDictT]:
     """Get exposures that were not found."""
     found_ids = set(
@@ -112,7 +112,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
         exposures = [
             dict_from_exposure(exposure) for exposure in exposure_iter
         ]
-        exposures.sort(key=lambda exposure: exposure["obs_id"])
+        exposures.sort(key=lambda exposure: exposure["id"])
 
         # Check for duplicate exposures
         obs_ids = {exposure["obs_id"] for exposure in exposures}
@@ -305,20 +305,63 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
                 len(exposures),
                 len(exposures) + 3,
             ):
-                response = await run_find({"limit": limit})
-                found_exposures = assert_good_response(response)
-                assert len(found_exposures) == min(limit, len(exposures))
-                found_obs_ids = {
-                    exposure["obs_id"] for exposure in found_exposures
-                }
-                assert len(found_obs_ids) == len(found_exposures)
-                assert found_obs_ids <= obs_ids
+                offset = 0
+                while True:
+                    response = await run_find(dict(offset=offset, limit=limit))
+                    found_exposures = assert_good_response(response)
+                    num_found = len(found_exposures)
+                    assert num_found <= limit
+                    if num_found < limit:
+                        assert offset + num_found == len(exposures)
+                    for i in range(offset, offset + num_found):
+                        assert (
+                            found_exposures[i]["obs_id"]
+                            == exposures[i]["obs_id"]
+                        )
+                    if len(found_exposures) <= limit:
+                        break
+                    offset += limit
+
+            # Test order_by
+            response = await run_find(dict(order_by=["-id"]))
+            assert_good_find_response(
+                response, reversed(exposures), predicate=lambda exposure: True
+            )
+
+            # group_id is not sufficient (there are duplicates)
+            # but the service appends "id" if "id" if not specified
+            response = await run_find(dict(order_by=["group_id"]))
+            exposures.sort(
+                key=lambda exposure: (exposure["group_id"], exposure["id"])
+            )
+            assert_good_find_response(
+                response, exposures, predicate=lambda exposure: True
+            )
+
+            # Now check group_id with -id to make sure the service
+            # is not appending id after the -id
+            response = await run_find(dict(order_by=["group_id", "-id"]))
+            exposures.sort(
+                key=lambda exposure: (exposure["group_id"], -exposure["id"])
+            )
+            assert_good_find_response(
+                response, exposures, predicate=lambda exposure: True
+            )
+
+            # Test that offset >= # of records returns nothing
+            response = await run_find(dict(limit=10, offset=len(exposures)))
+            found_exposures = assert_good_response(response)
+            assert len(found_exposures) == 0
 
             # Test that limit must be positive
             response = await run_find({"limit": 0})
             assert response.status_code == 422
 
-    async def test_duplicate_registries(self) -> None:
+            # Test that offset must not be negative
+            response = await run_find({"limit": -1})
+            assert response.status_code == 422
+
+    async def test_two_registries(self) -> None:
         """Test a server that has two repositories."""
         repo_path = pathlib.Path(__file__).parent / "data" / "LSSTCam"
         repo_path_2 = pathlib.Path(__file__).parent / "data" / "LATISS"
@@ -337,7 +380,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
         exposures = [
             dict_from_exposure(exposure) for exposure in exposure_iter
         ]
-        exposures.sort(key=lambda exposure: exposure["obs_id"])
+        exposures.sort(key=lambda exposure: exposure["id"])
 
         # Check for duplicate exposures.
         obs_ids = {exposure["obs_id"] for exposure in exposures}
@@ -355,10 +398,14 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
 
             async def run_find(
                 find_args: typing.Dict[str, typing.Any],
+                registry: int = 2,
                 instrument: str = instrument,
             ) -> httpx.Response:
-                """Run a query after adding instrument parameter."""
+                """Run a query after adding registry and instrument
+                parameters.
+                """
                 full_find_args = find_args.copy()
+                full_find_args["registry"] = registry
                 full_find_args["instrument"] = instrument
                 response = await client.get(
                     "/exposurelog/exposures",
@@ -366,7 +413,12 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
                 )
                 return response
 
-            response = await run_find({})
+            # Searching the wrong registry should return no matches
+            response = await run_find(dict(), registry=1)
+            found_exposures = assert_good_response(response)
+            assert len(found_exposures) == 0
+
+            response = await run_find(dict())
             found_exposures = assert_good_find_response(
                 response, exposures, lambda exposure: True
             )

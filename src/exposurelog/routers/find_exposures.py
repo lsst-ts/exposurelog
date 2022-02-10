@@ -4,6 +4,7 @@ __all__ = ["dict_from_exposure", "find_exposures"]
 
 import asyncio
 import datetime
+import functools
 import http
 import re
 import typing
@@ -28,6 +29,12 @@ DEFAULT_LIMIIT = 50
     include_in_schema=False,
 )
 async def find_exposures(
+    registry: int = fastapi.Query(
+        default=1,
+        description="Which registry to search: 1 or 2 (if it exists).",
+        ge=1,
+        le=2,
+    ),
     instrument: str = fastapi.Query(
         default=...,
         description="Name of instrument (e.g. LSSTCam)",
@@ -80,9 +87,27 @@ async def find_exposures(
         "TAI as an ISO string (with or without a T) with no timezone information. "
         "The date and time portions may be separated with a space or a T.",
     ),
+    order_by: typing.Optional[typing.List[str]] = fastapi.Query(
+        default=None,
+        description="Fields to sort by. "
+        "Prefix a name with - for descending order, e.g. -obs_id. "
+        "Repeat the parameter for each value. "
+        "Warnings:\n"
+        "* The butler does not support sorting by date (e.g. using timespan). "
+        "Sort by 'id' instead.\n"
+        "*  The only safe order for use with 'offset' with 'limit' is 'id' "
+        "if images are being added to the registry while you search.\n"
+        "The default order is 'id', and this is always appended "
+        "if you do not explicitly specify 'id' or '-id'",
+    ),
+    offset: typing.Optional[int] = fastapi.Query(
+        default=None,
+        description="The number of records to skip.",
+        ge=0,
+    ),
     limit: int = fastapi.Query(
         default=DEFAULT_LIMIIT,
-        description="Maximum number of records to return.",
+        description="The maximum number of records to return.",
         gt=0,
     ),
     state: SharedState = fastapi.Depends(get_shared_state),
@@ -95,6 +120,12 @@ async def find_exposures(
     Registry does not. It does, however, support ``limit``, in order to avoid
     performance issues for overly broad queries.
     """
+    if registry == 2 and len(state.registries) < 2:
+        raise fastapi.HTTPException(
+            status_code=http.HTTPStatus.NOT_FOUND,
+            detail=f"registry={registry} but no second registry configured",
+        )
+    registry_instance = state.registries[registry - 1]
 
     # Names of selection arguments;
     # note that min_date and max_date are handled separately.
@@ -157,15 +188,26 @@ async def find_exposures(
 
     where = " and ".join(conditions)
 
+    if order_by is None:
+        order_by = ["id"]
+    else:
+        for fieldname in order_by:
+            if fieldname in ("id", "-id"):
+                break
+        else:
+            order_by.append("id")
+
     loop = asyncio.get_running_loop()
-    rows = await loop.run_in_executor(
-        None,
-        find_exposures_in_registries,
-        state.registries,
-        bind,
-        where,
-        limit,
+    find_func = functools.partial(
+        find_exposures_in_a_registry,
+        registry=registry_instance,
+        bind=bind,
+        where=where,
+        order_by=order_by,
+        offset=offset,
+        limit=limit,
     )
+    rows = await loop.run_in_executor(None, find_func)
 
     exposures = [Exposure(**dict_from_exposure(row)) for row in rows]
     return sorted(exposures, key=lambda exposure: exposure.obs_id)
@@ -193,62 +235,50 @@ def dict_from_exposure(
     return data
 
 
-def find_exposures_in_registries(
-    registries: typing.Sequence[lsst.daf.butler.Registry],
+def find_exposures_in_a_registry(
+    registry: lsst.daf.butler.Registry,
     bind: dict,
     where: str,
+    order_by: typing.List[str],
+    offset: typing.Optional[int] = None,
     limit: int = 50,
-) -> typing.ValuesView[lsst.daf.butler.core.DimensionRecord]:
+) -> typing.List[lsst.daf.butler.core.DimensionRecord]:
     """Find exposures matching specified criteria.
 
     The exposures are sorted by obs_id.
 
     Parameters
     ----------
-    registries
-        One or more data registries.
-        They are searched in order.
+    registry
+        The data registry to search.
     bind
         bind argument to `lsst.daf.butler.Registry.queryDimensionRecords`.
     where
         where argument to `lsst.daf.butler.Registry.queryDimensionRecords`.
     limit
         Maximum number of exposures to return.
+    offset
+        Starting point. None acts as 0, but may take a different code
+        path in the daf_butler code.
+    order_by
+        Ordering criteria.
 
     Returns
     -------
     exposures
         The matching exposures.
-
-    Notes
-    -----
-    There is no pagination support because daf_butler does not support it.
-    The limit argument merely prevents performance issues from overly
-    broad searches.
     """
-    # Keep records in a dict to avoid duplicates
-    # (which will only be a problem if we have two registries).
-    record_dict: typing.Dict[
-        int, lsst.daf.butler.core.DimensionRecord
-    ] = dict()
-    for registry in registries:
-        if len(record_dict) >= limit:
-            break
-        try:
-            record_iter = registry.queryDimensionRecords(
-                "exposure",
-                bind=bind,
-                where=where,
-            )
-            for record in record_iter:
-                # Use dict.setdefault so the first instance "wins",
-                # though the records should match in each registry.
-                record_dict.setdefault(record.id, record)
-                if len(record_dict) >= limit:
-                    break
-        except Exception as e:
-            raise fastapi.HTTPException(
-                status_code=http.HTTPStatus.NOT_FOUND,
-                detail=f"Error in butler query: {e!r}",
-            )
-    return record_dict.values()
+    try:
+        record_iter = registry.queryDimensionRecords(
+            "exposure",
+            bind=bind,
+            where=where,
+        )
+        record_iter.limit(limit=limit, offset=offset)
+        record_iter.order_by(*order_by)
+        return list(record_iter)
+    except Exception as e:
+        raise fastapi.HTTPException(
+            status_code=http.HTTPStatus.NOT_FOUND,
+            detail=f"Error in butler query: {e!r}",
+        )
