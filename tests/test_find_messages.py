@@ -245,6 +245,53 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                 found_messages = assert_good_response(response)
                 assert len(found_messages) == 0
 
+            # Collection arguments for arrays;
+            # <field>, with a list of allowed values.
+            for field in ("tags",):
+                # Scramble the messages and use two field list values
+                # from the first message with at least two values
+                messages_to_search = random.sample(messages, len(messages))
+                for message in messages_to_search:
+                    if len(message[field]) >= 2:
+                        values = message[field][0:1]
+                        break
+
+                @doc_str(f"message[{field!r}] overlaps {values}")
+                def test_collection(
+                    message: MessageDictT,
+                    field: str = field,
+                    values: list[typing.Any] = values,
+                ) -> bool:
+                    return bool(set(message[field]) & set(values))
+
+                arg_name = field
+                find_args_predicates.append(
+                    ({arg_name: values}, test_collection)
+                )
+
+            # exclude_key for collection arguments for arrays
+            for field in ("tags",):
+                # Scramble the messages and use two field list values
+                # from the first message with at least two values
+                messages_to_search = random.sample(messages, len(messages))
+                for message in messages_to_search:
+                    if len(message[field]) >= 2:
+                        values = message[field][0:1]
+                        break
+
+                @doc_str(f"message[{field!r}] does not overlap {values}")
+                def test_collection(
+                    message: MessageDictT,
+                    field: str = field,
+                    values: list[typing.Any] = values,
+                ) -> bool:
+                    return not bool(set(message[field]) & set(values))
+
+                arg_name = "exclude_" + field
+                find_args_predicates.append(
+                    ({arg_name: values}, test_collection)
+                )
+
             # Collection arguments: <field>s, with a list of allowed values.
             num_to_find = 2
             for field in (

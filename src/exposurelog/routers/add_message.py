@@ -14,6 +14,7 @@ import sqlalchemy as sa
 
 from ..message import ExposureFlag, Message
 from ..shared_state import SharedState, get_shared_state
+from .normalize_tags import TAG_DESCRIPTION, normalize_tags
 
 router = fastapi.APIRouter()
 
@@ -32,6 +33,11 @@ async def add_message(
         description="Short name of instrument (e.g. LSSTCam)",
     ),
     message_text: str = fastapi.Body(..., description="Message text"),
+    tags: typing.List[str] = fastapi.Body(
+        default=[],
+        description="Tags describing the message, as space-separated words. "
+        + TAG_DESCRIPTION,
+    ),
     user_id: str = fastapi.Body(..., description="User ID"),
     user_agent: str = fastapi.Body(
         default=...,
@@ -63,6 +69,8 @@ async def add_message(
     """Add a message to the database and return the added message."""
     curr_tai = astropy.time.Time.now()
 
+    tags = normalize_tags(tags)
+
     # Check obs_id and determine day_obs.
     loop = asyncio.get_running_loop()
     obs_id = obs_id
@@ -84,8 +92,6 @@ async def add_message(
                 detail=f"Exposure obs_id={obs_id} not found and is_new is false",
             )
 
-    day_obs = day_obs
-
     el_table = state.exposurelog_db.table
 
     # Add the message.
@@ -93,16 +99,17 @@ async def add_message(
         result = await connection.execute(
             el_table.insert()
             .values(
-                date_added=curr_tai.tai.datetime,
-                day_obs=day_obs,
-                exposure_flag=exposure_flag,
-                instrument=instrument,
-                is_human=is_human,
-                message_text=message_text,
-                obs_id=obs_id,
                 site_id=state.site_id,
-                user_agent=user_agent,
+                obs_id=obs_id,
+                instrument=instrument,
+                day_obs=day_obs,
+                message_text=message_text,
+                tags=tags,
                 user_id=user_id,
+                user_agent=user_agent,
+                is_human=is_human,
+                exposure_flag=exposure_flag,
+                date_added=curr_tai.tai.datetime,
             )
             .returning(sa.literal_column("*"))
         )

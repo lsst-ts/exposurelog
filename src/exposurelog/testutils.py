@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 __all__ = [
+    "TEST_SITE_ID",
+    "TEST_TAGS",
     "MessageDictT",
     "assert_good_response",
     "assert_messages_equal",
@@ -34,6 +36,7 @@ MIN_DATE_RANDOM_MESSAGE = "2021-01-01"
 MAX_DATE_RANDOM_MESSAGE = "2022-12-31"
 
 TEST_SITE_ID = "test"
+TEST_TAGS = "green eggs and ham".split()
 
 # Type annotation aliases
 MessageDictT = typing.Dict[str, typing.Any]
@@ -254,6 +257,28 @@ def random_str(nchar: int) -> str:
     return "".join(random.sample(chars, nchar))
 
 
+def random_words(
+    allowed_words: typing.List[str], max_num: int = 3
+) -> typing.List[str]:
+    """Return a list of 0 or more allowed words.
+
+    Parameters
+    ----------
+    allowed_words
+        List of words from which to select words.
+    max_num
+        The maximum number of returned words.
+
+    Half of the time it will return 0 items.
+    The rest of the time it will return 1 - max_num values
+    in random order, with equal probability per number of returned words.
+    """
+    if random.random() < 0.5:
+        return []
+    num_words = random.randint(1, max_num)
+    return random.sample(allowed_words, num_words)
+
+
 def random_message() -> MessageDictT:
     """Make one random message, as a dict of field: value.
 
@@ -266,6 +291,8 @@ def random_message() -> MessageDictT:
 
     String are random ASCII characters, and each string field has
     a slightly different arbitrary length.
+    Tags are generated from a random selection (of random length)
+    of possible tags and URLs.
 
     To use:
 
@@ -289,6 +316,7 @@ def random_message() -> MessageDictT:
         instrument=random_str(nchar=16),
         day_obs=int(random_yyyymmdd),
         message_text=random_str(nchar=20),
+        tags=random_words(TEST_TAGS),
         user_id=random_str(nchar=14),
         user_agent=random_str(nchar=12),
         is_human=random_bool(),
