@@ -176,11 +176,12 @@ def assert_messages_equal(
         ]
         assert (
             values[0] == values[1]
-        ), f"field {field} unequal: {values[0]} != {values[1]}"
+        ), f"field {field} unequal: {values[0]!r} != {values[1]!r}"
 
 
 def cast_special(value: typing.Any) -> typing.Any:
-    """Cast special types (not plain old types) to str.
+    """Cast special types to plain data types;
+    return plain old data types unchanged.
 
     This allows comparison between values in the database
     and values returned by the web API.
@@ -204,8 +205,9 @@ def db_config_from_dsn(dsn: dict[str, str]) -> dict[str, str]:
     from an instance of testing.postgresql.Postgresql()::
 
         with testing.postgresql.Postgresql() as postgresql:
-            create_test_database(postgresql, num_messages=0)
+            create_test_database(postgresql.url(), num_messages=0)
 
+            db_config = db_config_from_dsn(postgresql.dsn())
             with modify_environ(
                 BUTLER_URI_1=str(repo_path),
                 SITE_ID=TEST_SITE_ID,
@@ -223,13 +225,21 @@ def db_config_from_dsn(dsn: dict[str, str]) -> dict[str, str]:
 
 
 def random_bool() -> bool:
+    """Return a random bool."""
     return random.random() > 0.5
 
 
 def random_date(precision: int = 0) -> datetime.datetime:
-    """Return a random date
+    """Return a random date between MIN_DATE_RANDOM_MESSAGE
+    and MAX_DATE_RANDOM_MESSAGE.
 
-    This is the same format as dates returned from the database.
+    Parameters
+    ----------
+    precision
+        The number of decimal digits of seconds.
+        If 0 then the output has no decimal point after the seconds field.
+
+    Return the same format as dates returned from the database.
     """
     min_date_unix = astropy.time.Time(MIN_DATE_RANDOM_MESSAGE).unix
     max_date_unix = astropy.time.Time(MAX_DATE_RANDOM_MESSAGE).unix
@@ -241,7 +251,7 @@ def random_date(precision: int = 0) -> datetime.datetime:
 
 
 def random_str(nchar: int) -> str:
-    """Return a random string of printable UTF-8 characters.
+    """Return a random string of nchar printable UTF-8 characters.
 
     The list of characters is limited, but attempts to
     cover a wide range of potentially problematic characters
@@ -258,13 +268,13 @@ def random_str(nchar: int) -> str:
 
 
 def random_words(
-    allowed_words: typing.List[str], max_num: int = 3
+    words: typing.List[str], max_num: int = 3
 ) -> typing.List[str]:
     """Return a list of 0 or more allowed words.
 
     Parameters
     ----------
-    allowed_words
+    words
         List of words from which to select words.
     max_num
         The maximum number of returned words.
@@ -276,7 +286,7 @@ def random_words(
     if random.random() < 0.5:
         return []
     num_words = random.randint(1, max_num)
-    return random.sample(allowed_words, num_words)
+    return random.sample(words, num_words)
 
 
 def random_message() -> MessageDictT:
@@ -358,7 +368,7 @@ def random_messages(num_messages: int, num_edited: int) -> list[MessageDictT]:
 
     # Create edited messages.
     parent_message_id_set: typing.Set[uuid.UUID] = set()
-    edited_messages = list(
+    edited_messages: typing.List[MessageDictT] = list(
         # [1:] because there is no older message to be the parent.
         random.sample(message_list[1:], num_edited)
     )
@@ -386,7 +396,7 @@ async def create_test_database(
     Parameters
     ----------
     postgresql_url
-        URL to database. Typically created using::
+        URL to PostgreSQL database. Typically a test database created using::
 
             with testing.postgresql.Postgresql() as postgresql:
                 postgres_url = postgresql.url()
@@ -425,9 +435,12 @@ async def create_test_database(
             pruned_message = message.copy()
             del pruned_message["is_valid"]
             result = await connection.execute(
-                table.insert().values(**pruned_message).returning(table.c.id)
+                table.insert()
+                .values(**pruned_message)
+                .returning(table.c.id, table.c.is_valid)
             )
             data = result.fetchone()
             assert message["id"] == data.id
+            assert message["is_valid"] == data.is_valid
 
     return messages
