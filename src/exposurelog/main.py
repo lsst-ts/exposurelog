@@ -12,6 +12,7 @@ from .routers import (
     find_exposures,
     find_messages,
     get_configuration,
+    get_instruments,
     get_message,
 )
 
@@ -30,6 +31,7 @@ subapp.include_router(edit_message.router)
 subapp.include_router(find_messages.router)
 subapp.include_router(find_exposures.router)
 subapp.include_router(get_configuration.router)
+subapp.include_router(get_instruments.router)
 subapp.include_router(get_message.router)
 
 
