@@ -92,13 +92,14 @@ async def find_exposures(
         description="Fields to sort by. "
         "Prefix a name with - for descending order, e.g. -obs_id. "
         "Repeat the parameter for each value. "
-        "Warnings:\n"
-        "* The butler does not support sorting by date (e.g. using timespan). "
-        "Sort by 'id' instead.\n"
-        "*  The only safe order for use with 'offset' with 'limit' is 'id' "
-        "if images are being added to the registry while you search.\n"
-        "The default order is 'id', and this is always appended "
-        "if you do not explicitly specify 'id' or '-id'",
+        "The default order is 'id' (oldest first), and this is always "
+        "appended if you do not explicitly specify 'id' or '-id'.\n"
+        "To order by date, specify 'id' (oldest first, the default order) "
+        "or '-id' (newest first). You may also search by 'timespan.begin' "
+        "or 'timespan.end' if you prefer. "
+        "Warning: the only safe order for use with 'offset' with 'limit' "
+        "is 'id' (oldest first) if images are being added to the registry "
+        "while you search.",
     ),
     offset: typing.Optional[int] = fastapi.Query(
         default=None,
