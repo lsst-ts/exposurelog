@@ -25,10 +25,11 @@ from exposurelog.testutils import (
 
 class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
     async def test_shared_state(self) -> None:
-        repo_path = pathlib.Path(__file__).parent / "data" / "hsc_raw"
+        repo_path = pathlib.Path(__file__).parent / "data" / "LSSTCam"
+        repo_path_2 = pathlib.Path(__file__).parent / "data" / "LATISS"
         with testing.postgresql.Postgresql() as postgresql:
             try:
-                await create_test_database(postgresql, num_messages=0)
+                await create_test_database(postgresql.url(), num_messages=0)
                 assert not has_shared_state()
                 with self.assertRaises(RuntimeError):
                     get_shared_state()
@@ -43,8 +44,8 @@ class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
                 # that results if that one item is bad.
                 db_bad_config_error = dict(
                     EXPOSURELOG_DB_PORT=("54321", OSError),
-                    # An invalid EXPOSURELOG_DB_HOST takes a long time to time out
-                    # so don't bother.
+                    # An invalid EXPOSURELOG_DB_HOST takes a long time
+                    # to time out, so don't bother.
                     EXPOSURELOG_DB_USER=(
                         "invalid_user",
                         asyncpg.exceptions.PostgresError,
@@ -111,9 +112,9 @@ class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
                     await create_shared_state()
                     assert has_shared_state()
 
-                    state = get_shared_state()
-                    assert len(state.registries) == 1
-                    assert state.site_id == required_kwargs["SITE_ID"]
+                    shared_state = get_shared_state()
+                    assert len(shared_state.registries) == 1
+                    assert shared_state.site_id == required_kwargs["SITE_ID"]
 
                     # Cannot create shared state once it is created
                     with self.assertRaises(RuntimeError):
@@ -125,16 +126,15 @@ class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
                     get_shared_state()
 
                 # Closing the database again should be a no-op
-                await state.exposurelog_db.close()
+                await shared_state.exposurelog_db.close()
 
                 # Deleting shared state again should be a no-op
                 await delete_shared_state()
                 assert not has_shared_state()
 
-                # Create two butler registries (both identical,
-                # since we only have one).
+                # Create two butler registries
                 with modify_environ(
-                    BUTLER_URI_2=str(repo_path),
+                    BUTLER_URI_2=str(repo_path_2),
                     **required_kwargs,
                     **db_config,
                 ):

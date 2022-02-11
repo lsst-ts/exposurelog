@@ -52,7 +52,7 @@ def assert_good_edit_response(
 
 class EditMessageTestCase(unittest.IsolatedAsyncioTestCase):
     async def test_edit_message(self) -> None:
-        repo_path = pathlib.Path(__file__).parent / "data" / "hsc_raw"
+        repo_path = pathlib.Path(__file__).parent / "data" / "LSSTCam"
         async with create_test_client(
             repo_path=repo_path, num_messages=1, random_seed=15
         ) as (
