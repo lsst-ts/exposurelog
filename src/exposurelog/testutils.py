@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 __all__ = [
+    "TEST_SITE_ID",
+    "TEST_TAGS",
     "MessageDictT",
     "assert_good_response",
     "assert_messages_equal",
@@ -34,6 +36,7 @@ MIN_DATE_RANDOM_MESSAGE = "2021-01-01"
 MAX_DATE_RANDOM_MESSAGE = "2022-12-31"
 
 TEST_SITE_ID = "test"
+TEST_TAGS = "green eggs and ham".split()
 
 # Type annotation aliases
 MessageDictT = typing.Dict[str, typing.Any]
@@ -54,11 +57,16 @@ async def create_test_client(
     random.seed(random_seed)
     with testing.postgresql.Postgresql() as postgresql:
         messages = await create_test_database(
-            postgresql, num_messages=num_messages, num_edited=num_edited
+            postgres_url=postgresql.url(),
+            num_messages=num_messages,
+            num_edited=num_edited,
         )
 
         db_config = db_config_from_dsn(postgresql.dsn())
         with modify_environ(
+            # TODO DM-33642: get rid of BUTLER_WRITEABLE_HACK
+            # when safe to do so.
+            BUTLER_WRITEABLE_HACK="true",
             BUTLER_URI_1=str(repo_path),
             BUTLER_URI_2=None if repo_path_2 is None else str(repo_path_2),
             SITE_ID=TEST_SITE_ID,
@@ -171,11 +179,12 @@ def assert_messages_equal(
         ]
         assert (
             values[0] == values[1]
-        ), f"field {field} unequal: {values[0]} != {values[1]}"
+        ), f"field {field} unequal: {values[0]!r} != {values[1]!r}"
 
 
 def cast_special(value: typing.Any) -> typing.Any:
-    """Cast special types (not plain old types) to str.
+    """Cast special types to plain data types;
+    return plain old data types unchanged.
 
     This allows comparison between values in the database
     and values returned by the web API.
@@ -199,8 +208,9 @@ def db_config_from_dsn(dsn: dict[str, str]) -> dict[str, str]:
     from an instance of testing.postgresql.Postgresql()::
 
         with testing.postgresql.Postgresql() as postgresql:
-            create_test_database(postgresql, num_messages=0)
+            create_test_database(postgresql.url(), num_messages=0)
 
+            db_config = db_config_from_dsn(postgresql.dsn())
             with modify_environ(
                 BUTLER_URI_1=str(repo_path),
                 SITE_ID=TEST_SITE_ID,
@@ -218,13 +228,21 @@ def db_config_from_dsn(dsn: dict[str, str]) -> dict[str, str]:
 
 
 def random_bool() -> bool:
+    """Return a random bool."""
     return random.random() > 0.5
 
 
 def random_date(precision: int = 0) -> datetime.datetime:
-    """Return a random date
+    """Return a random date between MIN_DATE_RANDOM_MESSAGE
+    and MAX_DATE_RANDOM_MESSAGE.
 
-    This is the same format as dates returned from the database.
+    Parameters
+    ----------
+    precision
+        The number of decimal digits of seconds.
+        If 0 then the output has no decimal point after the seconds field.
+
+    Return the same format as dates returned from the database.
     """
     min_date_unix = astropy.time.Time(MIN_DATE_RANDOM_MESSAGE).unix
     max_date_unix = astropy.time.Time(MAX_DATE_RANDOM_MESSAGE).unix
@@ -236,7 +254,7 @@ def random_date(precision: int = 0) -> datetime.datetime:
 
 
 def random_str(nchar: int) -> str:
-    """Return a random string of printable UTF-8 characters.
+    """Return a random string of nchar printable UTF-8 characters.
 
     The list of characters is limited, but attempts to
     cover a wide range of potentially problematic characters
@@ -252,6 +270,28 @@ def random_str(nchar: int) -> str:
     return "".join(random.sample(chars, nchar))
 
 
+def random_words(
+    words: typing.List[str], max_num: int = 3
+) -> typing.List[str]:
+    """Return a list of 0 or more allowed words.
+
+    Parameters
+    ----------
+    words
+        List of words from which to select words.
+    max_num
+        The maximum number of returned words.
+
+    Half of the time it will return 0 items.
+    The rest of the time it will return 1 - max_num values
+    in random order, with equal probability per number of returned words.
+    """
+    if random.random() < 0.5:
+        return []
+    num_words = random.randint(1, max_num)
+    return random.sample(words, num_words)
+
+
 def random_message() -> MessageDictT:
     """Make one random message, as a dict of field: value.
 
@@ -264,6 +304,8 @@ def random_message() -> MessageDictT:
 
     String are random ASCII characters, and each string field has
     a slightly different arbitrary length.
+    Tags are generated from a random selection (of random length)
+    of possible tags and URLs.
 
     To use:
 
@@ -287,6 +329,7 @@ def random_message() -> MessageDictT:
         instrument=random_str(nchar=16),
         day_obs=int(random_yyyymmdd),
         message_text=random_str(nchar=20),
+        tags=random_words(TEST_TAGS),
         user_id=random_str(nchar=14),
         user_agent=random_str(nchar=12),
         is_human=random_bool(),
@@ -328,7 +371,7 @@ def random_messages(num_messages: int, num_edited: int) -> list[MessageDictT]:
 
     # Create edited messages.
     parent_message_id_set: typing.Set[uuid.UUID] = set()
-    edited_messages = list(
+    edited_messages: typing.List[MessageDictT] = list(
         # [1:] because there is no older message to be the parent.
         random.sample(message_list[1:], num_edited)
     )
@@ -346,7 +389,7 @@ def random_messages(num_messages: int, num_edited: int) -> list[MessageDictT]:
 
 
 async def create_test_database(
-    postgresql: testing.postgresql.Postgresql,
+    postgres_url: str,
     num_messages: int,
     num_edited: int = 0,
 ) -> list[MessageDictT]:
@@ -355,10 +398,11 @@ async def create_test_database(
 
     Parameters
     ----------
-    postgresql
-        Test database. Typically created using::
+    postgresql_url
+        URL to PostgreSQL database. Typically a test database created using::
 
             with testing.postgresql.Postgresql() as postgresql:
+                postgres_url = postgresql.url()
     num_messages
         Number of messages
     num_edited, optional
@@ -376,7 +420,7 @@ async def create_test_database(
             f"num_edited={num_edited} must be zero or "
             f"less than num_messages={num_messages}"
         )
-    sa_url = sqlalchemy.engine.make_url(postgresql.url())
+    sa_url = sqlalchemy.engine.make_url(postgres_url)
     sa_url = sa_url.set(drivername="postgresql+asyncpg")
     engine = create_async_engine(sa_url, future=True)
 
@@ -394,9 +438,12 @@ async def create_test_database(
             pruned_message = message.copy()
             del pruned_message["is_valid"]
             result = await connection.execute(
-                table.insert().values(**pruned_message).returning(table.c.id)
+                table.insert()
+                .values(**pruned_message)
+                .returning(table.c.id, table.c.is_valid)
             )
             data = result.fetchone()
             assert message["id"] == data.id
+            assert message["is_valid"] == data.is_valid
 
     return messages

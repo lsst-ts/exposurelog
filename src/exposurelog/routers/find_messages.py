@@ -11,6 +11,7 @@ import sqlalchemy as sa
 
 from ..message import ExposureFlag, Message
 from ..shared_state import SharedState, get_shared_state
+from .normalize_tags import TAG_DESCRIPTION, normalize_tags
 
 router = fastapi.APIRouter()
 
@@ -36,7 +37,7 @@ async def find_messages(
     ),
     instruments: typing.Optional[typing.List[str]] = fastapi.Query(
         default=None,
-        description="Names of instruments (e.g. HSC). "
+        description="Names of instruments (e.g. LSSTCam). "
         "Repeat the parameter for each value.",
     ),
     min_day_obs: typing.Optional[int] = fastapi.Query(
@@ -52,6 +53,15 @@ async def find_messages(
     message_text: typing.Optional[str] = fastapi.Query(
         default=None,
         description="Message text contains...",
+    ),
+    tags: typing.Optional[typing.List[str]] = fastapi.Query(
+        default=None,
+        description="Tags, at least one of which must be present."
+        + TAG_DESCRIPTION,
+    ),
+    exclude_tags: typing.Optional[typing.List[str]] = fastapi.Query(
+        default=None,
+        description="Tags, all of which must be absent. " + TAG_DESCRIPTION,
     ),
     user_ids: typing.Optional[typing.List[str]] = fastapi.Query(
         default=None,
@@ -132,6 +142,8 @@ async def find_messages(
         "min_day_obs",
         "max_day_obs",
         "message_text",
+        "tags",
+        "exclude_tags",
         "user_ids",
         "user_agents",
         "is_human",
@@ -145,6 +157,11 @@ async def find_messages(
         "has_parent_id",
         "order_by",
     )
+
+    if tags is not None:
+        tags = normalize_tags(tags)
+    if exclude_tags is not None:
+        exclude_tags = normalize_tags(exclude_tags)
 
     async with state.exposurelog_db.engine.connect() as connection:
         conditions = []
@@ -167,6 +184,27 @@ async def find_messages(
                     conditions.append(column != None)  # noqa
                 else:
                     conditions.append(column == None)  # noqa
+            elif key == "tags":
+                # Field is an array and value is a list. Field name is the key.
+                # Return messages for which any item in the array matches
+                # matches any item in "value" (PostgreSQL's && operator).
+                # Notes:
+                # * The list cannot be empty, because the array is passed
+                #   by listing the parameter once per value.
+                # * The postgres-specific ARRAY field has an "overlap"
+                #   method that does the same thing as the && operator,
+                #   but the generic ARRAY field does not have this method.
+                #   The generic ARRAY field is easier to work with,
+                #   because it handles list directly, whereas the
+                #   postgres-specific ARRAY field requires casting lists.
+                column = el_table.columns[key]
+                conditions.append(column.op("&&")(value))
+            elif key == "exclude_tags":
+                # Value is a list; field name is the key.
+                # Note: the list cannot be empty, because the array is passed
+                # by listing the parameter once per value.
+                column = el_table.columns["tags"]
+                conditions.append(sa.sql.not_(column.op("&&")(value)))
             elif key in (
                 "site_ids",
                 "instruments",

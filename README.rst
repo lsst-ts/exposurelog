@@ -17,6 +17,7 @@ Configuration
 The service is configured via the following environment variables;
 All are optional except the few marked "(required)":
 
+* ``SITE_ID`` (required): Where this is deployed. Standard values include "summit" and "base".
 * ``BUTLER_URI_1`` (required): URI to an butler data repository, which is only read.
   Note that Exposure Log only reads the registry, so the actual data files are optional.
 * ``BUTLER_URI_2``: URI to a second, optional, data repository, which is searched after the first one.
@@ -25,7 +26,6 @@ All are optional except the few marked "(required)":
 * ``EXPOSURELOG_DB_HOST``: Exposurelog database server host; default="localhost".
 * ``EXPOSURELOG_DB_PORT``: Exposurelog database server port; default="5432".
 * ``EXPOSURELOG_DB_DATABASE``: Exposurelog database name; default="exposurelog".
-* ``SITE_ID`` (required): Where this is deployed, e.g. "summit" or "base".
 
 Developer Guide
 ---------------
@@ -53,6 +53,13 @@ If that fails with a complaint about missing packages try rebuilding your enviro
 
   tox -r
 
+To run unit tests manually (which has much less overhead than running tox),
+or to run the service, you must first activate tox's virtual environment.
+Warning: if you run unit tests this way, it tests the library code most recently built by tox;
+changes to library are ignored until you run tox again::
+
+  source .tox/py38/bin/activate
+
 To lint the code (run it twice if it reports a linting error the first time)::
 
   tox -e lint
@@ -61,23 +68,24 @@ To check type annotation with mypy::
 
   tox -e typing
 
-To run the service, first set the configuration environment variables, then::
-
-  uvicorn exposurelog.main:app --port n
-
-To run the service locally, you will need a running Postgres server
-with a user named ``exposurelog`` that has permission to create tables and rows,
-and a database also named ``exposurelog``.
+To run the service, you will need a running Postgres server with a user named ``exposurelog``
+that has permission to create tables and rows, and a database also named ``exposurelog``.
 With the Postgres server running::
 
+  # Configure the service
   export SITE_ID=test
-  export BUTLER_URI_1=.../exposurelog/tests/data/hsc_raw
-  # Also set EXPOSURELOG_DB_x environment variables as needed; see above
+  export BUTLER_URI_1=.../exposurelog/tests/data/LATISS
+  # Also set EXPOSURELOG_DB_x environment variables as needed; see Configuration above
 
-  uvicorn exposurelog.main:app --reload
+  # Activate the environment, if not already activated
+  source .tox/py38/bin/activate
 
-  # Then open this link in a browser: http://localhost:8000/exposurelog/
-  # For documentation open http://localhost:8000/exposurelog/docs
+  # Start the service.
+  # The default port is 8000, but the LSST standard port is 8080.
+  # --reload will reload the source code when you change it (don't use for production).
+  uvicorn exposurelog.main:app [--port n] [--reload]
+
+  # If running the service locally on port 8000, connect to it at: http://localhost:8000/exposurelog/
 
 Postgres Guide
 --------------

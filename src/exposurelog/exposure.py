@@ -9,7 +9,7 @@ import pydantic
 class Exposure(pydantic.BaseModel):
     obs_id: str = pydantic.Field(description="Observation ID.")
     instrument: str = pydantic.Field(
-        description="Short name of instrument, e.g. HSC."
+        description="Short name of instrument, e.g. LSSTCam."
     )
     observation_type: str = pydantic.Field(
         description="The observation type of this exposure "

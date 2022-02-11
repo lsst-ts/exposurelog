@@ -11,6 +11,7 @@ import sqlalchemy as sa
 
 from ..message import ExposureFlag, Message
 from ..shared_state import SharedState, get_shared_state
+from .normalize_tags import TAG_DESCRIPTION, normalize_tags
 
 router = fastapi.APIRouter()
 
@@ -20,6 +21,11 @@ async def edit_message(
     id: str,
     message_text: typing.Optional[str] = fastapi.Body(
         default=None, description="Message text"
+    ),
+    tags: typing.Optional[typing.List[str]] = fastapi.Body(
+        default=None,
+        description="Tags describing the message, as space-separated words. "
+        "If specified, replaces the existing set of tags. " + TAG_DESCRIPTION,
     ),
     site_id: typing.Optional[str] = fastapi.Body(
         default=None, description="Site ID"
@@ -63,9 +69,13 @@ async def edit_message(
     parent_id = id
     old_site_id = site_id
 
+    if tags is not None:
+        tags = normalize_tags(tags)
+
     request_data = dict(id=id, site_id=site_id)
     for name in (
         "message_text",
+        "tags",
         "site_id",
         "user_id",
         "user_agent",

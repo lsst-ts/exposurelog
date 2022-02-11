@@ -36,7 +36,7 @@ class doc_str:
 
 def assert_good_find_response(
     response: httpx.Response,
-    exposures: list[ExposureDictT],
+    exposures: typing.Iterable[ExposureDictT],
     predicate: typing.Callable,
 ) -> list[ExposureDictT]:
     """Assert that the correct exposures were found.
@@ -75,13 +75,15 @@ def get_range_values(
     assert len(values) >= 4, f"not enough values for {field}"
     min_value = values[1]
     max_value = values[-1]
-    assert max_value > min_value
+    if max_value == min_value:
+        assert isinstance(max_value, int)
+        max_value = min_value + 1
     return min_value, max_value
 
 
 def get_missing_exposure(
-    exposures: list[ExposureDictT],
-    found_exposures: list[ExposureDictT],
+    exposures: typing.Iterable[ExposureDictT],
+    found_exposures: typing.Iterable[ExposureDictT],
 ) -> list[ExposureDictT]:
     """Get exposures that were not found."""
     found_ids = set(
@@ -96,12 +98,13 @@ def get_missing_exposure(
 
 class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
     async def test_find_exposures(self) -> None:
-        repo_path = pathlib.Path(__file__).parent / "data" / "hsc_raw"
-        instrument = "HSC"
+        instrument = "LATISS"
+        repo_path = pathlib.Path(__file__).parent / "data" / instrument
 
         # Find all exposures in the registry,
         # and save as a list of dicts
-        butler = lsst.daf.butler.Butler(str(repo_path), writeable=False)
+        # TODO DM-33642: change to writeable=False when safe to do so.
+        butler = lsst.daf.butler.Butler(repo_path, writeable=True)
         registry = butler.registry
         exposure_iter = registry.queryDimensionRecords(
             "exposure",
@@ -110,7 +113,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
         exposures = [
             dict_from_exposure(exposure) for exposure in exposure_iter
         ]
-        exposures.sort(key=lambda exposure: exposure["obs_id"])
+        exposures.sort(key=lambda exposure: exposure["id"])
 
         # Check for duplicate exposures
         obs_ids = {exposure["obs_id"] for exposure in exposures}
@@ -158,15 +161,16 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
             ] = list()
 
             # Range arguments: min_<field>, max_<field>
-            # except min/max date, which is handled above.
             for field in ("day_obs", "seq_num", "date"):
                 min_name = f"min_{field}"
                 max_name = f"max_{field}"
 
                 if field == "date":
-                    # min_date and max_date need special handling
-                    # because they are compared to a time span,
-                    # rather than a scalar
+                    # min_date and max_date need special handling, because
+                    # they are compared to a time span, rather than a scalar.
+                    # The match rules are: timespan_end > min_date
+                    # and timespan_beg <= max_date. This matches how
+                    # daf_butler's Registry performs a timespan overlap search.
                     min_field = "timespan_end"
                     max_field = "timespan_begin"
                     min_value, __ = get_range_values(
@@ -186,7 +190,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
                         value = cast_special(exposure[field])
                         return value > min_value
 
-                    @doc_str(f"exposure[{max_field!r}] < {max_value}.")
+                    @doc_str(f"exposure[{max_field!r}] <= {max_value}.")
                     def test_max(
                         exposure: ExposureDictT,
                         field: str = max_field,
@@ -194,7 +198,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
                     ) -> bool:
                         max_value = cast_special(max_value)
                         value = cast_special(exposure[field])
-                        return value < max_value
+                        return value <= max_value
 
                 else:
                     min_field = field
@@ -302,31 +306,74 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
                 len(exposures),
                 len(exposures) + 3,
             ):
-                response = await run_find({"limit": limit})
-                found_exposures = assert_good_response(response)
-                assert len(found_exposures) == min(limit, len(exposures))
-                found_obs_ids = {
-                    exposure["obs_id"] for exposure in found_exposures
-                }
-                assert len(found_obs_ids) == len(found_exposures)
-                assert found_obs_ids <= obs_ids
+                offset = 0
+                while True:
+                    response = await run_find(dict(offset=offset, limit=limit))
+                    found_exposures = assert_good_response(response)
+                    num_found = len(found_exposures)
+                    assert num_found <= limit
+                    if num_found < limit:
+                        assert offset + num_found == len(exposures)
+                    for i in range(offset, offset + num_found):
+                        assert (
+                            found_exposures[i]["obs_id"]
+                            == exposures[i]["obs_id"]
+                        )
+                    if len(found_exposures) <= limit:
+                        break
+                    offset += limit
+
+            # Test order_by
+            response = await run_find(dict(order_by=["-id"]))
+            assert_good_find_response(
+                response, reversed(exposures), predicate=lambda exposure: True
+            )
+
+            # group_id is not sufficient (there are duplicates)
+            # but the service appends "id" if "id" if not specified
+            response = await run_find(dict(order_by=["group_id"]))
+            exposures.sort(
+                key=lambda exposure: (exposure["group_id"], exposure["id"])
+            )
+            assert_good_find_response(
+                response, exposures, predicate=lambda exposure: True
+            )
+
+            # Now check group_id with -id to make sure the service
+            # is not appending id after the -id
+            response = await run_find(dict(order_by=["group_id", "-id"]))
+            exposures.sort(
+                key=lambda exposure: (exposure["group_id"], -exposure["id"])
+            )
+            assert_good_find_response(
+                response, exposures, predicate=lambda exposure: True
+            )
+
+            # Test that offset >= # of records returns nothing
+            response = await run_find(dict(limit=10, offset=len(exposures)))
+            found_exposures = assert_good_response(response)
+            assert len(found_exposures) == 0
 
             # Test that limit must be positive
             response = await run_find({"limit": 0})
             assert response.status_code == 422
 
-    async def test_duplicate_registries(self) -> None:
-        """Test a server that has two repositories.
+            # Test that offset must not be negative
+            response = await run_find({"limit": -1})
+            assert response.status_code == 422
 
-        Unfortunately I only have one test repo (and it's hard enough
-        maintaining that as daf_butler evolves) so I just connect to it twice.
-        """
-        repo_path = pathlib.Path(__file__).parent / "data" / "hsc_raw"
-        instrument = "HSC"
+    async def test_two_registries(self) -> None:
+        """Test a server that has two repositories."""
+        repo_path = pathlib.Path(__file__).parent / "data" / "LSSTCam"
+        repo_path_2 = pathlib.Path(__file__).parent / "data" / "LATISS"
+        instrument = "LATISS"
 
-        # Find all exposures in the registry,
-        # and save as a list of dicts
-        butler = lsst.daf.butler.Butler(str(repo_path), writeable=False)
+        # The first repo is for LSSTCam and the second for LATISS,
+        # thus searches only return exposures from one registry.
+        # Use instrument=LATISS to search the second registry
+        # in order to test DM-33601
+        # TODO DM-33642: change to writeable=False when safe to do so.
+        butler = lsst.daf.butler.Butler(repo_path_2, writeable=True)
         registry = butler.registry
         exposure_iter = registry.queryDimensionRecords(
             "exposure",
@@ -335,7 +382,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
         exposures = [
             dict_from_exposure(exposure) for exposure in exposure_iter
         ]
-        exposures.sort(key=lambda exposure: exposure["obs_id"])
+        exposures.sort(key=lambda exposure: exposure["id"])
 
         # Check for duplicate exposures.
         obs_ids = {exposure["obs_id"] for exposure in exposures}
@@ -343,7 +390,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
 
         async with create_test_client(
             repo_path=repo_path,
-            repo_path_2=repo_path,
+            repo_path_2=repo_path_2,
         ) as (
             client,
             messages,
@@ -353,10 +400,14 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
 
             async def run_find(
                 find_args: typing.Dict[str, typing.Any],
+                registry: int = 2,
                 instrument: str = instrument,
             ) -> httpx.Response:
-                """Run a query after adding instrument parameter."""
+                """Run a query after adding registry and instrument
+                parameters.
+                """
                 full_find_args = find_args.copy()
+                full_find_args["registry"] = registry
                 full_find_args["instrument"] = instrument
                 response = await client.get(
                     "/exposurelog/exposures",
@@ -364,7 +415,12 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
                 )
                 return response
 
-            response = await run_find({})
+            # Searching the wrong registry should return no matches
+            response = await run_find(dict(), registry=1)
+            found_exposures = assert_good_response(response)
+            assert len(found_exposures) == 0
+
+            response = await run_find(dict())
             found_exposures = assert_good_find_response(
                 response, exposures, lambda exposure: True
             )

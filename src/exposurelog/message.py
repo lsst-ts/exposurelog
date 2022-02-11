@@ -23,10 +23,13 @@ class Message(pydantic.BaseModel):
     )
     obs_id: str = pydantic.Field(description="Observation ID.")
     instrument: str = pydantic.Field(
-        description="Short name of instrument, e.g. HSC."
+        description="Short name of instrument, e.g. LSSTCam."
     )
     day_obs: int = pydantic.Field(description="Observation day.")
     message_text: str = pydantic.Field(description="Message.")
+    tags: typing.List[str] = pydantic.Field(
+        title="Zero or more space-separated keywords relevant to this message."
+    )
     user_id: str = pydantic.Field(description="User ID.")
     user_agent: str = pydantic.Field(
         description="User agent: the application that created the message."

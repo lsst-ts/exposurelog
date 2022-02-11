@@ -12,6 +12,7 @@ from .routers import (
     find_exposures,
     find_messages,
     get_configuration,
+    get_instruments,
     get_message,
 )
 
@@ -30,6 +31,7 @@ subapp.include_router(edit_message.router)
 subapp.include_router(find_messages.router)
 subapp.include_router(find_exposures.router)
 subapp.include_router(get_configuration.router)
+subapp.include_router(get_instruments.router)
 subapp.include_router(get_message.router)
 
 
@@ -43,8 +45,13 @@ async def root(request: starlette.requests.Request) -> str:
     </head>
     <body>
         <h1>Exposure log service</h1>
+
         <p>Create and manage log messages associated with exposures.</p>
-        <p><a href="{request.url}docs">Interactive OpenAPI documentation</a></p>
+
+        <p>OpenAPI documentation is available in two flavors:
+        <a href="{request.url}redoc">redoc</a>, which is easy to read, and
+        <a href="{request.url}docs">docs</a> (swagger), which is interactive,
+        but harder to read.
     </html>
     """
 
