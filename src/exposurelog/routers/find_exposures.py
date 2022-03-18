@@ -6,13 +6,13 @@ import asyncio
 import datetime
 import functools
 import http
-import re
 import typing
 
 import astropy.time
 import fastapi
 import lsst.daf.butler
 import lsst.daf.butler.core
+import lsst.daf.butler.registry
 
 from ..exposure import Exposure
 from ..shared_state import SharedState, get_shared_state
@@ -140,18 +140,8 @@ async def find_exposures(
         "observation_types",
     )
 
-    # Work around registry.queryDimensionRecords DM-33600:
-    # * Specifying the instrument argument results in a LookupError
-    #   if the instrument is unknown. Specifying the instrument in ``where``
-    #   correctly returns no records, instead.
-    # * ``instrument`` cannot be specified in the ``bind`` argument.
-    if not re.match(r"^[a-zA-Z][a-zA-Z0-9-_]+$", instrument):
-        raise fastapi.HTTPException(
-            status_code=http.HTTPStatus.NOT_FOUND,
-            detail=f"Invalid instrument name {instrument!r}",
-        )
-    conditions = [f"instrument = '{instrument}'"]
-    bind = dict()
+    bind: typing.Dict[str, typing.Any] = dict()
+    conditions: typing.List[str] = []
     for key in select_arg_names:
         value = locals()[key]
         if value is None:
@@ -205,6 +195,7 @@ async def find_exposures(
     find_func = functools.partial(
         find_exposures_in_a_registry,
         registry=registry_instance,
+        instrument=instrument,
         bind=bind,
         where=where,
         order_by=order_by,
@@ -241,6 +232,7 @@ def dict_from_exposure(
 
 def find_exposures_in_a_registry(
     registry: lsst.daf.butler.Registry,
+    instrument: str,
     bind: dict,
     where: str,
     order_by: typing.List[str],
@@ -255,6 +247,8 @@ def find_exposures_in_a_registry(
     ----------
     registry
         The data registry to search.
+    instrument
+        Name of instrument.
     bind
         bind argument to `lsst.daf.butler.Registry.queryDimensionRecords`.
     where
@@ -275,12 +269,16 @@ def find_exposures_in_a_registry(
     try:
         record_iter = registry.queryDimensionRecords(
             "exposure",
+            instrument=instrument,
             bind=bind,
             where=where,
         )
         record_iter.limit(limit=limit, offset=offset)
         record_iter.order_by(*order_by)
         return list(record_iter)
+    except lsst.daf.butler.registry.DataIdValueError:
+        # No such instrument
+        return []
     except Exception as e:
         raise fastapi.HTTPException(
             status_code=http.HTTPStatus.NOT_FOUND,

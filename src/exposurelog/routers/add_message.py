@@ -10,6 +10,7 @@ import astropy.time
 import astropy.units as u
 import fastapi
 import lsst.daf.butler
+import lsst.daf.butler.registry
 import sqlalchemy as sa
 
 from ..message import ExposureFlag, Message
@@ -153,6 +154,9 @@ def get_day_obs_from_registries(
             )
             if records:
                 return records[0].day_obs
+    except lsst.daf.butler.registry.DataIdValueError:
+        # No such instrument
+        pass
     except Exception as e:
-        print(f"Error in butler query: {e}")
+        print(f"Error in butler query: {e!r}")
     return None
