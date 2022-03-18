@@ -15,12 +15,36 @@ _shared_state: typing.Optional[SharedState] = None
 
 
 def get_env(name: str, default: typing.Optional[str] = None) -> str:
+    """Get a value from an environment variable.
+
+    Parameters
+    ----------
+    name
+        The name of the environment variable.
+    default
+        The default value; if None then raise ValueError if absent.
+    """
     if default is not None and not isinstance(default, str):
         raise ValueError(f"default={default!r} must be a str or None")
     value = os.environ.get(name, default)
     if value is None:
         raise ValueError(f"You must specify environment variable {name}")
     return value
+
+
+def create_db_url() -> str:
+    """Create the exposurelog database URL from environment variables."""
+    exposurelog_db_user = get_env("EXPOSURELOG_DB_USER", "exposurelog")
+    exposurelog_db_password = get_env("EXPOSURELOG_DB_PASSWORD", "")
+    exposurelog_db_host = get_env("EXPOSURELOG_DB_HOST", "localhost")
+    exposurelog_db_port = int(get_env("EXPOSURELOG_DB_PORT", "5432"))
+    exposurelog_db_database = get_env("EXPOSURELOG_DB_DATABASE", "exposurelog")
+    encoded_db_password = urllib.parse.quote_plus(exposurelog_db_password)
+    return (
+        f"postgresql+asyncpg://{exposurelog_db_user}:{encoded_db_password}"
+        f"@{exposurelog_db_host}:{exposurelog_db_port}"
+        f"/{exposurelog_db_database}"
+    )
 
 
 class SharedState:
@@ -81,19 +105,7 @@ class SharedState:
         del butler_writeable_hack_str
         self.butler_uri_1 = get_env("BUTLER_URI_1")
         self.butler_uri_2 = get_env("BUTLER_URI_2", "")
-        exposurelog_db_user = get_env("EXPOSURELOG_DB_USER", "exposurelog")
-        exposurelog_db_password = get_env("EXPOSURELOG_DB_PASSWORD", "")
-        exposurelog_db_host = get_env("EXPOSURELOG_DB_HOST", "localhost")
-        exposurelog_db_port = int(get_env("EXPOSURELOG_DB_PORT", "5432"))
-        exposurelog_db_database = get_env(
-            "EXPOSURELOG_DB_DATABASE", "exposurelog"
-        )
-        encoded_db_password = urllib.parse.quote_plus(exposurelog_db_password)
-        exposurelog_db_url = (
-            f"postgresql://{exposurelog_db_user}:{encoded_db_password}"
-            f"@{exposurelog_db_host}:{exposurelog_db_port}"
-            f"/{exposurelog_db_database}"
-        )
+        exposurelog_db_url = create_db_url()
 
         butlers = [
             lsst.daf.butler.Butler(
