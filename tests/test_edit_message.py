@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import http
 import pathlib
+import random
 import unittest
 import uuid
 
 import httpx
 
 from exposurelog.testutils import (
+    TEST_TAGS,
     ArgDictT,
     MessageDictT,
     assert_good_response,
@@ -65,9 +67,14 @@ class EditMessageTestCase(unittest.IsolatedAsyncioTestCase):
             )
             assert_good_response(get_old_response)
 
+            new_tags_list = TEST_TAGS[:]
+            random.shuffle(TEST_TAGS)
             full_edit_args = dict(
                 site_id="NewSite",
                 message_text="New message text",
+                level=101,
+                tags=new_tags_list,
+                urls=["http:://new/url1", "http:://new/url2"],
                 user_id="new user_id",
                 user_agent="new user_agent",
                 is_human=True,

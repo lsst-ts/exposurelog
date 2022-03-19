@@ -4,6 +4,7 @@ __all__ = ["add_message"]
 
 import asyncio
 import http
+import logging
 import typing
 
 import astropy.time
@@ -34,10 +35,19 @@ async def add_message(
         description="Short name of instrument (e.g. LSSTCam)",
     ),
     message_text: str = fastapi.Body(..., description="Message text"),
+    level: int = fastapi.Body(
+        default=logging.INFO,
+        description="Message level; a python logging level.",
+    ),
     tags: typing.List[str] = fastapi.Body(
         default=[],
         description="Tags describing the message, as space-separated words. "
         + TAG_DESCRIPTION,
+    ),
+    urls: typing.List[str] = fastapi.Body(
+        default=[],
+        description="URLs of associated JIRA tickets, screen shots, etc.: "
+        "space-separated.",
     ),
     user_id: str = fastapi.Body(..., description="User ID"),
     user_agent: str = fastapi.Body(
@@ -105,7 +115,9 @@ async def add_message(
                 instrument=instrument,
                 day_obs=day_obs,
                 message_text=message_text,
+                level=level,
                 tags=tags,
+                urls=urls,
                 user_id=user_id,
                 user_agent=user_agent,
                 is_human=is_human,

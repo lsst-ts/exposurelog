@@ -54,10 +54,21 @@ async def find_messages(
         default=None,
         description="Message text contains...",
     ),
+    min_level: typing.Optional[int] = fastapi.Query(
+        default=None, description="Minimum level, inclusive."
+    ),
+    max_level: typing.Optional[int] = fastapi.Query(
+        default=None, description="Maximum level, exclusive."
+    ),
     tags: typing.Optional[typing.List[str]] = fastapi.Query(
         default=None,
-        description="Tags, at least one of which must be present."
+        description="Tags, at least one of which must be present. "
         + TAG_DESCRIPTION,
+    ),
+    urls: typing.Optional[typing.List[str]] = fastapi.Query(
+        default=None,
+        desription="URLs, or fragments of URLs, "
+        "at least one of which must be present.",
     ),
     exclude_tags: typing.Optional[typing.List[str]] = fastapi.Query(
         default=None,
@@ -87,12 +98,12 @@ async def find_messages(
     ),
     min_date_added: typing.Optional[datetime.datetime] = fastapi.Query(
         default=None,
-        description="Minimum date the exposure was added, inclusive; "
+        description="Minimum date the message was added, inclusive; "
         "TAI as an ISO string with no timezone information",
     ),
     max_date_added: typing.Optional[datetime.datetime] = fastapi.Query(
         default=None,
-        description="Maximum date the exposure was added, exclusive; "
+        description="Maximum date the message was added, exclusive; "
         "TAI as an ISO string with no timezone information",
     ),
     has_date_invalidated: typing.Optional[bool] = fastapi.Query(
@@ -143,6 +154,9 @@ async def find_messages(
         "max_day_obs",
         "message_text",
         "tags",
+        "urls",
+        "min_level",
+        "max_level",
         "exclude_tags",
         "user_ids",
         "user_agents",
@@ -184,7 +198,7 @@ async def find_messages(
                     conditions.append(column != None)  # noqa
                 else:
                     conditions.append(column == None)  # noqa
-            elif key == "tags":
+            elif key in ("tags", "urls"):
                 # Field is an array and value is a list. Field name is the key.
                 # Return messages for which any item in the array matches
                 # matches any item in "value" (PostgreSQL's && operator).

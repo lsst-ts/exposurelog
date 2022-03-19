@@ -3,6 +3,7 @@ from __future__ import annotations
 __all__ = [
     "TEST_SITE_ID",
     "TEST_TAGS",
+    "TEST_URLS",
     "MessageDictT",
     "assert_good_response",
     "assert_messages_equal",
@@ -37,6 +38,12 @@ MAX_DATE_RANDOM_MESSAGE = "2022-12-31"
 
 TEST_SITE_ID = "test"
 TEST_TAGS = "green eggs and ham".split()
+TEST_URLS = [
+    "https://jira.lsstcorp.org/browse/DM-1",
+    "https://jira.lsstcorp.org/browse/DM-3",
+    "https://jira.lsstcorp.org/browse/DM-5",
+    "https://jira.lsstcorp.org/browse/DM-7",
+]
 
 # Type annotation aliases
 MessageDictT = typing.Dict[str, typing.Any]
@@ -297,13 +304,12 @@ def random_message() -> MessageDictT:
     All messages will have ``id=None``, ``site_id=TEST_SITE_ID``,
     ``is_valid=True``, ``date_invalidated=None``, and ``parent_id=None``.
 
-    Fields are in the same order as `Message` and the database schema,
-    to make it easier to visually compare these messages to messages in
-    responses.
+    Fields are in the same order as `Message`, to make it easier
+    to visually compare these messages to messages in responses.
 
-    String are random ASCII characters, and each string field has
+    String are random unicode characters, and each string field has
     a slightly different arbitrary length.
-    Tags are generated from a random selection (of random length)
+    Tags and urls are generated from a random selection (of random length)
     of possible tags and URLs.
 
     To use:
@@ -328,7 +334,9 @@ def random_message() -> MessageDictT:
         instrument=random_str(nchar=16),
         day_obs=int(random_yyyymmdd),
         message_text=random_str(nchar=20),
+        level=random.randint(0, 40),
         tags=random_words(TEST_TAGS),
+        urls=random_words(TEST_URLS),
         user_id=random_str(nchar=14),
         user_agent=random_str(nchar=12),
         is_human=random_bool(),
