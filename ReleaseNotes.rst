@@ -2,6 +2,12 @@
 Release Notes
 =============
 
+0.9.0
+-----
+
+* Add support for schema evolution using alembic.
+* Add "level" and "urls" columns to the message table.
+
 0.8.0
 -----
 

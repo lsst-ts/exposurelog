@@ -10,6 +10,7 @@ import httpx
 
 from exposurelog.testutils import (
     TEST_TAGS,
+    TEST_URLS,
     MessageDictT,
     assert_good_response,
     create_test_client,
@@ -55,15 +56,19 @@ class AddMessageTestCase(unittest.IsolatedAsyncioTestCase):
             client,
             messages,
         ):
+            # Add a message whose obs_id matches an exposure
+            # and with all test tags and URLs in random order.
             shuffled_test_tags = TEST_TAGS[:]
             random.shuffle(shuffled_test_tags)
-
-            # Add a message whose obs_id matches an exposure.
+            shuffled_test_urls = TEST_URLS[:]
+            random.shuffle(shuffled_test_urls)
             add_args = dict(
                 obs_id="MC_C_20190322_000002",
                 instrument="LSSTCam",
                 message_text="A sample message",
+                level=10,
                 tags=shuffled_test_tags,
+                urls=shuffled_test_urls,
                 user_id="test_add_message",
                 user_agent="pytest",
                 is_human=False,
@@ -124,9 +129,12 @@ class AddMessageTestCase(unittest.IsolatedAsyncioTestCase):
 
             # Error: add a message that is missing a required field.
             # This is a schema violation so the error code is 422,
-            # but I have not found that documented so
-            # accept anything in the 400s
-            optional_fields = frozenset(["tags", "exposure_flag", "is_new"])
+            # but I have not found that documented,
+            # so accept anything in the 400s.
+            # Note that level cannot be NULL, but add_message sets a default.
+            optional_fields = frozenset(
+                ["level", "tags", "urls", "exposure_flag", "is_new"]
+            )
             for key in add_args:
                 if key in optional_fields:
                     continue

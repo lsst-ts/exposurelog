@@ -22,10 +22,19 @@ async def edit_message(
     message_text: typing.Optional[str] = fastapi.Body(
         default=None, description="Message text"
     ),
+    level: typing.Optional[int] = fastapi.Body(
+        default=None,
+        description="Message level; a python logging level.",
+    ),
     tags: typing.Optional[typing.List[str]] = fastapi.Body(
         default=None,
         description="Tags describing the message, as space-separated words. "
         "If specified, replaces the existing set of tags. " + TAG_DESCRIPTION,
+    ),
+    urls: typing.Optional[typing.List[str]] = fastapi.Body(
+        default=None,
+        description="URLs of associated JIRA tickets, screen shots, etc.: "
+        "space-separated. If specified, replaces the existing set.",
     ),
     site_id: typing.Optional[str] = fastapi.Body(
         default=None, description="Site ID"
@@ -75,7 +84,9 @@ async def edit_message(
     request_data = dict(id=id, site_id=site_id)
     for name in (
         "message_text",
+        "level",
         "tags",
+        "urls",
         "site_id",
         "user_id",
         "user_agent",

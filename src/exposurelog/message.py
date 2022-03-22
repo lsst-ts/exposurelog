@@ -27,8 +27,15 @@ class Message(pydantic.BaseModel):
     )
     day_obs: int = pydantic.Field(description="Observation day.")
     message_text: str = pydantic.Field(description="Message.")
+    level: int = pydantic.Field(
+        title="Message level. A python logging level: "
+        "info=20, warning=30, error=40."
+    )
     tags: typing.List[str] = pydantic.Field(
         title="Zero or more space-separated keywords relevant to this message."
+    )
+    urls: typing.List[str] = pydantic.Field(
+        title="Zero or more space-separated URLS to JIRA tickets, screen shots, etc."
     )
     user_id: str = pydantic.Field(description="User ID.")
     user_agent: str = pydantic.Field(

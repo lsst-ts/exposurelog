@@ -190,6 +190,7 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
 
             # Range arguments: min_<field>, max_<field>.
             for field in (
+                "level",
                 "day_obs",
                 "date_added",
                 "date_invalidated",
@@ -247,7 +248,10 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
 
             # Collection arguments for arrays;
             # <field>, with a list of allowed values.
-            for field in ("tags",):
+            for field in (
+                "tags",
+                "urls",
+            ):
                 # Scramble the messages and use two field list values
                 # from the first message with at least two values
                 messages_to_search = random.sample(messages, len(messages))
@@ -450,6 +454,7 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                 (
                     "instrument",
                     "message_text",
+                    "level",
                     "obs_id",
                     "user_id",
                     "user_agent",

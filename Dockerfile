@@ -43,7 +43,7 @@ WORKDIR /home/appuser
 # Switch to non-root user
 USER appuser
 
-# Copy the test butler registrues to allow us to run the application with it
+# Copy the test butler registries to allow us to run the application with it
 COPY tests/data/LSSTCam LSSTCam
 COPY tests/data/LATISS LATISS
 

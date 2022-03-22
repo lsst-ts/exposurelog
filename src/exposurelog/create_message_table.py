@@ -44,6 +44,9 @@ def create_message_table() -> sa.Table:
         sa.Column("date_added", saty.DateTime(), nullable=False),
         sa.Column("date_invalidated", saty.DateTime(), nullable=True),
         sa.Column("parent_id", UUID(as_uuid=True), nullable=True),
+        # Columns added in version 0.9
+        sa.Column("level", saty.Integer(), nullable=False),
+        sa.Column("urls", saty.ARRAY(sa.Text), nullable=False),
         sa.ForeignKeyConstraint(["parent_id"], ["message.id"]),
     )
 
@@ -51,6 +54,7 @@ def create_message_table() -> sa.Table:
         "obs_id",
         "instrument",
         "day_obs",
+        "level",
         "tags",
         "user_id",
         "is_valid",
