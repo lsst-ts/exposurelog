@@ -127,11 +127,10 @@ class AddMessageTestCase(unittest.IsolatedAsyncioTestCase):
                     )
                     assert response.status_code == http.HTTPStatus.BAD_REQUEST
 
-            # Error: add a message that is missing a required field.
-            # This is a schema violation so the error code is 422,
+            # Error: add a message that is missing a required parameter.
+            # This is a schema violation. The error code is 422,
             # but I have not found that documented,
             # so accept anything in the 400s.
-            # Note that level cannot be NULL, but add_message sets a default.
             optional_fields = frozenset(
                 ["level", "tags", "urls", "exposure_flag", "is_new"]
             )
