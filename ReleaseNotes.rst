@@ -2,6 +2,11 @@
 Release Notes
 =============
 
+0.9.2
+-----
+
+* Dockerfile was not copying the test repos.
+
 0.9.1
 -----
 
