@@ -55,9 +55,14 @@ RUN useradd --create-home appuser
 # Copy the virtualenv
 COPY --from=install-image /opt/venv /opt/venv
 
+# Copy the alembic files and start-api.sh
 COPY alembic /alembic
 COPY alembic.ini /alembic.ini
 COPY scripts/start-api.sh /start-api.sh
+
+# Copy the test butler registries, to allow running sandbox instances of the service
+COPY tests/data/LATISS LATISS
+COPY tests/data/LSSTCam LSSTCam
 
 # Make sure we use the virtualenv
 ENV PATH="/opt/venv/bin:$PATH"
