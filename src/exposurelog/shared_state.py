@@ -9,7 +9,8 @@ import urllib
 
 import lsst.daf.butler
 
-from . import create_message_table, log_message_database
+from .create_message_table import SITE_ID_LEN, create_message_table
+from .log_message_database import LogMessageDatabase
 
 _shared_state: typing.Optional[SharedState] = None
 
@@ -87,10 +88,9 @@ class SharedState:
 
     def __init__(self):  # type: ignore
         site_id = get_env("SITE_ID")
-        if len(site_id) > create_message_table.SITE_ID_LEN:
+        if len(site_id) > SITE_ID_LEN:
             raise ValueError(
-                f"SITE_ID={site_id!r} too long; "
-                f"max length={create_message_table.SITE_ID_LEN}"
+                f"SITE_ID={site_id!r} too long; max length={SITE_ID_LEN}"
             )
 
         # TODO DM-33642: get rid of BUTLER_WRITEABLE_HACK support
@@ -122,8 +122,8 @@ class SharedState:
         self.log = logging.getLogger("exposurelog")
         self.site_id = site_id
         self.registries = [butler.registry for butler in butlers]
-        self.exposurelog_db = log_message_database.LogMessageDatabase(
-            url=exposurelog_db_url
+        self.exposurelog_db = LogMessageDatabase(
+            message_table=create_message_table(), url=exposurelog_db_url
         )
 
 
