@@ -103,12 +103,12 @@ async def add_message(
                 detail=f"Exposure obs_id={obs_id} not found and is_new is false",
             )
 
-    el_table = state.exposurelog_db.table
+    message_table = state.exposurelog_db.message_table
 
     # Add the message.
     async with state.exposurelog_db.engine.begin() as connection:
         result = await connection.execute(
-            el_table.insert()
+            message_table.insert()
             .values(
                 site_id=state.site_id,
                 obs_id=obs_id,
