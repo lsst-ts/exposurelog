@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import http
 import itertools
 import pathlib
 import random
@@ -9,6 +10,7 @@ import unittest
 import httpx
 import lsst.daf.butler
 
+from exposurelog.exposure import EXPOSURE_ORDER_BY_VALUES
 from exposurelog.routers.find_exposures import dict_from_exposure
 from exposurelog.shared_state import get_shared_state
 from exposurelog.testutils import (
@@ -68,6 +70,89 @@ def assert_good_find_response(
     return found_exposures
 
 
+def assert_exposures_ordered(
+    exposures: list[ExposureDictT], order_by: list[str]
+) -> None:
+    """Assert that a list of exposures is ordered as specified.
+
+    Parameters
+    ----------
+    exposures
+        Messages to test
+    order_by
+        Field names by which the data should be ordered.
+        Each name can be prefixed by "-" to mean descending order.
+        Just like the service, "id" is appended unless "id" or "-id"
+        is already present
+    """
+    full_order_by = list(order_by)
+    if not ("id" in order_by or "-id" in order_by):
+        full_order_by.append("id")
+    exposure1: typing.Optional[dict] = None
+    for exposure2 in exposures:
+        if exposure1 is not None:
+            assert_two_exposures_ordered(
+                exposure1=exposure1,
+                exposure2=exposure2,
+                order_by=full_order_by,
+            )
+        exposure1 = exposure2
+
+
+def assert_two_exposures_ordered(
+    exposure1: ExposureDictT, exposure2: ExposureDictT, order_by: list[str]
+) -> None:
+    """Assert that two exposures are ordered as specified.
+
+    Parameters
+    ----------
+    exposure1
+        A exposure.
+    exposure2
+        The next exposure.
+    order_by
+        Field names by which the data should be ordered.
+        Each name can be prefixed by "-" to mean descending order.
+    """
+    for key in order_by:
+        if key.startswith("-"):
+            field = key[1:]
+            val1 = exposure1[field]
+            val2 = exposure2[field]
+            desired_cmp_result = 1
+        else:
+            field = key
+            desired_cmp_result = -1
+        val1 = exposure1[field]
+        val2 = exposure2[field]
+        cmp_result = cmp_exposure_field(field, val1, val2)
+        if cmp_result == desired_cmp_result:
+            # These two exposures are fine
+            return
+        elif cmp_result != 0:
+            raise AssertionError(
+                f"exposures mis-ordered in key {key}: "
+                f"exposure1[{field!r}]={val1!r}, exposure2[{field!r}]={val2!r}"
+            )
+
+
+def cmp_exposure_field(field: str, val1: typing.Any, val2: typing.Any) -> int:
+    """Return -1 if val1 < val2, 0 if val1 == val2, 1 if val1 > val2.
+
+    Value None is equal to None and larger than every value.
+    This mimics how PostgreSQL handles NULL.
+    """
+    if val1 == val2:
+        return 0
+    elif val1 is None:
+        return 1
+    elif val2 is None:
+        return -1
+    elif val1 > val2:
+        return 1
+    return -1
+
+
 def get_range_values(
     exposures: list[ExposureDictT], field: str
 ) -> typing.Tuple[float, float]:
@@ -97,7 +182,7 @@ def get_missing_exposure(
 
 
 class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
-    async def test_find_exposures(self) -> None:
+    async def test_find_exposures_one_registry(self) -> None:
         instrument = "LATISS"
         repo_path = pathlib.Path(__file__).parent / "data" / instrument
 
@@ -323,10 +408,15 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
                         break
                     offset += limit
 
-            # Test order_by
-            response = await run_find(dict(order_by=["-id"]))
-            assert_good_find_response(
+            # Test minimal order_by
+            order_by = ["-id"]
+            response = await run_find(dict(order_by=order_by))
+            found_exposures = assert_good_find_response(
                 response, reversed(exposures), predicate=lambda exposure: True
+            )
+            print("exposure 1 =", found_exposures[0])
+            assert_exposures_ordered(
+                exposures=found_exposures, order_by=order_by
             )
 
             # group_id is not sufficient (there are duplicates)
@@ -362,8 +452,20 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
             response = await run_find({"limit": -1})
             assert response.status_code == 422
 
-    async def test_two_registries(self) -> None:
-        """Test a server that has two repositories."""
+            # Test order_by with all records
+            for order_by_field in EXPOSURE_ORDER_BY_VALUES:
+                order_by = [order_by_field]
+                response = await run_find(dict(order_by=[order_by_field]))
+                found_exposures = assert_good_response(response)
+                assert_exposures_ordered(found_exposures, order_by=order_by)
+
+            # Check invalid order_by fields
+            for bad_order_by_field in ("not_a_field", "+id"):
+                response = await run_find(dict(order_by=[bad_order_by_field]))
+                assert response.status_code == http.HTTPStatus.BAD_REQUEST
+
+    async def test_find_exposures_two_registries(self) -> None:
+        """Test find_exposures with a server that has two repositories."""
         repo_path = pathlib.Path(__file__).parent / "data" / "LSSTCam"
         repo_path_2 = pathlib.Path(__file__).parent / "data" / "LATISS"
         instrument = "LATISS"

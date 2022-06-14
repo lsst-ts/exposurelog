@@ -14,12 +14,21 @@ import lsst.daf.butler
 import lsst.daf.butler.core
 import lsst.daf.butler.registry
 
-from ..exposure import Exposure
+from ..exposure import EXPOSURE_ORDER_BY_VALUES, Exposure
 from ..shared_state import SharedState, get_shared_state
 
 router = fastapi.APIRouter()
 
 DEFAULT_LIMIIT = 50
+
+ExposureOrderByFieldsSet = set(EXPOSURE_ORDER_BY_VALUES)
+
+OrderByTranslationDict = {
+    "timespan_begin": "timespan.begin",
+    "-timespan_begin": "-timespan.begin",
+    "timespan_end": "timespan.end",
+    "-timespan_end": "-timespan.end",
+}
 
 
 @router.get("/exposures", response_model=typing.List[Exposure])
@@ -92,14 +101,15 @@ async def find_exposures(
         description="Fields to sort by. "
         "Prefix a name with - for descending order, e.g. -obs_id. "
         "Repeat the parameter for each value. "
+        "Valid values are any field in Exposure except 'instrument'. "
         "The default order is 'id' (oldest first), and this is always "
         "appended if you do not explicitly specify 'id' or '-id'.\n"
         "To order by date, specify 'id' (oldest first, the default order) "
-        "or '-id' (newest first). You may also search by 'timespan.begin' "
-        "or 'timespan.end' if you prefer. "
-        "Warning: the only safe order for use with 'offset' with 'limit' "
-        "is 'id' (oldest first) if images are being added to the registry "
-        "while you search.",
+        "or '-id' (newest first). You may also search by 'timespan_begin' "
+        "or 'timespan_end' if you prefer. "
+        "Warning: if images are being added to the registry while you search, "
+        "then the only safe order for use with 'offset' and 'limit' is `id' "
+        "(oldest first).",
     ),
     offset: typing.Optional[int] = fastapi.Query(
         default=None,
@@ -185,10 +195,17 @@ async def find_exposures(
     if order_by is None:
         order_by = ["id"]
     else:
-        for fieldname in order_by:
-            if fieldname in ("id", "-id"):
-                break
-        else:
+        bad_fields = set(order_by) - ExposureOrderByFieldsSet
+        if bad_fields:
+            raise fastapi.HTTPException(
+                status_code=http.HTTPStatus.BAD_REQUEST,
+                detail=f"Invalid order_by fields: {sorted(bad_fields)}; "
+                + f"allowed values are {EXPOSURE_ORDER_BY_VALUES}",
+            )
+        order_by = [
+            OrderByTranslationDict.get(name, name) for name in order_by
+        ]
+        if not set(order_by) & {"id", "-id"}:
             order_by.append("id")
 
     loop = asyncio.get_running_loop()
@@ -204,8 +221,7 @@ async def find_exposures(
     )
     rows = await loop.run_in_executor(None, find_func)
 
-    exposures = [Exposure(**dict_from_exposure(row)) for row in rows]
-    return sorted(exposures, key=lambda exposure: exposure.obs_id)
+    return [Exposure(**dict_from_exposure(row)) for row in rows]
 
 
 def astropy_from_datetime(

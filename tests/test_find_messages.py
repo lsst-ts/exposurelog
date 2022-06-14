@@ -78,6 +78,8 @@ def assert_messages_ordered(
     order_by
         Field names by which the data should be ordered.
         Each name can be prefixed by "-" to mean descending order.
+        Just like the service, "id" is appended unless "id" or "-id"
+        is already present
     """
     full_order_by = list(order_by)
     if not ("id" in order_by or "-id" in order_by):

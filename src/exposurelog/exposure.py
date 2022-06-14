@@ -1,4 +1,4 @@
-__all__ = ["Exposure"]
+__all__ = ["Exposure", "EXPOSURE_ORDER_BY_VALUES"]
 
 import datetime
 import typing
@@ -8,6 +8,7 @@ import pydantic
 
 class Exposure(pydantic.BaseModel):
     obs_id: str = pydantic.Field(description="Observation ID.")
+    id: int = pydantic.Field(description="Integer derived from 'id'.")
     instrument: str = pydantic.Field(
         description="Short name of instrument, e.g. LSSTCam."
     )
@@ -28,6 +29,9 @@ class Exposure(pydantic.BaseModel):
     group_name: str = pydantic.Field(
         description="String group identifier associated with this exposure "
         "by the acquisition system."
+    )
+    group_id: int = pydantic.Field(
+        description="Integer derived from 'group_name'."
     )
     target_name: str = pydantic.Field(
         description="Object of interest for this observation or survey field name."
@@ -57,3 +61,24 @@ class Exposure(pydantic.BaseModel):
     timespan_end: datetime.datetime = pydantic.Field(
         description="End TAI time of observation."
     )
+
+
+def _make_exposure_order_by_values() -> tuple[str, ...]:
+    """Make a tuple of valid order_by values for find_messages.
+
+    Return a tuple of all field names except "instrument",
+    plus those same field names with a leading "-".
+    """
+    omit_fields = {"instrument"}
+
+    order_by_fields = []
+    for field in Exposure.schema()["properties"]:
+        if field in omit_fields:
+            continue
+        order_by_fields += [field, "-" + field]
+    return tuple(order_by_fields)
+
+
+# Tuple of valid order_by values.
+# Each of these exists in the Exposure class.
+EXPOSURE_ORDER_BY_VALUES = _make_exposure_order_by_values()
