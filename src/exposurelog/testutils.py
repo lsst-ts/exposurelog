@@ -4,13 +4,17 @@ __all__ = [
     "TEST_SITE_ID",
     "TEST_TAGS",
     "TEST_URLS",
+    "ExposureDictT",
     "MessageDictT",
     "assert_good_response",
     "assert_messages_equal",
+    "AssertDataDictsOrdered",
+    "AssertMessagesOrdered",
     "cast_special",
     "create_test_client",
     "modify_environ",
 ]
+
 
 import contextlib
 import datetime
@@ -46,7 +50,9 @@ TEST_URLS = [
 ]
 
 # Type annotation aliases
+DataDictT = typing.Dict[str, typing.Any]
 MessageDictT = typing.Dict[str, typing.Any]
+ExposureDictT = typing.Dict[str, typing.Any]
 ArgDictT = typing.Dict[str, typing.Any]
 
 
@@ -186,6 +192,133 @@ def assert_messages_equal(
         assert (
             values[0] == values[1]
         ), f"field {field} unequal: {values[0]!r} != {values[1]!r}"
+
+
+class AssertDataDictsOrdered:
+    """Assert that a list of data dicts is in the specified order.
+
+    Parameter
+    ---------
+    data_name
+        The data type name to use in error messages.
+    """
+
+    def __init__(self, data_name: str) -> None:
+        self.data_name = data_name
+
+    def __call__(
+        self,
+        data_dicts: list[typing.Dict[str, typing.Any]],
+        order_by: list[str],
+    ) -> None:
+        """Assert that a list of data dicts is ordered as specified.
+
+        Parameters
+        ----------
+        data_dicts
+            Messages to test
+        order_by
+            Field names by which the data should be ordered.
+            Each name can be prefixed by "-" to mean descending order.
+            Just like the service, "id" is appended unless "id" or "-id"
+            is already present
+        """
+        full_order_by = list(order_by)
+        if not ("id" in order_by or "-id" in order_by):
+            full_order_by.append("id")
+        data_dict1: typing.Optional[dict] = None
+        for data_dict2 in data_dicts:
+            if data_dict1 is not None:
+                self.assert_two_data_dicts_ordered(
+                    data_dict1=data_dict1,
+                    data_dict2=data_dict2,
+                    order_by=full_order_by,
+                )
+            data_dict1 = data_dict2
+
+    def assert_two_data_dicts_ordered(
+        self, data_dict1: DataDictT, data_dict2: DataDictT, order_by: list[str]
+    ) -> None:
+        """Assert that two data_dicts are ordered as specified.
+
+        Parameters
+        ----------
+        data_dict1
+            A data_dict.
+        data_dict2
+            The next data_dict.
+        order_by
+            Field names by which the data should be ordered.
+            Each name can be prefixed by "-" to mean descending order.
+        """
+        for key in order_by:
+            if key.startswith("-"):
+                field = key[1:]
+                val1 = data_dict1[field]
+                val2 = data_dict2[field]
+                desired_cmp_result = 1
+            else:
+                field = key
+                desired_cmp_result = -1
+            val1 = data_dict1[field]
+            val2 = data_dict2[field]
+            cmp_result = self.cmp_one_field(field, val1, val2)
+            if cmp_result == desired_cmp_result:
+                # These two data_dicts are fine
+                return
+            elif cmp_result != 0:
+                raise AssertionError(
+                    f"{self.data_name}s mis-ordered in key {key}: "
+                    f"{self.data_name}1[{field!r}]={val1!r}, "
+                    f"{self.data_name}2[{field!r}]={val2!r}"
+                )
+
+    def cmp_one_field(
+        self, field: str, val1: typing.Any, val2: typing.Any
+    ) -> int:
+        """Compare values for one field.
+
+        Return -1 if val1 < val2, 0 if val1 == val2, 1 if val1 > val2.
+        """
+        if val1 == val2:
+            return 0
+        elif val1 > val2:
+            return 1
+        return -1
+
+
+class AssertMessagesOrdered(AssertDataDictsOrdered):
+    def __init__(self) -> None:
+        super().__init__(data_name="message")
+
+    def cmp_one_field(
+        self, field: str, val1: typing.Any, val2: typing.Any
+    ) -> int:
+        """Overload for messages from PostgreSQL.
+
+        Return -1 if val1 < val2, 0 if val1 == val2, 1 if val1 > val2, but:
+
+        * Exposure_flags order is based on the order the items appear
+          in the enum.
+        * Value None is equal to None and larger than every value.
+
+        This mimics how PostgreSQL handles the data.
+        """
+        if field == "exposure_flag":
+            ordered_flag_values = dict(
+                none="0: none", junk="1: junk", questionable="2: questionable"
+            )
+            val1 = ordered_flag_values[val1]
+            val2 = ordered_flag_values[val2]
+        if val1 == val2:
+            return 0
+        elif val1 is None:
+            return 1
+        elif val2 is None:
+            return -1
+        elif val1 > val2:
+            return 1
+        return -1
 
 
 def cast_special(value: typing.Any) -> typing.Any:

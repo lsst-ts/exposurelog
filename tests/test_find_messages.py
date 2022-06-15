@@ -10,6 +10,7 @@ import httpx
 
 from exposurelog.message import MESSAGE_FIELDS
 from exposurelog.testutils import (
+    AssertMessagesOrdered,
     MessageDictT,
     assert_good_response,
     assert_messages_equal,
@@ -66,94 +67,7 @@ def assert_good_find_response(
     return found_messages
 
 
-def assert_messages_ordered(
-    messages: list[MessageDictT], order_by: list[str]
-) -> None:
-    """Assert that a list of message is ordered as specified.
-
-    Parameters
-    ----------
-    messages
-        Messages to test
-    order_by
-        Field names by which the data should be ordered.
-        Each name can be prefixed by "-" to mean descending order.
-        Just like the service, "id" is appended unless "id" or "-id"
-        is already present
-    """
-    full_order_by = list(order_by)
-    if not ("id" in order_by or "-id" in order_by):
-        full_order_by.append("id")
-    message1: typing.Optional[dict] = None
-    for message2 in messages:
-        if message1 is not None:
-            assert_two_messages_ordered(
-                message1=message1,
-                message2=message2,
-                order_by=full_order_by,
-            )
-        message1 = message2
-
-
-def assert_two_messages_ordered(
-    message1: MessageDictT, message2: MessageDictT, order_by: list[str]
-) -> None:
-    """Assert that two messages are ordered as specified.
-
-    Parameters
-    ----------
-    message1
-        A message.
-    message2
-        The next message.
-    order_by
-        Field names by which the data should be ordered.
-        Each name can be prefixed by "-" to mean descending order.
-    """
-    for key in order_by:
-        if key.startswith("-"):
-            field = key[1:]
-            val1 = message1[field]
-            val2 = message2[field]
-            desired_cmp_result = 1
-        else:
-            field = key
-            desired_cmp_result = -1
-        val1 = message1[field]
-        val2 = message2[field]
-        cmp_result = cmp_message_field(field, val1, val2)
-        if cmp_result == desired_cmp_result:
-            # These two messages are fine
-            return
-        elif cmp_result != 0:
-            raise AssertionError(
-                f"messages mis-ordered in key {key}: "
-                f"message1[{field!r}]={val1!r}, message2[{field!r}]={val2!r}"
-            )
-
-
-def cmp_message_field(field: str, val1: typing.Any, val2: typing.Any) -> int:
-    """Return -1 if val1 < val2, 0 if val1 == val2, 1 if val1 > val2.
-
-    Value None is equal to None and larger than every value.
-    This mimics how PostgreSQL handles NULL.
-    Field exposure_flag is ordered by enum.
-    """
-    if field == "exposure_flag":
-        ordered_flag_values = dict(
-            none="0: none", junk="1: junk", questionable="2: questionable"
-        )
-        val1 = ordered_flag_values[val1]
-        val2 = ordered_flag_values[val2]
-    if val1 == val2:
-        return 0
-    elif val1 is None:
-        return 1
-    elif val2 is None:
-        return -1
-    elif val1 > val2:
-        return 1
-    return -1
+assert_messages_ordered = AssertMessagesOrdered()
 
 
 def get_missing_message(
@@ -472,7 +386,7 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                 messages = assert_good_response(response)
                 if field not in str_fields:
                     assert_messages_ordered(
-                        messages=messages, order_by=order_by
+                        data_dicts=messages, order_by=order_by
                     )
 
                 paged_messages: typing.List[MessageDictT] = []
@@ -515,7 +429,7 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                 messages = assert_good_response(response)
                 if field1 not in str_fields and field2 not in str_fields:
                     assert_messages_ordered(
-                        messages=messages, order_by=order_by
+                        data_dicts=messages, order_by=order_by
                     )
 
             # Check that limit must be positive
