@@ -2,6 +2,23 @@
 Change Log
 ==========
 
+0.9.4
+-----
+
+* find_exposures:
+
+    * Fix broken order_by handling (and possibly broken limit handling) and improve validation of the order_by order parameter.
+    * Allow timespan_begin and timespan_end to be invalid (in which case they are set to None).
+      Exposure ought to always have a valid timespan, but we have some that do not.
+
+* find_messages: improve validation of the ``order_by`` query parameter.
+* Update to python 3.10.
+* Get daf_butler from pypi (as lsst-daf-butler) instead of github.
+* Modernize type annotations, applying changes that required Python 3.9 or 3.10.
+  Use native types or `collections.abc` where possible.
+  Replace `typing.Union` and `typing.Optional` with ``|``.
+  Remove ``from __future__ import annotations`` where possible.
+
 0.9.3
 -----
 
