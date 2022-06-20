@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import http
 import itertools
 import pathlib
 import random
@@ -75,7 +76,7 @@ def get_missing_message(
     found_messages: list[MessageDictT],
 ) -> list[MessageDictT]:
     """Get messages that were not found."""
-    found_ids = set(found_message["id"] for found_message in found_messages)
+    found_ids = {found_message["id"] for found_message in found_messages}
     return [
         message for message in messages if str(message["id"]) not in found_ids
     ]
@@ -366,16 +367,14 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
             # I issue the order_by command but do not test the resulting
             # order if ordering by a string field.
             fields = list(MESSAGE_FIELDS)
-            str_fields = set(
-                (
-                    "instrument",
-                    "message_text",
-                    "level",
-                    "obs_id",
-                    "user_id",
-                    "user_agent",
-                )
-            )
+            str_fields = {
+                "instrument",
+                "message_text",
+                "level",
+                "obs_id",
+                "user_id",
+                "user_agent",
+            }
             for field, prefix in itertools.product(fields, ("", "-")):
                 order_by = [prefix + field]
                 find_args = find_args_day_obs.copy()
@@ -431,6 +430,16 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                     assert_messages_ordered(
                         data_dicts=messages, order_by=order_by
                     )
+
+            # Check invalid order_by fields
+            for bad_order_by in ("not_a_field", "+id"):
+                order_by = [bad_order_by]
+                find_args = find_args_day_obs.copy()
+                find_args["order_by"] = order_by
+                response = await client.get(
+                    "/exposurelog/messages", params=find_args
+                )
+                assert response.status_code == http.HTTPStatus.BAD_REQUEST
 
             # Check that limit must be positive
             response = await client.get(
