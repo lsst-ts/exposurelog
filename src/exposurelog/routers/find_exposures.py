@@ -289,8 +289,8 @@ def find_exposures_in_a_registry(
             bind=bind,
             where=where,
         )
-        record_iter.limit(limit=limit, offset=offset)
-        record_iter.order_by(*order_by)
+        record_iter = record_iter.limit(limit=limit, offset=offset)
+        record_iter = record_iter.order_by(*order_by)
         return list(record_iter)
     except lsst.daf.butler.registry.DataIdValueError:
         # No such instrument
