@@ -55,11 +55,13 @@ class Exposure(pydantic.BaseModel):
         "Can  be NULL for observations that are not on sky, or for "
         "where the sky angle changes during the observation.",
     )
-    timespan_begin: datetime.datetime = pydantic.Field(
-        description="Start TAI time of observation."
+    timespan_begin: typing.Optional[datetime.datetime] = pydantic.Field(
+        description="Start TAI time of observation, or None if unknown. "
+        "The date ought to always be known, but we have seen cases where it is not."
     )
-    timespan_end: datetime.datetime = pydantic.Field(
-        description="End TAI time of observation."
+    timespan_end: typing.Optional[datetime.datetime] = pydantic.Field(
+        description="End TAI time of observation, or None if unknown. "
+        "The date ought to always be known, but we have seen cases where it is not."
     )
 
 

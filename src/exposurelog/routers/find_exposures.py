@@ -241,8 +241,8 @@ def dict_from_exposure(
 ) -> dict:
     data = exposure.toDict()
     timespan = data.pop("timespan")
-    data["timespan_begin"] = timespan.begin.datetime
-    data["timespan_end"] = timespan.end.datetime
+    data["timespan_begin"] = getattr(timespan.begin, "datetime", None)
+    data["timespan_end"] = getattr(timespan.end, "datetime", None)
     return data
 
 
