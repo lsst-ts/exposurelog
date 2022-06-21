@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 __all__ = ["dict_from_exposure", "find_exposures"]
 
 import asyncio
@@ -31,10 +29,10 @@ OrderByTranslationDict = {
 }
 
 
-@router.get("/exposures", response_model=typing.List[Exposure])
+@router.get("/exposures", response_model=list[Exposure])
 @router.get(
     "/exposures/",
-    response_model=typing.List[Exposure],
+    response_model=list[Exposure],
     include_in_schema=False,
 )
 async def find_exposures(
@@ -48,55 +46,65 @@ async def find_exposures(
         default=...,
         description="Name of instrument (e.g. LSSTCam)",
     ),
-    min_day_obs: typing.Optional[int] = fastapi.Query(
+    min_day_obs: None
+    | int = fastapi.Query(
         default=None,
         description="Minimum day of observation, inclusive; "
         "an integer of the form YYYYMMDD",
     ),
-    max_day_obs: typing.Optional[int] = fastapi.Query(
+    max_day_obs: None
+    | int = fastapi.Query(
         default=None,
         description="Maximum day of observation, exclusive; "
         "an integer of the form YYYYMMDD",
     ),
-    min_seq_num: typing.Optional[int] = fastapi.Query(
+    min_seq_num: None
+    | int = fastapi.Query(
         default=None,
         description="Minimum sequence number",
     ),
-    max_seq_num: typing.Optional[int] = fastapi.Query(
+    max_seq_num: None
+    | int = fastapi.Query(
         default=None,
         description="Maximum sequence number",
     ),
-    group_names: typing.Optional[typing.List[str]] = fastapi.Query(
+    group_names: None
+    | list[str] = fastapi.Query(
         default=None,
         description="String group identifiers associated with exposures "
         "by the acquisition system. Repeat the parameter for each value.",
     ),
-    observation_reasons: typing.Optional[typing.List[str]] = fastapi.Query(
+    observation_reasons: None
+    | list[str] = fastapi.Query(
         default=None,
         description="Observation types (e.g. dark, bias, science). "
         "Repeat the parameter for each value.",
     ),
-    observation_types: typing.Optional[typing.List[str]] = fastapi.Query(
+    observation_types: None
+    | list[str] = fastapi.Query(
         default=None,
         description="Reasons the exposure was taken "
         "(e.g. science, filter scan, unknown). "
         "Repeat the parameter for each value.",
     ),
-    min_date: typing.Optional[datetime.datetime] = fastapi.Query(
+    min_date: None
+    | datetime.datetime = fastapi.Query(
         default=None,
         description="Minimum date during the time the exposure was taken, exclusive "
         "(because that is how daf_butler Registry performs a timespan overlap search). "
         "TAI as an ISO string with no timezone information. "
         "The date and time portions may be separated with a space or a T.",
     ),
-    max_date: typing.Optional[datetime.datetime] = fastapi.Query(
+    max_date: None
+    | datetime.datetime = fastapi.Query(
         default=None,
         description="Maximum date during the time the exposure was taken, inclusive "
         "(because that is how daf_butler Registry performs a timespan overlap search). "
         "TAI as an ISO string (with or without a T) with no timezone information. "
         "The date and time portions may be separated with a space or a T.",
     ),
-    order_by: typing.Optional[typing.List[str]] = fastapi.Query(
+    order_by: None
+    | list[str] = fastapi.Query(
         default=None,
         description="Fields to sort by. "
         "Prefix a name with - for descending order, e.g. -obs_id. "
@@ -111,7 +119,8 @@ async def find_exposures(
         "then the only safe order for use with 'offset' and 'limit' is `id' "
         "(oldest first).",
     ),
-    offset: typing.Optional[int] = fastapi.Query(
+    offset: None
+    | int = fastapi.Query(
         default=None,
         description="The number of records to skip.",
         ge=0,
@@ -150,8 +159,8 @@ async def find_exposures(
         "observation_types",
     )
 
-    bind: typing.Dict[str, typing.Any] = dict()
-    conditions: typing.List[str] = []
+    bind: dict[str, typing.Any] = dict()
+    conditions: list[str] = []
     for key in select_arg_names:
         value = locals()[key]
         if value is None:
@@ -225,8 +234,8 @@ async def find_exposures(
 
 
 def astropy_from_datetime(
-    date: typing.Optional[datetime.datetime],
-) -> typing.Optional[astropy.time.Time]:
+    date: None | datetime.datetime,
+) -> None | astropy.time.Time:
     """Convert an optional TAI datetime.datetime to an astropy.time.Time.
 
     Return None if date is None.
@@ -247,14 +256,14 @@ def dict_from_exposure(
 
 
 def find_exposures_in_a_registry(
-    registry: lsst.daf.butler.Registry,
+    registry: lsst.daf.butler.registry.Registry,
     instrument: str,
     bind: dict,
     where: str,
-    order_by: typing.List[str],
-    offset: typing.Optional[int] = None,
+    order_by: list[str],
+    offset: None | int = None,
     limit: int = 50,
-) -> typing.List[lsst.daf.butler.core.DimensionRecord]:
+) -> list[lsst.daf.butler.core.DimensionRecord]:
     """Find exposures matching specified criteria.
 
     The exposures are sorted by obs_id.

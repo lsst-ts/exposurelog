@@ -1,11 +1,8 @@
-from __future__ import annotations
-
 __all__ = ["find_messages"]
 
 import datetime
 import enum
 import http
-import typing
 
 import fastapi
 import sqlalchemy as sa
@@ -26,63 +23,76 @@ class TriState(str, enum.Enum):
 MESSAGE_ORDER_BY_SET = set(MESSAGE_ORDER_BY_VALUES)
 
 
-@router.get("/messages", response_model=typing.List[Message])
+@router.get("/messages", response_model=list[Message])
 @router.get(
-    "/messages/", response_model=typing.List[Message], include_in_schema=False
+    "/messages/", response_model=list[Message], include_in_schema=False
 )
 async def find_messages(
-    site_ids: typing.Optional[typing.List[str]] = fastapi.Query(
+    site_ids: None
+    | list[str] = fastapi.Query(
         default=None,
         description="Site IDs.",
     ),
-    obs_id: typing.Optional[str] = fastapi.Query(
+    obs_id: None
+    | str = fastapi.Query(
         default=None,
         description="Observation ID (a string) contains...",
     ),
-    instruments: typing.Optional[typing.List[str]] = fastapi.Query(
+    instruments: None
+    | list[str] = fastapi.Query(
         default=None,
         description="Names of instruments (e.g. LSSTCam). "
         "Repeat the parameter for each value.",
     ),
-    min_day_obs: typing.Optional[int] = fastapi.Query(
+    min_day_obs: None
+    | int = fastapi.Query(
         default=None,
         description="Minimum day of observation, inclusive; "
         "an integer of the form YYYYMMDD",
     ),
-    max_day_obs: typing.Optional[int] = fastapi.Query(
+    max_day_obs: None
+    | int = fastapi.Query(
         default=None,
         description="Maximum day of observation, exclusive; "
         "an integer of the form YYYYMMDD",
     ),
-    message_text: typing.Optional[str] = fastapi.Query(
+    message_text: None
+    | str = fastapi.Query(
         default=None,
         description="Message text contains...",
     ),
-    min_level: typing.Optional[int] = fastapi.Query(
+    min_level: None
+    | int = fastapi.Query(
         default=None, description="Minimum level, inclusive."
     ),
-    max_level: typing.Optional[int] = fastapi.Query(
+    max_level: None
+    | int = fastapi.Query(
         default=None, description="Maximum level, exclusive."
     ),
-    tags: typing.Optional[typing.List[str]] = fastapi.Query(
+    tags: None
+    | list[str] = fastapi.Query(
         default=None,
         description="Tags, at least one of which must be present. "
         + TAG_DESCRIPTION,
     ),
-    urls: typing.Optional[typing.List[str]] = fastapi.Query(
+    urls: None
+    | list[str] = fastapi.Query(
         default=None,
         desription="URLs, or fragments of URLs, "
         "at least one of which must be present.",
     ),
-    exclude_tags: typing.Optional[typing.List[str]] = fastapi.Query(
+    exclude_tags: None
+    | list[str] = fastapi.Query(
         default=None,
         description="Tags, all of which must be absent. " + TAG_DESCRIPTION,
     ),
-    user_ids: typing.Optional[typing.List[str]] = fastapi.Query(
+    user_ids: None
+    | list[str] = fastapi.Query(
         default=None,
         description="User IDs. Repeat the parameter for each value.",
     ),
-    user_agents: typing.Optional[typing.List[str]] = fastapi.Query(
+    user_agents: None
+    | list[str] = fastapi.Query(
         default=None,
         description="User agents (which app created the message). "
         "Repeat the parameter for each value.",
@@ -95,40 +105,48 @@ async def find_messages(
         default=TriState.true,
         description="Is the message valid? (False if deleted or superseded)",
     ),
-    exposure_flags: typing.Optional[typing.List[ExposureFlag]] = fastapi.Query(
+    exposure_flags: None
+    | list[ExposureFlag] = fastapi.Query(
         default=None,
         description="List of exposure flag values. "
         "Repeat the parameter for each value.",
     ),
-    min_date_added: typing.Optional[datetime.datetime] = fastapi.Query(
+    min_date_added: None
+    | datetime.datetime = fastapi.Query(
         default=None,
         description="Minimum date the message was added, inclusive; "
         "TAI as an ISO string with no timezone information",
     ),
-    max_date_added: typing.Optional[datetime.datetime] = fastapi.Query(
+    max_date_added: None
+    | datetime.datetime = fastapi.Query(
         default=None,
         description="Maximum date the message was added, exclusive; "
         "TAI as an ISO string with no timezone information",
     ),
-    has_date_invalidated: typing.Optional[bool] = fastapi.Query(
+    has_date_invalidated: None
+    | bool = fastapi.Query(
         default=None,
         description="Does this message have a non-null " "date_invalidated?",
     ),
-    min_date_invalidated: typing.Optional[datetime.datetime] = fastapi.Query(
+    min_date_invalidated: None
+    | datetime.datetime = fastapi.Query(
         default=None,
         description="Minimum date the is_valid flag was last toggled, inclusive, "
         "TAI as an ISO string with no timezone information",
     ),
-    max_date_invalidated: typing.Optional[datetime.datetime] = fastapi.Query(
+    max_date_invalidated: None
+    | datetime.datetime = fastapi.Query(
         default=None,
         description="Maximum date the is_valid flag was last toggled, exclusive, "
         "TAI as an ISO string with no timezone information",
     ),
-    has_parent_id: typing.Optional[bool] = fastapi.Query(
+    has_parent_id: None
+    | bool = fastapi.Query(
         default=None,
         description="Does this message have a " "non-null parent ID?",
     ),
-    order_by: typing.Optional[typing.List[str]] = fastapi.Query(
+    order_by: None
+    | list[str] = fastapi.Query(
         default=None,
         description="Fields to sort by. "
         "The allowed fields are all fields in 'Message'."

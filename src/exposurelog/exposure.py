@@ -1,7 +1,6 @@
 __all__ = ["Exposure", "EXPOSURE_ORDER_BY_VALUES"]
 
 import datetime
-import typing
 
 import pydantic
 
@@ -39,27 +38,27 @@ class Exposure(pydantic.BaseModel):
     science_program: str = pydantic.Field(
         description="Observing program (survey, proposal, engineering project)."
     )
-    tracking_ra: typing.Optional[float] = pydantic.Field(
+    tracking_ra: None | float = pydantic.Field(
         None,
         description="Tracking ICRS right ascension of boresight in degrees. "
         "Can be None for observations that are not on sky.",
     )
-    tracking_dec: typing.Optional[float] = pydantic.Field(
+    tracking_dec: None | float = pydantic.Field(
         None,
         description="Tracking ICRS declination of boresight in degrees. "
         "Can be None for observations that are not on sky.",
     )
-    sky_angle: typing.Optional[float] = pydantic.Field(
+    sky_angle: None | float = pydantic.Field(
         None,
         description="Angle of the instrument focal plane on the sky in degrees. "
         "Can  be NULL for observations that are not on sky, or for "
         "where the sky angle changes during the observation.",
     )
-    timespan_begin: typing.Optional[datetime.datetime] = pydantic.Field(
+    timespan_begin: None | datetime.datetime = pydantic.Field(
         description="Start TAI time of observation, or None if unknown. "
         "The date ought to always be known, but we have seen cases where it is not."
     )
-    timespan_end: typing.Optional[datetime.datetime] = pydantic.Field(
+    timespan_end: None | datetime.datetime = pydantic.Field(
         description="End TAI time of observation, or None if unknown. "
         "The date ought to always be known, but we have seen cases where it is not."
     )

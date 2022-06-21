@@ -7,7 +7,6 @@ __all__ = [
 
 import datetime
 import enum
-import typing
 import uuid
 
 import pydantic
@@ -36,10 +35,10 @@ class Message(pydantic.BaseModel):
         title="Message level. A python logging level: "
         "info=20, warning=30, error=40."
     )
-    tags: typing.List[str] = pydantic.Field(
+    tags: list[str] = pydantic.Field(
         title="Zero or more space-separated keywords relevant to this message."
     )
-    urls: typing.List[str] = pydantic.Field(
+    urls: list[str] = pydantic.Field(
         title="Zero or more space-separated URLS to JIRA tickets, screen shots, etc."
     )
     user_id: str = pydantic.Field(description="User ID.")
@@ -58,10 +57,10 @@ class Message(pydantic.BaseModel):
     date_added: datetime.datetime = pydantic.Field(
         description="TAI date at which the message was added."
     )
-    date_invalidated: typing.Optional[datetime.datetime] = pydantic.Field(
+    date_invalidated: None | datetime.datetime = pydantic.Field(
         description="TAI date at which is_valid was last set true."
     )
-    parent_id: typing.Optional[uuid.UUID] = pydantic.Field(
+    parent_id: None | uuid.UUID = pydantic.Field(
         description="Message ID of message this is an edited version of."
     )
 

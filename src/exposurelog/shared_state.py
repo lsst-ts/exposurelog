@@ -4,7 +4,6 @@ __all__ = ["create_shared_state", "delete_shared_state", "get_shared_state"]
 
 import logging
 import os
-import typing
 import urllib
 
 import lsst.daf.butler
@@ -12,10 +11,10 @@ import lsst.daf.butler
 from .create_message_table import SITE_ID_LEN, create_message_table
 from .log_message_database import LogMessageDatabase
 
-_shared_state: typing.Optional[SharedState] = None
+_shared_state: None | SharedState = None
 
 
-def get_env(name: str, default: typing.Optional[str] = None) -> str:
+def get_env(name: str, default: None | str = None) -> str:
     """Get a value from an environment variable.
 
     Parameters

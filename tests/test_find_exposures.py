@@ -1,5 +1,4 @@
-from __future__ import annotations
-
+import collections.abc
 import http
 import itertools
 import pathlib
@@ -31,15 +30,17 @@ class doc_str:
     def __init__(self, doc: str):
         self.doc = doc
 
-    def __call__(self, func: typing.Callable) -> typing.Callable:
+    def __call__(
+        self, func: collections.abc.Callable
+    ) -> collections.abc.Callable:
         func.__doc__ = self.doc
         return func
 
 
 def assert_good_find_response(
     response: httpx.Response,
-    exposures: typing.Iterable[ExposureDictT],
-    predicate: typing.Callable,
+    exposures: collections.abc.Iterable[ExposureDictT],
+    predicate: collections.abc.Callable,
 ) -> list[ExposureDictT]:
     """Assert that the correct exposures were found.
 
@@ -75,7 +76,7 @@ assert_exposures_ordered = AssertDataDictsOrdered(data_name="exposure")
 
 def get_range_values(
     exposures: list[ExposureDictT], field: str
-) -> typing.Tuple[float, float]:
+) -> tuple[float, float]:
     values = sorted(exposure[field] for exposure in exposures)
     assert len(values) >= 4, f"not enough values for {field}"
     min_value = values[1]
@@ -87,8 +88,8 @@ def get_range_values(
 
 
 def get_missing_exposure(
-    exposures: typing.Iterable[ExposureDictT],
-    found_exposures: typing.Iterable[ExposureDictT],
+    exposures: collections.abc.Iterable[ExposureDictT],
+    found_exposures: collections.abc.Iterable[ExposureDictT],
 ) -> list[ExposureDictT]:
     """Get exposures that were not found."""
     found_ids = set(
@@ -144,7 +145,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
             assert response.status_code == 422
 
             async def run_find(
-                find_args: typing.Dict[str, typing.Any],
+                find_args: dict[str, typing.Any],
                 instrument: str = instrument,
             ) -> httpx.Response:
                 """Run a query after adding instrument parameter."""
@@ -161,8 +162,8 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
             # * dict of find arg name: value
             # * predicate: function that takes an exposure dict
             #   and returns True if the exposure matches the query
-            find_args_predicates: typing.List[
-                typing.Tuple[typing.Dict[str, typing.Any], typing.Callable]
+            find_args_predicates: list[
+                tuple[dict[str, typing.Any], collections.abc.Callable]
             ] = list()
 
             # Range arguments: min_<field>, max_<field>
@@ -290,8 +291,8 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
                 @doc_str(f"{predicate1.__doc__} and {predicate2.__doc__}")
                 def and_predicates(
                     exposure: ExposureDictT,
-                    predicate1: typing.Callable,
-                    predicate2: typing.Callable,
+                    predicate1: collections.abc.Callable,
+                    predicate2: collections.abc.Callable,
                 ) -> bool:
                     return predicate1(exposure) and predicate2(exposure)
 
@@ -423,7 +424,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
             assert len(shared_state.registries) == 2
 
             async def run_find(
-                find_args: typing.Dict[str, typing.Any],
+                find_args: dict[str, typing.Any],
                 registry: int = 2,
                 instrument: str = instrument,
             ) -> httpx.Response:

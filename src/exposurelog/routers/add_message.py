@@ -1,16 +1,13 @@
-from __future__ import annotations
-
 __all__ = ["add_message"]
 
 import asyncio
+import collections.abc
 import http
 import logging
-import typing
 
 import astropy.time
 import astropy.units as u
 import fastapi
-import lsst.daf.butler
 import lsst.daf.butler.registry
 import sqlalchemy as sa
 
@@ -39,12 +36,12 @@ async def add_message(
         default=logging.INFO,
         description="Message level; a python logging level.",
     ),
-    tags: typing.List[str] = fastapi.Body(
+    tags: list[str] = fastapi.Body(
         default=[],
         description="Tags describing the message, as space-separated words. "
         + TAG_DESCRIPTION,
     ),
-    urls: typing.List[str] = fastapi.Body(
+    urls: list[str] = fastapi.Body(
         default=[],
         description="URLs of associated JIRA tickets, screen shots, etc.: "
         "space-separated.",
@@ -132,10 +129,10 @@ async def add_message(
 
 
 def get_day_obs_from_registries(
-    registries: typing.Sequence[lsst.daf.butler.Registry],
+    registries: collections.abc.Sequence[lsst.daf.butler.registry.Registry],
     obs_id: str,
     instrument: str,
-) -> typing.Optional[int]:
+) -> None | int:
     """Get the day of observation of an exposure, or None if not found.
 
     Parameters
