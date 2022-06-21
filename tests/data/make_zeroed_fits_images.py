@@ -40,6 +40,7 @@ def make_zeroed_fits_images(
         print(f"Proccessing {srcimagepath} -> {destimagepath.parent}")
         data = fits.open(srcimagepath)
         for i, hdu in enumerate(data):
+            assert hdu.data is not None  # make linters happy
             if isinstance(hdu, fits.CompImageHDU):
                 hdu.data[:] = 0
             elif isinstance(hdu, fits.ImageHDU):
