@@ -1,5 +1,5 @@
-from __future__ import annotations
-
+import collections.abc
+import http
 import itertools
 import pathlib
 import random
@@ -10,6 +10,7 @@ import httpx
 
 from exposurelog.message import MESSAGE_FIELDS
 from exposurelog.testutils import (
+    AssertMessagesOrdered,
     MessageDictT,
     assert_good_response,
     assert_messages_equal,
@@ -27,7 +28,9 @@ class doc_str:
     def __init__(self, doc: str):
         self.doc = doc
 
-    def __call__(self, func: typing.Callable) -> typing.Callable:
+    def __call__(
+        self, func: collections.abc.Callable
+    ) -> collections.abc.Callable:
         func.__doc__ = self.doc
         return func
 
@@ -35,7 +38,7 @@ class doc_str:
 def assert_good_find_response(
     response: httpx.Response,
     messages: list[MessageDictT],
-    predicate: typing.Callable,
+    predicate: collections.abc.Callable,
 ) -> list[MessageDictT]:
     """Assert that the correct messages were found.
 
@@ -66,92 +69,7 @@ def assert_good_find_response(
     return found_messages
 
 
-def assert_messages_ordered(
-    messages: list[MessageDictT], order_by: list[str]
-) -> None:
-    """Assert that a list of message is ordered as specified.
-
-    Parameters
-    ----------
-    messages
-        Messages to test
-    order_by
-        Field names by which the data should be ordered.
-        Each name can be prefixed by "-" to mean descending order.
-    """
-    full_order_by = list(order_by)
-    if not ("id" in order_by or "-id" in order_by):
-        full_order_by.append("id")
-    message1: typing.Optional[dict] = None
-    for message2 in messages:
-        if message1 is not None:
-            assert_two_messages_ordered(
-                message1=message1,
-                message2=message2,
-                order_by=full_order_by,
-            )
-        message1 = message2
-
-
-def assert_two_messages_ordered(
-    message1: MessageDictT, message2: MessageDictT, order_by: list[str]
-) -> None:
-    """Assert that two messages are ordered as specified.
-
-    Parameters
-    ----------
-    message1
-        A message.
-    message2
-        The next message.
-    order_by
-        Field names by which the data should be ordered.
-        Each name can be prefixed by "-" to mean descending order.
-    """
-    for key in order_by:
-        if key.startswith("-"):
-            field = key[1:]
-            val1 = message1[field]
-            val2 = message2[field]
-            desired_cmp_result = 1
-        else:
-            field = key
-            desired_cmp_result = -1
-        val1 = message1[field]
-        val2 = message2[field]
-        cmp_result = cmp_message_field(field, val1, val2)
-        if cmp_result == desired_cmp_result:
-            # These two messages are fine
-            return
-        elif cmp_result != 0:
-            raise AssertionError(
-                f"messages mis-ordered in key {key}: "
-                f"message1[{field!r}]={val1!r}, message2[{field!r}]={val2!r}"
-            )
-
-
-def cmp_message_field(field: str, val1: typing.Any, val2: typing.Any) -> int:
-    """Return -1 if val1 < val2, 0 if val1 == val2, 1 if val1 > val2.
-
-    Value None is equal to None and larger than every value.
-    This mimics how PostgreSQL handles NULL.
-    Field exposure_flag is ordered by enum.
-    """
-    if field == "exposure_flag":
-        ordered_flag_values = dict(
-            none="0: none", junk="1: junk", questionable="2: questionable"
-        )
-        val1 = ordered_flag_values[val1]
-        val2 = ordered_flag_values[val2]
-    if val1 == val2:
-        return 0
-    elif val1 is None:
-        return 1
-    elif val2 is None:
-        return -1
-    elif val1 > val2:
-        return 1
-    return -1
+assert_messages_ordered = AssertMessagesOrdered()
 
 
 def get_missing_message(
@@ -159,7 +77,7 @@ def get_missing_message(
     found_messages: list[MessageDictT],
 ) -> list[MessageDictT]:
     """Get messages that were not found."""
-    found_ids = set(found_message["id"] for found_message in found_messages)
+    found_ids = {found_message["id"] for found_message in found_messages}
     return [
         message for message in messages if str(message["id"]) not in found_ids
     ]
@@ -184,8 +102,8 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
             # * dict of find arg name: value
             # * predicate: function that takes a message dict
             #   and returns True if the message matches the query
-            find_args_predicates: typing.List[
-                typing.Tuple[typing.Dict[str, typing.Any], typing.Callable]
+            find_args_predicates: list[
+                tuple[dict[str, typing.Any], collections.abc.Callable]
             ] = list()
 
             # Range arguments: min_<field>, max_<field>.
@@ -401,7 +319,7 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                     )
                     def predicate_and_is_valid(
                         message: MessageDictT,
-                        predicate: typing.Callable = predicate,
+                        predicate: collections.abc.Callable = predicate,
                     ) -> bool:
                         return (
                             predicate(message) and message["is_valid"] is True
@@ -425,8 +343,8 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                 @doc_str(f"{predicate1.__doc__} and {predicate2.__doc__}")
                 def and_predicates(
                     message: MessageDictT,
-                    predicate1: typing.Callable,
-                    predicate2: typing.Callable,
+                    predicate1: collections.abc.Callable,
+                    predicate2: collections.abc.Callable,
                 ) -> bool:
                     return predicate1(message) and predicate2(message)
 
@@ -450,16 +368,14 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
             # I issue the order_by command but do not test the resulting
             # order if ordering by a string field.
             fields = list(MESSAGE_FIELDS)
-            str_fields = set(
-                (
-                    "instrument",
-                    "message_text",
-                    "level",
-                    "obs_id",
-                    "user_id",
-                    "user_agent",
-                )
-            )
+            str_fields = {
+                "instrument",
+                "message_text",
+                "level",
+                "obs_id",
+                "user_id",
+                "user_agent",
+            }
             for field, prefix in itertools.product(fields, ("", "-")):
                 order_by = [prefix + field]
                 find_args = find_args_day_obs.copy()
@@ -470,10 +386,10 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                 messages = assert_good_response(response)
                 if field not in str_fields:
                     assert_messages_ordered(
-                        messages=messages, order_by=order_by
+                        data_dicts=messages, order_by=order_by
                     )
 
-                paged_messages: typing.List[MessageDictT] = []
+                paged_messages: list[MessageDictT] = []
                 limit = 2
                 find_args["limit"] = limit
                 while len(paged_messages) < len(messages):
@@ -513,8 +429,18 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
                 messages = assert_good_response(response)
                 if field1 not in str_fields and field2 not in str_fields:
                     assert_messages_ordered(
-                        messages=messages, order_by=order_by
+                        data_dicts=messages, order_by=order_by
                     )
+
+            # Check invalid order_by fields
+            for bad_order_by in ("not_a_field", "+id"):
+                order_by = [bad_order_by]
+                find_args = find_args_day_obs.copy()
+                find_args["order_by"] = order_by
+                response = await client.get(
+                    "/exposurelog/messages", params=find_args
+                )
+                assert response.status_code == http.HTTPStatus.BAD_REQUEST
 
             # Check that limit must be positive
             response = await client.get(

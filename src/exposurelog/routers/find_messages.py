@@ -1,15 +1,13 @@
-from __future__ import annotations
-
 __all__ = ["find_messages"]
 
 import datetime
 import enum
-import typing
+import http
 
 import fastapi
 import sqlalchemy as sa
 
-from ..message import ExposureFlag, Message
+from ..message import MESSAGE_ORDER_BY_VALUES, ExposureFlag, Message
 from ..shared_state import SharedState, get_shared_state
 from .normalize_tags import TAG_DESCRIPTION, normalize_tags
 
@@ -22,63 +20,79 @@ class TriState(str, enum.Enum):
     false = "false"
 
 
-@router.get("/messages", response_model=typing.List[Message])
+MESSAGE_ORDER_BY_SET = set(MESSAGE_ORDER_BY_VALUES)
+
+
+@router.get("/messages", response_model=list[Message])
 @router.get(
-    "/messages/", response_model=typing.List[Message], include_in_schema=False
+    "/messages/", response_model=list[Message], include_in_schema=False
 )
 async def find_messages(
-    site_ids: typing.Optional[typing.List[str]] = fastapi.Query(
+    site_ids: None
+    | list[str] = fastapi.Query(
         default=None,
         description="Site IDs.",
     ),
-    obs_id: typing.Optional[str] = fastapi.Query(
+    obs_id: None
+    | str = fastapi.Query(
         default=None,
         description="Observation ID (a string) contains...",
     ),
-    instruments: typing.Optional[typing.List[str]] = fastapi.Query(
+    instruments: None
+    | list[str] = fastapi.Query(
         default=None,
         description="Names of instruments (e.g. LSSTCam). "
         "Repeat the parameter for each value.",
     ),
-    min_day_obs: typing.Optional[int] = fastapi.Query(
+    min_day_obs: None
+    | int = fastapi.Query(
         default=None,
         description="Minimum day of observation, inclusive; "
         "an integer of the form YYYYMMDD",
     ),
-    max_day_obs: typing.Optional[int] = fastapi.Query(
+    max_day_obs: None
+    | int = fastapi.Query(
         default=None,
         description="Maximum day of observation, exclusive; "
         "an integer of the form YYYYMMDD",
     ),
-    message_text: typing.Optional[str] = fastapi.Query(
+    message_text: None
+    | str = fastapi.Query(
         default=None,
         description="Message text contains...",
     ),
-    min_level: typing.Optional[int] = fastapi.Query(
+    min_level: None
+    | int = fastapi.Query(
         default=None, description="Minimum level, inclusive."
     ),
-    max_level: typing.Optional[int] = fastapi.Query(
+    max_level: None
+    | int = fastapi.Query(
         default=None, description="Maximum level, exclusive."
     ),
-    tags: typing.Optional[typing.List[str]] = fastapi.Query(
+    tags: None
+    | list[str] = fastapi.Query(
         default=None,
         description="Tags, at least one of which must be present. "
         + TAG_DESCRIPTION,
     ),
-    urls: typing.Optional[typing.List[str]] = fastapi.Query(
+    urls: None
+    | list[str] = fastapi.Query(
         default=None,
         desription="URLs, or fragments of URLs, "
         "at least one of which must be present.",
     ),
-    exclude_tags: typing.Optional[typing.List[str]] = fastapi.Query(
+    exclude_tags: None
+    | list[str] = fastapi.Query(
         default=None,
         description="Tags, all of which must be absent. " + TAG_DESCRIPTION,
     ),
-    user_ids: typing.Optional[typing.List[str]] = fastapi.Query(
+    user_ids: None
+    | list[str] = fastapi.Query(
         default=None,
         description="User IDs. Repeat the parameter for each value.",
     ),
-    user_agents: typing.Optional[typing.List[str]] = fastapi.Query(
+    user_agents: None
+    | list[str] = fastapi.Query(
         default=None,
         description="User agents (which app created the message). "
         "Repeat the parameter for each value.",
@@ -91,44 +105,53 @@ async def find_messages(
         default=TriState.true,
         description="Is the message valid? (False if deleted or superseded)",
     ),
-    exposure_flags: typing.Optional[typing.List[ExposureFlag]] = fastapi.Query(
+    exposure_flags: None
+    | list[ExposureFlag] = fastapi.Query(
         default=None,
         description="List of exposure flag values. "
         "Repeat the parameter for each value.",
     ),
-    min_date_added: typing.Optional[datetime.datetime] = fastapi.Query(
+    min_date_added: None
+    | datetime.datetime = fastapi.Query(
         default=None,
         description="Minimum date the message was added, inclusive; "
         "TAI as an ISO string with no timezone information",
     ),
-    max_date_added: typing.Optional[datetime.datetime] = fastapi.Query(
+    max_date_added: None
+    | datetime.datetime = fastapi.Query(
         default=None,
         description="Maximum date the message was added, exclusive; "
         "TAI as an ISO string with no timezone information",
     ),
-    has_date_invalidated: typing.Optional[bool] = fastapi.Query(
+    has_date_invalidated: None
+    | bool = fastapi.Query(
         default=None,
         description="Does this message have a non-null " "date_invalidated?",
     ),
-    min_date_invalidated: typing.Optional[datetime.datetime] = fastapi.Query(
+    min_date_invalidated: None
+    | datetime.datetime = fastapi.Query(
         default=None,
         description="Minimum date the is_valid flag was last toggled, inclusive, "
         "TAI as an ISO string with no timezone information",
     ),
-    max_date_invalidated: typing.Optional[datetime.datetime] = fastapi.Query(
+    max_date_invalidated: None
+    | datetime.datetime = fastapi.Query(
         default=None,
         description="Maximum date the is_valid flag was last toggled, exclusive, "
         "TAI as an ISO string with no timezone information",
     ),
-    has_parent_id: typing.Optional[bool] = fastapi.Query(
+    has_parent_id: None
+    | bool = fastapi.Query(
         default=None,
         description="Does this message have a " "non-null parent ID?",
     ),
-    order_by: typing.Optional[typing.List[str]] = fastapi.Query(
+    order_by: None
+    | list[str] = fastapi.Query(
         default=None,
         description="Fields to sort by. "
-        "Prefix a name with - for descending order, e.g. -id. "
-        "Repeat the parameter for each value.",
+        "The allowed fields are all fields in 'Message'."
+        "Prefix a field with - for descending order, e.g. -id. "
+        "Repeat the parameter for each value. ",
     ),
     offset: int = fastapi.Query(
         default=0,
@@ -169,8 +192,35 @@ async def find_messages(
         "min_date_invalidated",
         "max_date_invalidated",
         "has_parent_id",
-        "order_by",
     )
+
+    # Compute the columns to order by.
+    # If order_by does not include "id" then append it, to make the order
+    # repeatable. Otherwise different calls can return data in different
+    # orders, which is a disaster when using limit and offset.
+    order_by_columns = []
+    if order_by is None:
+        order_by = ["id"]
+    else:
+        order_by_set = set(order_by)
+        bad_fields = order_by_set - MESSAGE_ORDER_BY_SET
+        if bad_fields:
+            raise fastapi.HTTPException(
+                status_code=http.HTTPStatus.BAD_REQUEST,
+                detail=f"Invalid order_by fields: {sorted(bad_fields)}; "
+                + f"allowed values are {MESSAGE_ORDER_BY_VALUES}",
+            )
+        if not order_by_set & {"id", "-id"}:
+            order_by.append("id")
+    for item in order_by:
+        if item.startswith("-"):
+            column_name = item[1:]
+            column = message_table.columns[column_name]
+            order_by_columns.append(sa.sql.desc(column))
+        else:
+            column_name = item
+            column = message_table.columns[column_name]
+            order_by_columns.append(sa.sql.asc(column))
 
     if tags is not None:
         tags = normalize_tags(tags)
@@ -179,8 +229,6 @@ async def find_messages(
 
     async with state.exposurelog_db.engine.connect() as connection:
         conditions = []
-        order_by_columns = []
-        order_by_id = False
         # Handle minimums and maximums
         for key in select_arg_names:
             value = locals()[key]
@@ -198,7 +246,7 @@ async def find_messages(
                     conditions.append(column != None)  # noqa
                 else:
                     conditions.append(column == None)  # noqa
-            elif key in ("tags", "urls"):
+            elif key in {"tags", "urls"}:
                 # Field is an array and value is a list. Field name is the key.
                 # Return messages for which any item in the array matches
                 # matches any item in "value" (PostgreSQL's && operator).
@@ -219,48 +267,30 @@ async def find_messages(
                 # by listing the parameter once per value.
                 column = message_table.columns["tags"]
                 conditions.append(sa.sql.not_(column.op("&&")(value)))
-            elif key in (
+            elif key in {
                 "site_ids",
                 "instruments",
                 "user_ids",
                 "user_agents",
                 "exposure_flags",
-            ):
+            }:
                 # Value is a list; field name is key without the final "s".
                 # Note: the list cannot be empty, because the array is passed
                 # by listing the parameter once per value.
                 column = message_table.columns[key[:-1]]
                 conditions.append(column.in_(value))
-            elif key in ("message_text", "obs_id"):
+            elif key in {"message_text", "obs_id"}:
                 column = message_table.columns[key]
                 conditions.append(column.contains(value))
-            elif key in ("is_human", "is_valid"):
+            elif key in {"is_human", "is_valid"}:
                 if value != TriState.either:
                     logical_value = value == TriState.true
                     column = message_table.columns[key]
                     conditions.append(column == logical_value)
-            elif key == "order_by":
-                for item in value:
-                    if item.startswith("-"):
-                        column_name = item[1:]
-                        column = message_table.columns[column_name]
-                        order_by_columns.append(sa.sql.desc(column))
-                    else:
-                        column_name = item
-                        column = message_table.columns[column_name]
-                        order_by_columns.append(sa.sql.asc(column))
-                    if column_name == "id":
-                        order_by_id = True
-                column = message_table.c.exposure_flag
 
             else:
                 raise RuntimeError(f"Bug: unrecognized key: {key}")
 
-        # If order_by does not include "id" then append it, to make the order
-        # repeatable. Otherwise different calls can return data in different
-        # orders, which is a disaster when using limit and offset.
-        if not order_by_id:
-            order_by_columns.append(sa.sql.asc(message_table.c.id))
         if conditions:
             full_conditions = sa.sql.and_(*conditions)
         else:

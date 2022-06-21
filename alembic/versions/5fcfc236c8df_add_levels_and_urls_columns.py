@@ -5,7 +5,6 @@ Revises: 3bb3cd14b2dd
 Create Date: 2022-03-18 16:56:58.689843
 """
 import logging
-import typing
 
 import sqlalchemy as sa
 import sqlalchemy.types as saty
@@ -21,7 +20,7 @@ depends_on = None
 MESSAGE_TABLE_NAME = "message"
 
 
-def upgrade(log: logging.Logger, table_names: typing.Set[str]) -> None:
+def upgrade(log: logging.Logger, table_names: set[str]) -> None:
     if MESSAGE_TABLE_NAME not in table_names:
         log.info(f"No {MESSAGE_TABLE_NAME} table; nothing to do")
         return
@@ -40,7 +39,7 @@ def upgrade(log: logging.Logger, table_names: typing.Set[str]) -> None:
     op.alter_column(MESSAGE_TABLE_NAME, "urls", nullable=False)
 
 
-def downgrade(log: logging.Logger, table_names: typing.Set[str]) -> None:
+def downgrade(log: logging.Logger, table_names: set[str]) -> None:
     if MESSAGE_TABLE_NAME not in table_names:
         log.info(f"No {MESSAGE_TABLE_NAME} table; nothing to do")
         return

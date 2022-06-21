@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 __all__ = ["dict_from_exposure", "find_exposures"]
 
 import asyncio
@@ -14,18 +12,27 @@ import lsst.daf.butler
 import lsst.daf.butler.core
 import lsst.daf.butler.registry
 
-from ..exposure import Exposure
+from ..exposure import EXPOSURE_ORDER_BY_VALUES, Exposure
 from ..shared_state import SharedState, get_shared_state
 
 router = fastapi.APIRouter()
 
 DEFAULT_LIMIIT = 50
 
+ExposureOrderByFieldsSet = set(EXPOSURE_ORDER_BY_VALUES)
 
-@router.get("/exposures", response_model=typing.List[Exposure])
+OrderByTranslationDict = {
+    "timespan_begin": "timespan.begin",
+    "-timespan_begin": "-timespan.begin",
+    "timespan_end": "timespan.end",
+    "-timespan_end": "-timespan.end",
+}
+
+
+@router.get("/exposures", response_model=list[Exposure])
 @router.get(
     "/exposures/",
-    response_model=typing.List[Exposure],
+    response_model=list[Exposure],
     include_in_schema=False,
 )
 async def find_exposures(
@@ -39,69 +46,81 @@ async def find_exposures(
         default=...,
         description="Name of instrument (e.g. LSSTCam)",
     ),
-    min_day_obs: typing.Optional[int] = fastapi.Query(
+    min_day_obs: None
+    | int = fastapi.Query(
         default=None,
         description="Minimum day of observation, inclusive; "
         "an integer of the form YYYYMMDD",
     ),
-    max_day_obs: typing.Optional[int] = fastapi.Query(
+    max_day_obs: None
+    | int = fastapi.Query(
         default=None,
         description="Maximum day of observation, exclusive; "
         "an integer of the form YYYYMMDD",
     ),
-    min_seq_num: typing.Optional[int] = fastapi.Query(
+    min_seq_num: None
+    | int = fastapi.Query(
         default=None,
         description="Minimum sequence number",
     ),
-    max_seq_num: typing.Optional[int] = fastapi.Query(
+    max_seq_num: None
+    | int = fastapi.Query(
         default=None,
         description="Maximum sequence number",
     ),
-    group_names: typing.Optional[typing.List[str]] = fastapi.Query(
+    group_names: None
+    | list[str] = fastapi.Query(
         default=None,
         description="String group identifiers associated with exposures "
         "by the acquisition system. Repeat the parameter for each value.",
     ),
-    observation_reasons: typing.Optional[typing.List[str]] = fastapi.Query(
+    observation_reasons: None
+    | list[str] = fastapi.Query(
         default=None,
         description="Observation types (e.g. dark, bias, science). "
         "Repeat the parameter for each value.",
     ),
-    observation_types: typing.Optional[typing.List[str]] = fastapi.Query(
+    observation_types: None
+    | list[str] = fastapi.Query(
         default=None,
         description="Reasons the exposure was taken "
         "(e.g. science, filter scan, unknown). "
         "Repeat the parameter for each value.",
     ),
-    min_date: typing.Optional[datetime.datetime] = fastapi.Query(
+    min_date: None
+    | datetime.datetime = fastapi.Query(
         default=None,
         description="Minimum date during the time the exposure was taken, exclusive "
         "(because that is how daf_butler Registry performs a timespan overlap search). "
         "TAI as an ISO string with no timezone information. "
         "The date and time portions may be separated with a space or a T.",
     ),
-    max_date: typing.Optional[datetime.datetime] = fastapi.Query(
+    max_date: None
+    | datetime.datetime = fastapi.Query(
         default=None,
         description="Maximum date during the time the exposure was taken, inclusive "
         "(because that is how daf_butler Registry performs a timespan overlap search). "
         "TAI as an ISO string (with or without a T) with no timezone information. "
         "The date and time portions may be separated with a space or a T.",
     ),
-    order_by: typing.Optional[typing.List[str]] = fastapi.Query(
+    order_by: None
+    | list[str] = fastapi.Query(
         default=None,
         description="Fields to sort by. "
         "Prefix a name with - for descending order, e.g. -obs_id. "
         "Repeat the parameter for each value. "
+        "Valid values are any field in Exposure except 'instrument'. "
         "The default order is 'id' (oldest first), and this is always "
         "appended if you do not explicitly specify 'id' or '-id'.\n"
         "To order by date, specify 'id' (oldest first, the default order) "
-        "or '-id' (newest first). You may also search by 'timespan.begin' "
-        "or 'timespan.end' if you prefer. "
-        "Warning: the only safe order for use with 'offset' with 'limit' "
-        "is 'id' (oldest first) if images are being added to the registry "
-        "while you search.",
+        "or '-id' (newest first). You may also search by 'timespan_begin' "
+        "or 'timespan_end' if you prefer. "
+        "Warning: if images are being added to the registry while you search, "
+        "then the only safe order for use with 'offset' and 'limit' is `id' "
+        "(oldest first).",
     ),
-    offset: typing.Optional[int] = fastapi.Query(
+    offset: None
+    | int = fastapi.Query(
         default=None,
         description="The number of records to skip.",
         ge=0,
@@ -140,8 +159,8 @@ async def find_exposures(
         "observation_types",
     )
 
-    bind: typing.Dict[str, typing.Any] = dict()
-    conditions: typing.List[str] = []
+    bind: dict[str, typing.Any] = dict()
+    conditions: list[str] = []
     for key in select_arg_names:
         value = locals()[key]
         if value is None:
@@ -185,10 +204,17 @@ async def find_exposures(
     if order_by is None:
         order_by = ["id"]
     else:
-        for fieldname in order_by:
-            if fieldname in ("id", "-id"):
-                break
-        else:
+        bad_fields = set(order_by) - ExposureOrderByFieldsSet
+        if bad_fields:
+            raise fastapi.HTTPException(
+                status_code=http.HTTPStatus.BAD_REQUEST,
+                detail=f"Invalid order_by fields: {sorted(bad_fields)}; "
+                + f"allowed values are {EXPOSURE_ORDER_BY_VALUES}",
+            )
+        order_by = [
+            OrderByTranslationDict.get(name, name) for name in order_by
+        ]
+        if not set(order_by) & {"id", "-id"}:
             order_by.append("id")
 
     loop = asyncio.get_running_loop()
@@ -204,13 +230,12 @@ async def find_exposures(
     )
     rows = await loop.run_in_executor(None, find_func)
 
-    exposures = [Exposure(**dict_from_exposure(row)) for row in rows]
-    return sorted(exposures, key=lambda exposure: exposure.obs_id)
+    return [Exposure(**dict_from_exposure(row)) for row in rows]
 
 
 def astropy_from_datetime(
-    date: typing.Optional[datetime.datetime],
-) -> typing.Optional[astropy.time.Time]:
+    date: None | datetime.datetime,
+) -> None | astropy.time.Time:
     """Convert an optional TAI datetime.datetime to an astropy.time.Time.
 
     Return None if date is None.
@@ -225,20 +250,20 @@ def dict_from_exposure(
 ) -> dict:
     data = exposure.toDict()
     timespan = data.pop("timespan")
-    data["timespan_begin"] = timespan.begin.datetime
-    data["timespan_end"] = timespan.end.datetime
+    data["timespan_begin"] = getattr(timespan.begin, "datetime", None)
+    data["timespan_end"] = getattr(timespan.end, "datetime", None)
     return data
 
 
 def find_exposures_in_a_registry(
-    registry: lsst.daf.butler.Registry,
+    registry: lsst.daf.butler.registry.Registry,
     instrument: str,
     bind: dict,
     where: str,
-    order_by: typing.List[str],
-    offset: typing.Optional[int] = None,
+    order_by: list[str],
+    offset: None | int = None,
     limit: int = 50,
-) -> typing.List[lsst.daf.butler.core.DimensionRecord]:
+) -> list[lsst.daf.butler.core.DimensionRecord]:
     """Find exposures matching specified criteria.
 
     The exposures are sorted by obs_id.
@@ -273,8 +298,8 @@ def find_exposures_in_a_registry(
             bind=bind,
             where=where,
         )
-        record_iter.limit(limit=limit, offset=offset)
-        record_iter.order_by(*order_by)
+        record_iter = record_iter.limit(limit=limit, offset=offset)
+        record_iter = record_iter.order_by(*order_by)
         return list(record_iter)
     except lsst.daf.butler.registry.DataIdValueError:
         # No such instrument

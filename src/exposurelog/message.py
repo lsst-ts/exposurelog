@@ -1,8 +1,12 @@
-__all__ = ["ExposureFlag", "Message", "MESSAGE_FIELDS"]
+__all__ = [
+    "ExposureFlag",
+    "Message",
+    "MESSAGE_FIELDS",
+    "MESSAGE_ORDER_BY_VALUES",
+]
 
 import datetime
 import enum
-import typing
 import uuid
 
 import pydantic
@@ -31,10 +35,10 @@ class Message(pydantic.BaseModel):
         title="Message level. A python logging level: "
         "info=20, warning=30, error=40."
     )
-    tags: typing.List[str] = pydantic.Field(
+    tags: list[str] = pydantic.Field(
         title="Zero or more space-separated keywords relevant to this message."
     )
-    urls: typing.List[str] = pydantic.Field(
+    urls: list[str] = pydantic.Field(
         title="Zero or more space-separated URLS to JIRA tickets, screen shots, etc."
     )
     user_id: str = pydantic.Field(description="User ID.")
@@ -53,10 +57,10 @@ class Message(pydantic.BaseModel):
     date_added: datetime.datetime = pydantic.Field(
         description="TAI date at which the message was added."
     )
-    date_invalidated: typing.Optional[datetime.datetime] = pydantic.Field(
+    date_invalidated: None | datetime.datetime = pydantic.Field(
         description="TAI date at which is_valid was last set true."
     )
-    parent_id: typing.Optional[uuid.UUID] = pydantic.Field(
+    parent_id: None | uuid.UUID = pydantic.Field(
         description="Message ID of message this is an edited version of."
     )
 
@@ -65,3 +69,20 @@ class Message(pydantic.BaseModel):
 
 
 MESSAGE_FIELDS = tuple(Message.schema()["properties"].keys())
+
+
+def _make_message_order_by_values() -> tuple[str, ...]:
+    """Make a tuple of valid order_by values for find_messages.
+
+    Return a tuple of all field names,
+    plus those same field names with a leading "-".
+    """
+    order_by_values = []
+    for field in Message.schema()["properties"]:
+        order_by_values += [field, "-" + field]
+    return tuple(order_by_values)
+
+
+# Tuple of valid order_by fields.
+# Each of these exists in the Message class.
+MESSAGE_ORDER_BY_VALUES = _make_message_order_by_values()

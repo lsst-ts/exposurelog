@@ -340,4 +340,3 @@ exposure:
   sky_angle: 338.229952825324
   zenith_angle: 13.247972221783101
   timespan: Timespan(begin=astropy.time.Time('2022-02-09 01:19:49.909789', scale='tai', format='iso'), end=astropy.time.Time('2022-02-09 01:19:52.143000', scale='tai', format='iso'))
-(py38) (square) tsrepos/exposurelog/tests/data tickets/DM-33601% 

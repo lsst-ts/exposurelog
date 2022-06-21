@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 import argparse
 import pathlib
-import typing
 
 from astropy.io import fits
 
 
 def make_zeroed_fits_images(
-    srcdir: typing.Union[pathlib.Path, str],
-    destdir: typing.Union[pathlib.Path, str],
+    srcdir: pathlib.Path | str,
+    destdir: pathlib.Path | str,
     overwrite: bool = False,
 ) -> None:
     """Copy FITS images from srcdir to destdir, zeroing the image data
@@ -40,6 +39,7 @@ def make_zeroed_fits_images(
         print(f"Proccessing {srcimagepath} -> {destimagepath.parent}")
         data = fits.open(srcimagepath)
         for i, hdu in enumerate(data):
+            assert hdu.data is not None  # make linters happy
             if isinstance(hdu, fits.CompImageHDU):
                 hdu.data[:] = 0
             elif isinstance(hdu, fits.ImageHDU):

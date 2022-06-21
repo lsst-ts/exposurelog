@@ -1,5 +1,5 @@
-from __future__ import annotations
-
+import collections.abc
+import http
 import itertools
 import pathlib
 import random
@@ -9,15 +9,16 @@ import unittest
 import httpx
 import lsst.daf.butler
 
+from exposurelog.exposure import EXPOSURE_ORDER_BY_VALUES
 from exposurelog.routers.find_exposures import dict_from_exposure
 from exposurelog.shared_state import get_shared_state
 from exposurelog.testutils import (
+    AssertDataDictsOrdered,
+    ExposureDictT,
     assert_good_response,
     cast_special,
     create_test_client,
 )
-
-ExposureDictT = typing.Dict[str, typing.Any]
 
 
 class doc_str:
@@ -29,15 +30,17 @@ class doc_str:
     def __init__(self, doc: str):
         self.doc = doc
 
-    def __call__(self, func: typing.Callable) -> typing.Callable:
+    def __call__(
+        self, func: collections.abc.Callable
+    ) -> collections.abc.Callable:
         func.__doc__ = self.doc
         return func
 
 
 def assert_good_find_response(
     response: httpx.Response,
-    exposures: typing.Iterable[ExposureDictT],
-    predicate: typing.Callable,
+    exposures: collections.abc.Iterable[ExposureDictT],
+    predicate: collections.abc.Callable,
 ) -> list[ExposureDictT]:
     """Assert that the correct exposures were found.
 
@@ -68,9 +71,12 @@ def assert_good_find_response(
     return found_exposures
 
 
+assert_exposures_ordered = AssertDataDictsOrdered(data_name="exposure")
+
+
 def get_range_values(
     exposures: list[ExposureDictT], field: str
-) -> typing.Tuple[float, float]:
+) -> tuple[float, float]:
     values = sorted(exposure[field] for exposure in exposures)
     assert len(values) >= 4, f"not enough values for {field}"
     min_value = values[1]
@@ -82,8 +88,8 @@ def get_range_values(
 
 
 def get_missing_exposure(
-    exposures: typing.Iterable[ExposureDictT],
-    found_exposures: typing.Iterable[ExposureDictT],
+    exposures: collections.abc.Iterable[ExposureDictT],
+    found_exposures: collections.abc.Iterable[ExposureDictT],
 ) -> list[ExposureDictT]:
     """Get exposures that were not found."""
     found_ids = set(
@@ -97,7 +103,7 @@ def get_missing_exposure(
 
 
 class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
-    async def test_find_exposures(self) -> None:
+    async def test_find_exposures_one_registry(self) -> None:
         instrument = "LATISS"
         repo_path = pathlib.Path(__file__).parent / "data" / instrument
 
@@ -139,7 +145,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
             assert response.status_code == 422
 
             async def run_find(
-                find_args: typing.Dict[str, typing.Any],
+                find_args: dict[str, typing.Any],
                 instrument: str = instrument,
             ) -> httpx.Response:
                 """Run a query after adding instrument parameter."""
@@ -156,8 +162,8 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
             # * dict of find arg name: value
             # * predicate: function that takes an exposure dict
             #   and returns True if the exposure matches the query
-            find_args_predicates: typing.List[
-                typing.Tuple[typing.Dict[str, typing.Any], typing.Callable]
+            find_args_predicates: list[
+                tuple[dict[str, typing.Any], collections.abc.Callable]
             ] = list()
 
             # Range arguments: min_<field>, max_<field>
@@ -285,8 +291,8 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
                 @doc_str(f"{predicate1.__doc__} and {predicate2.__doc__}")
                 def and_predicates(
                     exposure: ExposureDictT,
-                    predicate1: typing.Callable,
-                    predicate2: typing.Callable,
+                    predicate1: collections.abc.Callable,
+                    predicate2: collections.abc.Callable,
                 ) -> bool:
                     return predicate1(exposure) and predicate2(exposure)
 
@@ -323,10 +329,15 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
                         break
                     offset += limit
 
-            # Test order_by
-            response = await run_find(dict(order_by=["-id"]))
-            assert_good_find_response(
+            # Test minimal order_by
+            order_by = ["-id"]
+            response = await run_find(dict(order_by=order_by))
+            found_exposures = assert_good_find_response(
                 response, reversed(exposures), predicate=lambda exposure: True
+            )
+            print("exposure 1 =", found_exposures[0])
+            assert_exposures_ordered(
+                data_dicts=found_exposures, order_by=order_by
             )
 
             # group_id is not sufficient (there are duplicates)
@@ -362,8 +373,22 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
             response = await run_find({"limit": -1})
             assert response.status_code == 422
 
-    async def test_two_registries(self) -> None:
-        """Test a server that has two repositories."""
+            # Test order_by with all records
+            for order_by_field in EXPOSURE_ORDER_BY_VALUES:
+                order_by = [order_by_field]
+                response = await run_find(dict(order_by=[order_by_field]))
+                found_exposures = assert_good_response(response)
+                assert_exposures_ordered(
+                    data_dicts=found_exposures, order_by=order_by
+                )
+
+            # Check invalid order_by fields
+            for bad_order_by_field in ("not_a_field", "+id"):
+                response = await run_find(dict(order_by=[bad_order_by_field]))
+                assert response.status_code == http.HTTPStatus.BAD_REQUEST
+
+    async def test_find_exposures_two_registries(self) -> None:
+        """Test find_exposures with a server that has two repositories."""
         repo_path = pathlib.Path(__file__).parent / "data" / "LSSTCam"
         repo_path_2 = pathlib.Path(__file__).parent / "data" / "LATISS"
         instrument = "LATISS"
@@ -399,7 +424,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
             assert len(shared_state.registries) == 2
 
             async def run_find(
-                find_args: typing.Dict[str, typing.Any],
+                find_args: dict[str, typing.Any],
                 registry: int = 2,
                 instrument: str = instrument,
             ) -> httpx.Response:

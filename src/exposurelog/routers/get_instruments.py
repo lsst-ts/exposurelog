@@ -1,15 +1,11 @@
-from __future__ import annotations
-
 __all__ = ["get_instruments"]
 
 import asyncio
-import typing
+import collections.abc
 
 import fastapi
+import lsst.daf.butler.registry
 import pydantic
-
-if typing.TYPE_CHECKING:
-    import lsst.daf.butler
 
 from ..shared_state import SharedState, get_shared_state
 
@@ -17,10 +13,10 @@ router = fastapi.APIRouter()
 
 
 class Config(pydantic.BaseModel):
-    butler_instruments_1: typing.List[str] = pydantic.Field(
+    butler_instruments_1: list[str] = pydantic.Field(
         description="Instruments supported by butler 1."
     )
-    butler_instruments_2: typing.List[str] = pydantic.Field(
+    butler_instruments_2: list[str] = pydantic.Field(
         description="Instruments supported by butler 2; "
         "'[]' if there is only one butler."
     )
@@ -39,7 +35,7 @@ async def get_instruments(
 
 
 def blocking_get_instruments(
-    registries: typing.Iterable[lsst.daf.butler.Registry],
+    registries: collections.abc.Iterable[lsst.daf.butler.registry.Registry],
 ) -> Config:
     instrument_lists = dict()
     for i, registry in enumerate(registries):
