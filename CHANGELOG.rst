@@ -2,6 +2,13 @@
 Change Log
 ==========
 
+0.9.5
+-----
+
+* pyproject.toml: add PGUSER and PGPASSWORD to passenv.
+* Update input and computed requirements.
+* Apply dependabot alerts to .github/workflows/ci.yaml.
+
 0.9.4
 -----
 
