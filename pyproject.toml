@@ -25,6 +25,8 @@ passenv =
     # Basic configuration
     BUTLER_URI_1
     BUTLER_URI_2
+    PGUSER
+    PGPASSWORD
     EXPOSURELOG_DB_USER
     EXPOSURELOG_DB_PASSWORD
     EXPOSURELOG_DB_HOST
