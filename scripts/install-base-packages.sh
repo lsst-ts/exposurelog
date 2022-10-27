@@ -34,6 +34,9 @@ apt-get -y install --no-install-recommends git
 # Remove this when we switch to a web-based butler service:
 apt-get -y install --no-install-recommends build-essential
 
+# Install libpq-dev for Butlers that use postgres
+apt-get -y install --no-install-recommends libpq-dev
+
 # Delete cached files we don't need anymore:
 apt-get clean
 rm -rf /var/lib/apt/lists/*
