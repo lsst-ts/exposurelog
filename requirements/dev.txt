@@ -60,7 +60,7 @@ packaging==21.3
     # via pytest
 pathspec==0.10.1
     # via black
-pg8000==1.29.2
+pg8000==1.29.3
     # via testing-postgresql
 platformdirs==2.5.2
     # via
@@ -84,7 +84,7 @@ pyyaml==6.0
     # via pre-commit
 rfc3986[idna2008]==1.5.0
     # via httpx
-scramp==1.4.2
+scramp==1.4.3
     # via pg8000
 six==1.16.0
     # via python-dateutil

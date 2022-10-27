@@ -2,6 +2,11 @@
 Change Log
 ==========
 
+0.9.6
+-----
+
+* Install butler with the ``[postgres]`` option to make it compatible with a Postgres back end.
+
 0.9.5
 -----
 
