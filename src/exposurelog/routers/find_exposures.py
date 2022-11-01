@@ -136,9 +136,9 @@ async def find_exposures(
 
     Warnings
     --------
-    This does not yet support pagination or ordering, because daf_butler
-    Registry does not. It does, however, support ``limit``, in order to avoid
-    performance issues for overly broad queries.
+    Be careful to specify a registry that contains data for the instrument
+    you specify, else you will get no exposures. Use the ``/instruments``
+    endpoint to find out which registries have data for which instruments.
     """
     if registry > len(state.registries):
         raise fastapi.HTTPException(
