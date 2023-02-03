@@ -59,13 +59,9 @@ If that fails with a complaint about missing packages try rebuilding your enviro
 
   tox -r
 
-To lint the code (run it twice if it reports a linting error the first time)::
+To lint the code, including type checking (run it twice if it reports a linting error the first time)::
 
   tox -e lint
-
-To check type annotation with mypy::
-
-  tox -e typing
 
 To run the service, you will need a running Postgres server with a user named ``exposurelog``
 that has permission to create tables and rows, and a database also named ``exposurelog``.
