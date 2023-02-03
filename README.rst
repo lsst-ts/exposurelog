@@ -46,6 +46,7 @@ If you change requirements (in requirements/dev.in or main.in),
 or if running the code gives a "package not found" error,
 update the generated dependencies and install the new requirements using::
 
+  make update-deps
   make update
 
 tox configuration goes in pyproject.toml (not tox.ini, as tox documentation often suggests).
