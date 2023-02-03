@@ -5,16 +5,22 @@
 # After editing, update requirements/main.txt by running:
 #     make update-deps
 
-# prevent a resolution conflict
-# uvicorn 0.19 wants h11 0.14.0, but httpcore 0.15.0 (which is ancient, but demanded by httpx)
-# demands h11 0.12.0
-h11==0.12.0
-alembic~=1.8
-astropy~=5.1
-asyncpg~=0.26
+# Resolve a dependency issue by forcing a version of packaging
+packaging>=22.0
+alembic~=1.9
+astropy~=5.2
+asyncpg~=0.27
 fastapi<1
-importlib_metadata~=5.0
-sqlalchemy~=1.4, <1.5
-structlog~=22.1
-uvicorn~=0.19
-lsst-daf-butler[postgres]
+importlib_metadata~=6.0
+sqlalchemy~=2.0
+structlog~=22.3
+uvicorn~=0.20
+# Use explicit versions because otherwise pip installs version 24, which is too old.
+lsst-daf-butler[postgres]==26.0.0a20230100
+# Drop these once DM fixes the pip versioning of lsst-daf-butler
+# Note that here is no 0100 release of these but we need that older release
+# of lsst-daf-butler to avoid an ordering bug (DM-37855).
+lsst-resources==26.0.0a20230500
+lsst-sphgeom==26.0.0a20230500
+lsst-utils==26.0.0a20230500
+
