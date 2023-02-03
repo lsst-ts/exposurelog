@@ -15,10 +15,11 @@ importlib_metadata~=6.0
 sqlalchemy~=2.0
 structlog~=22.3
 uvicorn~=0.20
-# Use this alpha because otherwise pip installs version 24, which is too old.
+# Use explicit versions because otherwise pip installs version 24, which is too old.
 # Once DM fixes the problem you can just use the lsst-daf-butler[postgres] line,
-# hopefullly with a proper release version.
-lsst-daf-butler[postgres]==26.0.0a20230500
-lsst-resources==26.0.0a20230500
-lsst-sphgeom==26.0.0a20230500
-lsst-utils==26.0.0a20230500
+# hopefullly with a proper release version, and delete the others.
+lsst-daf-butler[postgres]==26.0.0a20230100
+lsst-resources==26.0.0a20230100
+lsst-sphgeom==26.0.0a20230100
+lsst-utils==26.0.0a20230500  # 0100 is not available
+
