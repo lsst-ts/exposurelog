@@ -64,12 +64,15 @@ async def get_column_info(
         "name", "type", "nullable", "default", and "autoincrement"
     """
 
-    def _impl(connection: Connection) -> list[str]:
+    # Note: the return type of the elements of the list
+    # is too complicated to bother trying to annotate.
+    def _impl(connection: Connection) -> list[typing.Any]:
         """Synchronous implementation.
 
         Inspect does not work with an async connection
         """
         inspector = inspect(connection)
+        # Cast the return value to a list to make mypy happy.
         return inspector.get_columns(table)
 
     return await connection.run_sync(_impl)

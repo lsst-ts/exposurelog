@@ -580,6 +580,7 @@ async def create_test_database(
                 .returning(table.c.id, table.c.is_valid)
             )
             data = result.fetchone()
+            assert data is not None  # Make mypy happy.
             assert message["id"] == data.id
             assert message["is_valid"] == data.is_valid
 
