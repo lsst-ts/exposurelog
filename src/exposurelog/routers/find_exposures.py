@@ -307,5 +307,6 @@ def find_exposures_in_a_registry(
     except Exception as e:
         raise fastapi.HTTPException(
             status_code=http.HTTPStatus.NOT_FOUND,
-            detail=f"Error in butler query: {e!r}",
+            detail=f"Error in butler query {instrument=}, {bind=}, {where=}, "
+            f"{limit=}, {offset=}, {order_by=}: {e!r}",
         )
