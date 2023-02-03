@@ -2,6 +2,11 @@
 Change Log
 ==========
 
+1.0.0
+-----
+
+* Fix some outdated help.
+
 0.9.6
 -----
 
