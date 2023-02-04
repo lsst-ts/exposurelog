@@ -12,7 +12,9 @@ from exposurelog.testutils import (
     MessageDictT,
     assert_good_response,
     create_test_client,
+    random_obs_id,
 )
+from exposurelog.utils import current_date_and_day_obs
 
 
 def assert_good_add_response(
@@ -83,7 +85,7 @@ class AddMessageTestCase(unittest.IsolatedAsyncioTestCase):
             # and ``is_new=True``. This should succeed, with data_added = now.
             current_time = astropy.time.Time.now()
             no_obs_id_args = add_args.copy()
-            no_obs_id_args["obs_id"] = "NO_SUCH_OBS_ID"
+            no_obs_id_args["obs_id"] = random_obs_id()
             no_obs_id_args["is_new"] = True
             response = await client.post(
                 "/exposurelog/messages",
@@ -102,6 +104,36 @@ class AddMessageTestCase(unittest.IsolatedAsyncioTestCase):
                 json=no_obs_id_args,
             )
             assert response.status_code == http.HTTPStatus.NOT_FOUND
+
+            # Error: add a message with is_new true and invalid obs_id
+            bad_obs_id_args = add_args.copy()
+            bad_obs_id_args["is_new"] = True
+            good_day_obs = str(current_date_and_day_obs()[1])
+            good_seq_num = "123456"
+            for bad_fields in (
+                ("A",),  # 1 of 4 fields
+                ("A", good_day_obs),  # 2 of 4 fields
+                ("A", good_day_obs, good_seq_num),  # 3 of 4 fields
+                ("AA", "A", "EXTRA", good_day_obs, good_seq_num),
+                ("A", "A", good_day_obs, good_seq_num),
+                ("aa", "A", good_day_obs, good_seq_num),
+                ("AAA", "A", good_day_obs, good_seq_num),
+                ("AA", "", good_day_obs, good_seq_num),
+                ("AA", "a", good_day_obs, good_seq_num),
+                ("AA", "AA", good_day_obs, good_seq_num),
+                ("AA", "A", str(int(good_day_obs) + 3), good_seq_num),
+                ("AA", "A", str(int(good_day_obs) - 3), good_seq_num),
+                ("AA", "A", "2023123", good_seq_num),
+                ("A", "A", good_day_obs, "12345"),
+                ("A", "A", good_day_obs, "a23456"),
+                ("A", "A", good_day_obs, "1234567"),
+            ):
+                bad_obs_id_args["obs_id"] = "_".join(bad_fields)
+                response = await client.post(
+                    "/exposurelog/messages",
+                    json=bad_obs_id_args,
+                )
+                assert response.status_code == http.HTTPStatus.BAD_REQUEST
 
             # Error: add a message with invalid tags.
             invalid_tags = [
