@@ -2,10 +2,15 @@
 Change Log
 ==========
 
-1.0.0
+0.9.7
 -----
 
+* add_message: reject malformed obs_id values if is_new is true.
+  The code checks the format and that the day_obs field is within 1 day of the current day_obs
+  (to allow adding messages near the time day_obs changes).
+* find_exposures: apply ordering before offset & limit.
 * Fix some outdated help.
+* Modernize dependencies, though the version of lsst-daf-butler is slightly old to avoid a query bug (DM-37855).
 
 0.9.6
 -----
