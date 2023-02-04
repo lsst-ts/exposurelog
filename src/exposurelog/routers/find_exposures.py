@@ -298,8 +298,8 @@ def find_exposures_in_a_registry(
             bind=bind,
             where=where,
         )
-        record_iter = record_iter.limit(limit=limit, offset=offset)
         record_iter = record_iter.order_by(*order_by)
+        record_iter = record_iter.limit(limit=limit, offset=offset)
         return list(record_iter)
     except lsst.daf.butler.registry.DataIdValueError:
         # No such instrument
@@ -307,5 +307,6 @@ def find_exposures_in_a_registry(
     except Exception as e:
         raise fastapi.HTTPException(
             status_code=http.HTTPStatus.NOT_FOUND,
-            detail=f"Error in butler query: {e!r}",
+            detail=f"Error in butler query {instrument=}, {bind=}, {where=}, "
+            f"{limit=}, {offset=}, {order_by=}: {e!r}",
         )
