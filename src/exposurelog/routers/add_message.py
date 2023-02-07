@@ -6,6 +6,7 @@ import http
 import logging
 import re
 
+import astropy.time
 import fastapi
 import lsst.daf.butler
 import lsst.daf.butler.registry
@@ -13,7 +14,6 @@ import sqlalchemy as sa
 
 from ..message import ExposureFlag, Message
 from ..shared_state import SharedState, get_shared_state
-from ..utils import current_date_and_day_obs
 from .normalize_tags import TAG_DESCRIPTION, normalize_tags
 
 router = fastapi.APIRouter()
@@ -60,10 +60,8 @@ async def add_message(
     ),
     is_new: bool = fastapi.Body(
         default=...,
-        description="Is the exposure new (and perhaps not yet ingested)?"
-        "If True: the exposure need not appear in either "
-        "butler registry, and if it does not, this service will compute "
-        "day_obs using the current date. ",
+        description="DEPRECATED and IGNORED. "
+        "The exposure must exist in a registry.",
     ),
     exposure_flag: ExposureFlag = fastapi.Body(
         default=ExposureFlag.none,
@@ -78,7 +76,7 @@ async def add_message(
     state: SharedState = fastapi.Depends(get_shared_state),
 ) -> Message:
     """Add a message to the database and return the added message."""
-    current_date, current_day_obs = current_date_and_day_obs()
+    current_date = current_date = astropy.time.Time.now()
 
     tags = normalize_tags(tags)
 
@@ -90,17 +88,13 @@ async def add_message(
             None,
             exposure_from_registry,
             state.registries,
-            obs_id,
             instrument,
+            obs_id,
         )
     except Exception as e:
-        if is_new:
-            day_obs = current_day_obs
-            check_obs_id(obs_id=obs_id, current_day_obs=current_day_obs)
-        else:
-            raise fastapi.HTTPException(
-                status_code=http.HTTPStatus.NOT_FOUND, detail=str(e)
-            )
+        raise fastapi.HTTPException(
+            status_code=http.HTTPStatus.NOT_FOUND, detail=str(e)
+        )
     else:
         day_obs = exposure.day_obs
 
@@ -132,60 +126,21 @@ async def add_message(
     return Message.from_orm(result)
 
 
-def check_obs_id(obs_id: str, current_day_obs: int) -> None:
-    """Check obs_id.
-
-    Only intended to be called if is_new is true, since otherwise obs_id
-    is checked and the current seq_num retrieved with the butler.
-
-    Parameters
-    ----------
-    obs_id
-        obs_id of the exposure being taken.
-    current_day_obs
-        Current day_obs. Used to check obs_id.
-
-    Returns
-    -------
-    seq_num
-        The exposure sequence number.
-
-    Raises
-    ------
-    fastapi.HTTPException
-        If obs_id has invalid format or if the obs_day field is more
-        than 1 day away from the current_obs_day.
-    """
-    match = OBSID_REGEX.fullmatch(obs_id)
-    if match is None:
-        raise fastapi.HTTPException(
-            status_code=http.HTTPStatus.BAD_REQUEST,
-            detail=f"Invalid {obs_id=}",
-        )
-    day_obs = int(match.groups()[0])
-    if not current_day_obs - 1 <= day_obs <= current_day_obs + 1:
-        raise fastapi.HTTPException(
-            status_code=http.HTTPStatus.BAD_REQUEST,
-            detail=f"Invalid {obs_id=}; {day_obs=} "
-            f"not within one day of current day_obs={current_day_obs}",
-        )
-
-
 def exposure_from_registry(
     registries: collections.abc.Sequence[lsst.daf.butler.registry.Registry],
-    obs_id: str,
     instrument: str,
+    obs_id: str,
 ) -> lsst.daf.butler.dimensions.DimensionRecord:
     """Get the day of observation of an exposure, or None if not found.
 
     Parameters
     ----------
-    registries
+    registries: `list` [`lsst.daf.butler.registry.Registry`]
         One or more data registries.
         They are searched in order.
-    instrument
+    instrument : `str`
         Instrument name.
-    obs_id
+    obs_id : `str`
         Observation ID.
 
     Returns

@@ -35,7 +35,6 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from . import main, shared_state
 from .create_message_table import create_message_table
 from .message import MESSAGE_FIELDS
-from .utils import current_date_and_day_obs
 
 # Range of dates for random messages.
 MIN_DATE_RANDOM_MESSAGE = "2021-01-01"
@@ -396,17 +395,15 @@ def random_date(precision: int = 0) -> datetime.datetime:
 def random_obs_id() -> str:
     """Return a random obs_id.
 
-    The format is aa_a_YYYYMMDD_dddddd, where:
+    The format is AA_A_dddddddd_dddddd, where:
 
-    * a is an uppercase letter,
-    * YYYYMMDD is the current day_obs (current TAI - 12 hours).
+    * A is an uppercase letter
     * d is a digit
     """
-    current_day_obs = current_date_and_day_obs()[1]
     fields = (
         "".join(random.sample(string.ascii_uppercase, 2)),
         random.choice(string.ascii_uppercase),
-        str(current_day_obs),
+        "".join(random.sample(string.digits, 8)),
         "".join(random.sample(string.digits, 6)),
     )
     return "_".join(fields)
