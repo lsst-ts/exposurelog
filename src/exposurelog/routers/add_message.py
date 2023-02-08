@@ -176,7 +176,7 @@ def exposure_from_registry(
                         f"with {instrument=} and {obs_id=}. Is the registry corrupt?"
                     )
             except lsst.daf.butler.registry.DataIdValueError:
-                # No such instrument
+                # No such instrument.
                 continue
     except Exception as e:
         raise RuntimeError(f"Error in butler query: {e!r}")

@@ -168,7 +168,7 @@ async def find_messages(
     """Find messages."""
     message_table = state.exposurelog_db.message_table
 
-    # Names of selection arguments
+    # Names of selection arguments.
     select_arg_names = (
         "site_ids",
         "obs_id",
@@ -229,7 +229,7 @@ async def find_messages(
 
     async with state.exposurelog_db.engine.connect() as connection:
         conditions = []
-        # Handle minimums and maximums
+        # Handle minimums and maximums.
         for key in select_arg_names:
             value = locals()[key]
             if value is None:
