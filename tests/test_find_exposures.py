@@ -107,8 +107,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
         instrument = "LATISS"
         repo_path = pathlib.Path(__file__).parent / "data" / instrument
 
-        # Find all exposures in the registry,
-        # and save as a list of dicts
+        # Find all exposures in the registry, and save as a list of dicts.
         # TODO DM-33642: change to writeable=False when safe to do so.
         butler = lsst.daf.butler.Butler(str(repo_path), writeable=True)
         registry = butler.registry
@@ -121,7 +120,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
         ]
         exposures.sort(key=lambda exposure: exposure["id"])
 
-        # Check for duplicate exposures
+        # Check for duplicate exposures.
         obs_ids = {exposure["obs_id"] for exposure in exposures}
         assert len(obs_ids) == len(exposures)
 
@@ -129,7 +128,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
         # and pick a subrange.
         assert len(exposures) > 5
 
-        # Make sure all exposures have the right instrument
+        # Make sure all exposures have the right instrument.
         for exposure in exposures:
             assert exposure["instrument"] == instrument
 
@@ -137,7 +136,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
             client,
             messages,
         ):
-            # Test that instrument is required
+            # Test that instrument is required.
             response = await client.get(
                 "/exposurelog/exposures",
                 params={"limit": 1},
@@ -166,7 +165,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
                 tuple[dict[str, typing.Any], collections.abc.Callable]
             ] = list()
 
-            # Range arguments: min_<field>, max_<field>
+            # Range arguments: min_<field>, max_<field>.
             for field in ("day_obs", "seq_num", "date"):
                 min_name = f"min_{field}"
                 max_name = f"max_{field}"
@@ -305,7 +304,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
                 response, exposures, lambda exposure: True
             )
 
-            # Test that limit limits the number of records
+            # Test that limit limits the number of records.
             for limit in (
                 1,
                 len(exposures) - 3,
@@ -329,7 +328,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
                         break
                     offset += limit
 
-            # Test minimal order_by
+            # Test minimal order_by.
             order_by = ["-id"]
             response = await run_find(dict(order_by=order_by))
             found_exposures = assert_good_find_response(
@@ -341,7 +340,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
             )
 
             # group_id is not sufficient (there are duplicates)
-            # but the service appends "id" if "id" if not specified
+            # but the service appends "id" if "id" if not specified.
             response = await run_find(dict(order_by=["group_id"]))
             exposures.sort(
                 key=lambda exposure: (exposure["group_id"], exposure["id"])
@@ -351,7 +350,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
             )
 
             # Now check group_id with -id to make sure the service
-            # is not appending id after the -id
+            # is not appending id after the -id.
             response = await run_find(dict(order_by=["group_id", "-id"]))
             exposures.sort(
                 key=lambda exposure: (exposure["group_id"], -exposure["id"])
@@ -360,20 +359,20 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
                 response, exposures, predicate=lambda exposure: True
             )
 
-            # Test that offset >= # of records returns nothing
+            # Test that offset >= # of records returns nothing.
             response = await run_find(dict(limit=10, offset=len(exposures)))
             found_exposures = assert_good_response(response)
             assert len(found_exposures) == 0
 
-            # Test that limit must be positive
+            # Test that limit must be positive.
             response = await run_find({"limit": 0})
             assert response.status_code == 422
 
-            # Test that offset must not be negative
+            # Test that offset must not be negative.
             response = await run_find({"limit": -1})
             assert response.status_code == 422
 
-            # Test order_by with all records
+            # Test order_by with all records.
             for order_by_field in EXPOSURE_ORDER_BY_VALUES:
                 order_by = [order_by_field]
                 response = await run_find(dict(order_by=[order_by_field]))
@@ -382,7 +381,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
                     data_dicts=found_exposures, order_by=order_by
                 )
 
-            # Check invalid order_by fields
+            # Check invalid order_by fields.
             for bad_order_by_field in ("not_a_field", "+id"):
                 response = await run_find(dict(order_by=[bad_order_by_field]))
                 assert response.status_code == http.HTTPStatus.BAD_REQUEST
@@ -396,7 +395,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
         # The first repo is for LSSTCam and the second for LATISS,
         # thus searches only return exposures from one registry.
         # Use instrument=LATISS to search the second registry
-        # in order to test DM-33601
+        # in order to test DM-33601.
         # TODO DM-33642: change to writeable=False when safe to do so.
         butler = lsst.daf.butler.Butler(str(repo_path_2), writeable=True)
         registry = butler.registry
@@ -440,7 +439,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
                 )
                 return response
 
-            # Searching the wrong registry should return no matches
+            # Searching the wrong registry should return no matches.
             response = await run_find(dict(), registry=1)
             found_exposures = assert_good_response(response)
             assert len(found_exposures) == 0

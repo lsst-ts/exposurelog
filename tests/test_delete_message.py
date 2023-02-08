@@ -23,7 +23,7 @@ class DeleteMessageTestCase(unittest.IsolatedAsyncioTestCase):
             assert message_to_delete["date_invalidated"] is None
             id = message_to_delete["id"]
 
-            # Delete the message
+            # Delete the message.
             response = await client.delete(f"/exposurelog/messages/{id}")
             assert response.status_code == http.HTTPStatus.NO_CONTENT
 
@@ -40,7 +40,7 @@ class DeleteMessageTestCase(unittest.IsolatedAsyncioTestCase):
             deleted_message2 = assert_good_response(response)
             assert_messages_equal(deleted_message1, deleted_message2)
 
-            # Test that a non-existent message returns NOT_FOUND
+            # Test that a non-existent message returns NOT_FOUND.
             bad_id = uuid.uuid4()
             response = await client.delete(f"/exposurelog/messages/{bad_id}")
             assert response.status_code == http.HTTPStatus.NOT_FOUND
