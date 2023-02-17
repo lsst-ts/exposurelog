@@ -2,10 +2,12 @@ import asyncio
 import logging
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config, inspect, pool
+from sqlalchemy import engine, engine_from_config, inspect, pool
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from alembic import context
+# Use type: ignore because alembic.context is only available for env.py
+# when it is executed through the alembic command.
+from alembic import context  # type: ignore
 from exposurelog.shared_state import create_db_url
 
 # This is the Alembic Config object, which provides
@@ -30,7 +32,7 @@ target_metadata = None
 # ... etc.
 
 
-def do_run_migrations(connection):
+def do_run_migrations(connection: engine.base.Connection) -> None:
     """Run a migration given an async connection.
 
     A helper function used by run_migrations_online.
@@ -48,21 +50,21 @@ def do_run_migrations(connection):
         context.run_migrations(log=log, table_names=table_names)
 
 
-async def run_migrations_online():
+async def run_migrations_online() -> None:
     """Run migrations in 'online' mode.
 
     In this scenario we need to create an Engine
     and associate a connection with the context.
     """
-    connectable = AsyncEngine(
-        engine_from_config(
-            config.get_section(config.config_ini_section),
-            prefix="sqlalchemy.",
-            poolclass=pool.NullPool,
-            future=True,
-        )
+    engine_config = config.get_section(config.config_ini_section)
+    assert engine_config is not None
+    engine = engine_from_config(
+        engine_config,
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+        future=True,
     )
-
+    connectable = AsyncEngine(engine)
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
 

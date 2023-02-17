@@ -5,7 +5,10 @@ import unittest
 
 import astropy.time
 import httpx
+import lsst.daf.butler
+import lsst.daf.butler.core
 
+from exposurelog.shared_state import get_shared_state
 from exposurelog.testutils import (
     TEST_TAGS,
     TEST_URLS,
@@ -43,6 +46,27 @@ def assert_good_add_response(
     return message
 
 
+def find_all_exposures(
+    registry: lsst.daf.butler.Registry, instrument: str
+) -> list[lsst.daf.butler.core.DimensionRecord]:
+    """Find all exposures in the specified registry.
+
+    Parameters
+    ----------
+    registry : lsst.daf.butler.Registry
+        The butler registry.
+    instrument : str
+        The instrument.
+    """
+    record_iter = registry.queryDimensionRecords(
+        "exposure",
+        instrument=instrument,
+        bind={},
+        where="",
+    )
+    return list(record_iter)
+
+
 class AddMessageTestCase(unittest.IsolatedAsyncioTestCase):
     async def test_add_message(self) -> None:
         repo_path = pathlib.Path(__file__).parent / "data" / "LSSTCam"
@@ -54,6 +78,15 @@ class AddMessageTestCase(unittest.IsolatedAsyncioTestCase):
             client,
             messages,
         ):
+            shared_state = get_shared_state()
+            exposures = []
+            for registry, instrument in zip(
+                shared_state.registries, ("LSSTCam", "LATISS")
+            ):
+                exposures += find_all_exposures(
+                    registry=registry, instrument=instrument
+                )
+
             # Add a message whose obs_id matches an exposure
             # and with all test tags and URLs in random order.
             shuffled_test_tags = TEST_TAGS[:]
@@ -61,8 +94,8 @@ class AddMessageTestCase(unittest.IsolatedAsyncioTestCase):
             shuffled_test_urls = TEST_URLS[:]
             random.shuffle(shuffled_test_urls)
             add_args = dict(
-                obs_id="MC_C_20190322_000002",
-                instrument="LSSTCam",
+                obs_id=exposures[0].obs_id,
+                instrument=exposures[0].instrument,
                 message_text="A sample message",
                 level=10,
                 tags=shuffled_test_tags,
@@ -81,25 +114,40 @@ class AddMessageTestCase(unittest.IsolatedAsyncioTestCase):
 
             # Add a message whose obs_id does not match an exposure,
             # and ``is_new=True``. This should succeed, with data_added = now.
-            current_time = astropy.time.Time.now()
-            no_obs_id_args = add_args.copy()
-            no_obs_id_args["obs_id"] = "NO_SUCH_OBS_ID"
-            no_obs_id_args["is_new"] = True
-            response = await client.post(
-                "/exposurelog/messages",
-                json=no_obs_id_args,
-            )
-            message = assert_good_add_response(
-                response=response, add_args=no_obs_id_args
-            )
-            assert message["date_added"] > current_time.tai.isot
+            for exposure in exposures:
+                current_time = astropy.time.Time.now()
+                new_add_args = add_args.copy()
+                new_add_args["instrument"] = exposure.instrument
+                new_add_args["obs_id"] = exposure.obs_id
+                response = await client.post(
+                    "/exposurelog/messages",
+                    json=new_add_args,
+                )
+                message = assert_good_add_response(
+                    response=response, add_args=new_add_args
+                )
+                assert message["date_added"] > current_time.tai.isot
 
-            # Error: add a message whose obs_id does not match an exposure,
+            # Error: add a message whose obs_id does not match an exposure
             # and ``is_new=False``.
-            no_obs_id_args["is_new"] = False
+            no_obs_id_args = add_args.copy()
+            no_obs_id_args["obs_id"] = "No such obs_id"
             response = await client.post(
                 "/exposurelog/messages",
                 json=no_obs_id_args,
+            )
+            assert response.status_code == http.HTTPStatus.NOT_FOUND
+
+            # Error: add a message with the wrong instrument.
+            wrong_instrument_args = add_args.copy()
+            instrument = {
+                "LATISS": "LSSTCam",
+                "LSSTCam": "LATISS",
+            }[wrong_instrument_args["instrument"]]
+            wrong_instrument_args["instrument"] = "No such instrument"
+            response = await client.post(
+                "/exposurelog/messages",
+                json=wrong_instrument_args,
             )
             assert response.status_code == http.HTTPStatus.NOT_FOUND
 

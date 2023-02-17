@@ -168,7 +168,7 @@ async def find_messages(
     """Find messages."""
     message_table = state.exposurelog_db.message_table
 
-    # Names of selection arguments
+    # Names of selection arguments.
     select_arg_names = (
         "site_ids",
         "obs_id",
@@ -198,7 +198,7 @@ async def find_messages(
     # If order_by does not include "id" then append it, to make the order
     # repeatable. Otherwise different calls can return data in different
     # orders, which is a disaster when using limit and offset.
-    order_by_columns = []
+    order_by_columns: list[sa.sql.elements.UnaryExpression] = []
     if order_by is None:
         order_by = ["id"]
     else:
@@ -229,7 +229,7 @@ async def find_messages(
 
     async with state.exposurelog_db.engine.connect() as connection:
         conditions = []
-        # Handle minimums and maximums
+        # Handle minimums and maximums.
         for key in select_arg_names:
             value = locals()[key]
             if value is None:

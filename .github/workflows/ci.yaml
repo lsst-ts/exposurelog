@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@v3.3.0
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -19,7 +19,7 @@ jobs:
 
       - name: Cache tox environments
         id: cache-tox
-        uses: actions/cache@v3.0.11
+        uses: actions/cache@v3.2.4
         with:
           path: .tox
           # requirements/*.txt, pyproject.toml, and .pre-commit-config.yaml
@@ -34,7 +34,7 @@ jobs:
     needs: [test]
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3.3.0
 
       - name: Define the Docker tag
         id: vars

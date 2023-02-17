@@ -26,7 +26,6 @@ SITE_ID_LEN = 16
 async def create_database() -> collections.abc.AsyncGenerator[
     AsyncEngine, None
 ]:
-
     """Create an empty database and set env vars to point to it.
 
     Returns
@@ -65,7 +64,9 @@ async def get_column_info(
         "name", "type", "nullable", "default", and "autoincrement"
     """
 
-    def _impl(connection: Connection) -> list[str]:
+    # Note: the return type of the elements of the list
+    # is too complicated to bother trying to annotate.
+    def _impl(connection: Connection) -> list[typing.Any]:
         """Synchronous implementation.
 
         Inspect does not work with an async connection

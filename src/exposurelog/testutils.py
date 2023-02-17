@@ -21,6 +21,7 @@ import http
 import os
 import pathlib
 import random
+import string
 import typing
 import unittest.mock
 import uuid
@@ -391,6 +392,23 @@ def random_date(precision: int = 0) -> datetime.datetime:
     ).datetime
 
 
+def random_obs_id() -> str:
+    """Return a random obs_id.
+
+    The format is AA_A_dddddddd_dddddd, where:
+
+    * A is an uppercase letter
+    * d is a digit
+    """
+    fields = (
+        "".join(random.sample(string.ascii_uppercase, 2)),
+        random.choice(string.ascii_uppercase),
+        "".join(random.sample(string.digits, 8)),
+        "".join(random.sample(string.digits, 6)),
+    )
+    return "_".join(fields)
+
+
 def random_str(nchar: int) -> str:
     """Return a random string of nchar printable UTF-8 characters.
 
@@ -460,7 +478,7 @@ def random_message() -> MessageDictT:
     message = dict(
         id=None,
         site_id=TEST_SITE_ID,
-        obs_id=random_str(nchar=18),
+        obs_id=random_obs_id(),
         instrument=random_str(nchar=16),
         day_obs=int(random_yyyymmdd),
         message_text=random_str(nchar=20),
@@ -580,6 +598,7 @@ async def create_test_database(
                 .returning(table.c.id, table.c.is_valid)
             )
             data = result.fetchone()
+            assert data is not None  # Make mypy happy.
             assert message["id"] == data.id
             assert message["is_valid"] == data.is_valid
 

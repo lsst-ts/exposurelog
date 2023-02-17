@@ -2,6 +2,16 @@
 Change Log
 ==========
 
+0.9.7
+-----
+
+* add_message: require the exposure to be in a registry (already be ingested),
+  to prevent adding messages with an invalid (obs_id, instrument).
+  Document the is_new argument as deprecated and ignored.
+* find_exposures: apply ordering before offset & limit.
+* Fix some outdated help.
+* Modernize dependencies.
+
 0.9.6
 -----
 

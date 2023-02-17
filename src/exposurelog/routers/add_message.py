@@ -4,10 +4,11 @@ import asyncio
 import collections.abc
 import http
 import logging
+import re
 
 import astropy.time
-import astropy.units as u
 import fastapi
+import lsst.daf.butler
 import lsst.daf.butler.registry
 import sqlalchemy as sa
 
@@ -16,6 +17,8 @@ from ..shared_state import SharedState, get_shared_state
 from .normalize_tags import TAG_DESCRIPTION, normalize_tags
 
 router = fastapi.APIRouter()
+
+OBSID_REGEX = re.compile(r"[A-Z][A-Z]_[A-Z]_(\d\d\d\d\d\d\d\d)_(\d\d\d\d\d\d)")
 
 
 # The pair of decorators avoids a redirect from uvicorn if the trailing "/"
@@ -57,10 +60,8 @@ async def add_message(
     ),
     is_new: bool = fastapi.Body(
         default=...,
-        description="Is the exposure new (and perhaps not yet ingested)?"
-        "If True: the exposure need not appear in either "
-        "butler registry, and if it does not, this service will compute "
-        "day_obs using the current date. ",
+        description="DEPRECATED and IGNORED. "
+        "The exposure must exist in a registry.",
     ),
     exposure_flag: ExposureFlag = fastapi.Body(
         default=ExposureFlag.none,
@@ -75,30 +76,27 @@ async def add_message(
     state: SharedState = fastapi.Depends(get_shared_state),
 ) -> Message:
     """Add a message to the database and return the added message."""
-    curr_tai = astropy.time.Time.now()
+    current_date = current_date = astropy.time.Time.now()
 
     tags = normalize_tags(tags)
 
     # Check obs_id and determine day_obs.
     loop = asyncio.get_running_loop()
-    obs_id = obs_id
-    day_obs = await loop.run_in_executor(
-        None,
-        get_day_obs_from_registries,
-        state.registries,
-        obs_id,
-        instrument,
-    )
-    if day_obs is None:
-        if is_new:
-            exposure_start_time = curr_tai
-            day_obs_full = exposure_start_time - 12 * u.hr
-            day_obs = int(day_obs_full.strftime("%Y%m%d"))
-        else:
-            raise fastapi.HTTPException(
-                status_code=http.HTTPStatus.NOT_FOUND,
-                detail=f"Exposure obs_id={obs_id} not found and is_new is false",
-            )
+
+    try:
+        exposure = await loop.run_in_executor(
+            None,
+            exposure_from_registry,
+            state.registries,
+            instrument,
+            obs_id,
+        )
+    except Exception as e:
+        raise fastapi.HTTPException(
+            status_code=http.HTTPStatus.NOT_FOUND, detail=str(e)
+        )
+    else:
+        day_obs = exposure.day_obs
 
     message_table = state.exposurelog_db.message_table
 
@@ -119,7 +117,7 @@ async def add_message(
                 user_agent=user_agent,
                 is_human=is_human,
                 exposure_flag=exposure_flag,
-                date_added=curr_tai.tai.datetime,
+                date_added=current_date.tai.datetime,
             )
             .returning(sa.literal_column("*"))
         )
@@ -128,44 +126,60 @@ async def add_message(
     return Message.from_orm(result)
 
 
-def get_day_obs_from_registries(
+def exposure_from_registry(
     registries: collections.abc.Sequence[lsst.daf.butler.registry.Registry],
-    obs_id: str,
     instrument: str,
-) -> None | int:
+    obs_id: str,
+) -> lsst.daf.butler.dimensions.DimensionRecord:
     """Get the day of observation of an exposure, or None if not found.
 
     Parameters
     ----------
-    registries
+    registries: `list` [`lsst.daf.butler.registry.Registry`]
         One or more data registries.
         They are searched in order.
-    obs_id
-        Observation ID.
-    instrument
+    instrument : `str`
         Instrument name.
+    obs_id : `str`
+        Observation ID.
 
     Returns
     -------
     day_obs : `int` or `None`
         The day of observation of the exposure, if found, else None.
 
-    Notes:
+    Raises
+    ------
+    RuntimError
+        If more than one matching exposure is found in a registry,
+        or if no matching exposures are found in any registry.
+
+    Notes
     -----
-    If more than one matching exposure is found,
-    silently uses the first one.
+    The first registry that has a matching exposure is used, and the
+    remaining registries are not searched.
+    If a registry that is checked contains more than one matching exposure,
+    raise RuntimeError.
     """
     try:
         query_str = f"exposure.obs_id='{obs_id}' and instrument='{instrument}'"
         for registry in registries:
-            records = list(
-                registry.queryDimensionRecords("exposure", where=query_str)
-            )
-            if records:
-                return records[0].day_obs
-    except lsst.daf.butler.registry.DataIdValueError:
-        # No such instrument
-        pass
+            try:
+                records = list(
+                    registry.queryDimensionRecords("exposure", where=query_str)
+                )
+                if len(records) == 1:
+                    return records[0]
+                elif len(records) > 1:
+                    raise RuntimeError(
+                        f"Found {len(records)} > 1 exposures in {registries=} "
+                        f"with {instrument=} and {obs_id=}. Is the registry corrupt?"
+                    )
+            except lsst.daf.butler.registry.DataIdValueError:
+                # No such instrument.
+                continue
     except Exception as e:
-        print(f"Error in butler query: {e!r}")
-    return None
+        raise RuntimeError(f"Error in butler query: {e!r}")
+    raise RuntimeError(
+        f"No exposure found in {registries=} with {instrument=} and {obs_id=}"
+    )

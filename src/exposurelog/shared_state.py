@@ -4,7 +4,7 @@ __all__ = ["create_shared_state", "delete_shared_state", "get_shared_state"]
 
 import logging
 import os
-import urllib
+import urllib.parse
 
 import lsst.daf.butler
 
@@ -57,7 +57,7 @@ class SharedState:
     site_id : str
         Name identifying where the exposurelog service is running.
         Values include: "summit" and "base".
-    registries : [lsst.daf.butler.Registry]
+    registries : list[lsst.daf.butler.Registry]
         List of one or two butler registries.
     exposurelog_db : sa.Table
 

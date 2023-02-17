@@ -18,7 +18,7 @@ async def get_message(
     """Get one message."""
     message_table = state.exposurelog_db.message_table
 
-    # Find the message
+    # Find the message.
     async with state.exposurelog_db.engine.connect() as connection:
         result = await connection.execute(
             message_table.select().where(message_table.c.id == id)
