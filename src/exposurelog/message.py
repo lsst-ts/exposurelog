@@ -29,7 +29,12 @@ class Message(pydantic.BaseModel):
     instrument: str = pydantic.Field(
         description="Short name of instrument, e.g. LSSTCam."
     )
-    day_obs: int = pydantic.Field(description="Observation day.")
+    day_obs: int = pydantic.Field(
+        description="Observation day, as an integer in the form YYYYMMDD."
+    )
+    seq_num: int = pydantic.Field(
+        description="Counter for the observation within a larger sequence."
+    )
     message_text: str = pydantic.Field(description="Message.")
     level: int = pydantic.Field(
         title="Message level. A python logging level: "

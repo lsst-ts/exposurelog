@@ -97,6 +97,7 @@ async def add_message(
         )
     else:
         day_obs = exposure.day_obs
+        seq_num = exposure.seq_num
 
     message_table = state.exposurelog_db.message_table
 
@@ -109,6 +110,7 @@ async def add_message(
                 obs_id=obs_id,
                 instrument=instrument,
                 day_obs=day_obs,
+                seq_num=seq_num,
                 message_text=message_text,
                 level=level,
                 tags=tags,
@@ -145,8 +147,8 @@ def exposure_from_registry(
 
     Returns
     -------
-    day_obs : `int` or `None`
-        The day of observation of the exposure, if found, else None.
+    exposure : `lsst.daf.butler.dimensions.DimensionRecord`
+        The found exposure record.
 
     Raises
     ------

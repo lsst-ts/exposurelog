@@ -6,7 +6,11 @@ import pydantic
 
 
 class Exposure(pydantic.BaseModel):
-    obs_id: str = pydantic.Field(description="Observation ID.")
+    obs_id: str = pydantic.Field(
+        description="Observation ID. Note that the Rubin obs_id format "
+        "includes sections for day_obs and seq_num, but these are also "
+        "available as separate database columns, for convenience."
+    )
     id: int = pydantic.Field(description="Integer derived from 'id'.")
     instrument: str = pydantic.Field(
         description="Short name of instrument, e.g. LSSTCam."
@@ -19,11 +23,11 @@ class Exposure(pydantic.BaseModel):
         description="The reason this observation was taken. "
         "(e.g. science, filter scan, unknown)."
     )
-    day_obs: int = pydantic.Field(description="Observation day.")
+    day_obs: int = pydantic.Field(
+        description="Observation day, as an integer in the form YYYYMMDD."
+    )
     seq_num: int = pydantic.Field(
-        description="Counter for the observation within a larger sequence. "
-        "Context of the sequence number is observatory specific. "
-        "Can be a global counter or counter within day_obs."
+        description="Counter for the observation within a larger sequence."
     )
     group_name: str = pydantic.Field(
         description="String group identifier associated with this exposure "

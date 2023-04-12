@@ -110,6 +110,7 @@ class FindMessagesTestCase(unittest.IsolatedAsyncioTestCase):
             for field in (
                 "level",
                 "day_obs",
+                "seq_num",
                 "date_added",
                 "date_invalidated",
             ):
