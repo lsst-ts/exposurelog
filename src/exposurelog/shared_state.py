@@ -132,7 +132,7 @@ async def create_shared_state() -> None:
     Raises
     ------
     RuntimeError
-            If the shared state has already been created.
+        If the shared state has already been created.
     """
     global _shared_state
     if _shared_state is not None:
@@ -158,7 +158,7 @@ def get_shared_state() -> SharedState:
     Raises
     ------
     RuntimeError
-            If the shared state has not been created.
+        If the shared state has not been created.
     """
     global _shared_state
     if _shared_state is None:
