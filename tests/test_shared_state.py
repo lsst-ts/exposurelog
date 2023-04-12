@@ -59,6 +59,9 @@ class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
                     missing_required_kwargs = required_kwargs.copy()
                     missing_required_kwargs[key] = None
                     with modify_environ(
+                        # Hide BUTLER_URI_2 in case it exists in the
+                        # user's environment.
+                        BUTLER_URI_2=None,
                         # TODO DM-33642: get rid of BUTLER_WRITEABLE_HACK
                         # when safe to do so.
                         BUTLER_WRITEABLE_HACK="true",
@@ -73,6 +76,7 @@ class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
                 bad_site_id = "A" * (SITE_ID_LEN + 1)
                 with modify_environ(
                     BUTLER_URI_1=str(repo_path),
+                    BUTLER_URI_2=None,
                     SITE_ID=bad_site_id,
                     # TODO DM-33642: get rid of BUTLER_WRITEABLE_HACK
                     # when safe to do so.
@@ -114,8 +118,9 @@ class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
                         with self.assertRaises(expected_error):
                             await create_shared_state()
 
-                # Test a valid shared state
+                # Test a valid shared state with one registry.
                 with modify_environ(
+                    BUTLER_URI_2=None,
                     # TODO DM-33642: get rid of BUTLER_WRITEABLE_HACK
                     # when safe to do so.
                     BUTLER_WRITEABLE_HACK="true",
@@ -129,7 +134,7 @@ class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
                     assert len(shared_state.registries) == 1
                     assert shared_state.site_id == required_kwargs["SITE_ID"]
 
-                    # Cannot create shared state once it is created
+                    # Cannot create shared state once it is created.
                     with self.assertRaises(RuntimeError):
                         await create_shared_state()
 
@@ -138,10 +143,10 @@ class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
                 with self.assertRaises(RuntimeError):
                     get_shared_state()
 
-                # Closing the database again should be a no-op
+                # Closing the database again should be a no-op.
                 await shared_state.exposurelog_db.close()
 
-                # Deleting shared state again should be a no-op
+                # Deleting shared state again should be a no-op.
                 await delete_shared_state()
                 assert not has_shared_state()
 
@@ -163,12 +168,12 @@ class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
                 await delete_shared_state()
 
     def test_get_env(self) -> None:
-        # If default=None then value must be present
+        # If default=None then value must be present.
         with modify_environ(SITE_ID=None):
             with self.assertRaises(ValueError):
                 get_env(name="SITE_ID", default=None)
 
-        # the default must be a str or None
+        # the default must be a str or None.
         for bad_default in (1.2, 34, True, False):
             with self.assertRaises(ValueError):
                 get_env(name="SITE_ID", default=bad_default)  # type: ignore
