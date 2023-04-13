@@ -16,7 +16,12 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.ext.asyncio.engine import AsyncConnection, AsyncEngine
 from sqlalchemy.future.engine import Connection
 
-from exposurelog.testutils import db_config_from_dsn, modify_environ
+from exposurelog.create_message_table import create_message_table
+from exposurelog.testutils import (
+    db_config_from_dsn,
+    modify_environ,
+    random_messages,
+)
 
 # Length of the site_id field.
 SITE_ID_LEN = 16
@@ -202,23 +207,90 @@ class AlembicMigrationTestCase(unittest.IsolatedAsyncioTestCase):
                     old_message_table.metadata.create_all
                 )
 
+                # Warning: these randomly generated messages include
+                # values for the new columns; don't use those!
+                messages = random_messages(num_messages=10, num_edited=3)
+                for message in messages:
+                    instrument = message["instrument"]
+                    await connection.execute(
+                        old_message_table.insert()
+                        .values(
+                            id=message["id"],
+                            site_id=message["site_id"],
+                            obs_id=message["obs_id"],
+                            instrument=instrument,
+                            day_obs=message["day_obs"],
+                            message_text=message["message_text"],
+                            tags=message["tags"],
+                            user_id=message["user_id"],
+                            user_agent=message["user_agent"],
+                            is_human=message["is_human"],
+                            exposure_flag=message["exposure_flag"],
+                            date_added=message["date_added"],
+                            date_invalidated=message["date_invalidated"],
+                            parent_id=message["parent_id"],
+                        )
+                        .returning(sa.literal_column("*"))
+                    )
+
                 table_names = await get_table_names(connection)
                 assert table_names == ["message"]
 
-                column_names = await get_column_names(
+                old_column_names = await get_column_names(
                     connection, table="message"
                 )
-                assert new_columns & set(column_names) == set()
+                assert old_column_names == [
+                    "id",
+                    "site_id",
+                    "obs_id",
+                    "instrument",
+                    "day_obs",
+                    "message_text",
+                    "tags",
+                    "user_id",
+                    "user_agent",
+                    "is_human",
+                    "is_valid",
+                    "exposure_flag",
+                    "date_added",
+                    "date_invalidated",
+                    "parent_id",
+                ]
+                assert new_columns & set(old_column_names) == set()
 
             subprocess.run(
                 ["alembic", "upgrade", "head"], env=os.environ.copy()
             )
 
-            async with engine.connect() as connection:
-                table_names = await get_table_names(connection)
-                assert set(table_names) == {"alembic_version", "message"}
+            new_message_table = create_message_table()
 
-                column_names = await get_column_names(
-                    connection, table="message"
-                )
-                assert new_columns < set(column_names)
+            # Check the data in the updated message table.
+            async with engine.begin() as connection:
+                async with engine.connect() as connection:
+                    table_names = await get_table_names(connection)
+                    assert set(table_names) == {"alembic_version", "message"}
+
+                    column_names = await get_column_names(
+                        connection, table="message"
+                    )
+                    assert new_columns < set(column_names)
+
+                    messages_dict = {
+                        message["id"]: message for message in messages
+                    }
+                    result = await connection.execute(
+                        new_message_table.select()
+                    )
+                    rows = result.fetchall()
+                    for row in rows:
+                        # The old columns should be unchanged.
+                        original_message = messages_dict[row.id]
+                        for column_name in old_column_names:
+                            assert (
+                                getattr(row, column_name)
+                                == original_message[column_name]
+                            )
+                        # The new columns should be set appropriately.
+                        assert row.level == 20
+                        assert row.urls == []
+                        assert row.seq_num == int(row.obs_id[14:])
