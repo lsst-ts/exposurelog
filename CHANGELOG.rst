@@ -2,6 +2,11 @@
 Change Log
 ==========
 
+1.0.0
+-----
+
+* Add seq_num column to the message table.
+
 0.9.7
 -----
 

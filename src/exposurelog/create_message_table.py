@@ -48,12 +48,15 @@ def create_message_table() -> sa.Table:
         sa.Column("level", saty.Integer(), nullable=False),
         sa.Column("urls", saty.ARRAY(sa.Text), nullable=False),
         sa.ForeignKeyConstraint(["parent_id"], ["message.id"]),
+        # Coumn added in version 1.0
+        sa.Column("seq_num", saty.Integer(), nullable=False),
     )
 
     for name in (
         "obs_id",
         "instrument",
         "day_obs",
+        "seq_num",
         "level",
         "tags",
         "user_id",

@@ -56,6 +56,16 @@ async def find_messages(
         description="Maximum day of observation, exclusive; "
         "an integer of the form YYYYMMDD",
     ),
+    min_seq_num: None
+    | int = fastapi.Query(
+        default=None,
+        description="Minimum sequence number",
+    ),
+    max_seq_num: None
+    | int = fastapi.Query(
+        default=None,
+        description="Maximum sequence number",
+    ),
     message_text: None
     | str = fastapi.Query(
         default=None,
@@ -175,6 +185,8 @@ async def find_messages(
         "instruments",
         "min_day_obs",
         "max_day_obs",
+        "min_seq_num",
+        "max_seq_num",
         "message_text",
         "tags",
         "urls",

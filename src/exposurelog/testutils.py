@@ -21,6 +21,7 @@ import http
 import os
 import pathlib
 import random
+import re
 import string
 import typing
 import unittest.mock
@@ -35,6 +36,8 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from . import main, shared_state
 from .create_message_table import create_message_table
 from .message import MESSAGE_FIELDS
+
+OBS_ID_RE = re.compile(r"(..)_(.)_(\d\d\d\d\d\d\d\d)_(\d\d\d\d\d\d)")
 
 # Range of dates for random messages.
 MIN_DATE_RANDOM_MESSAGE = "2021-01-01"
@@ -395,15 +398,18 @@ def random_date(precision: int = 0) -> datetime.datetime:
 def random_obs_id() -> str:
     """Return a random obs_id.
 
-    The format is AA_A_dddddddd_dddddd, where:
+    The format is AA_A_{day_obs}_{seq_num}, where:
 
     * A is an uppercase letter
+    * day_obs is an 8-digit integer representation of a date: YYYYMMDD
+    * seq_num is a 6-digit integer
     * d is a digit
     """
+    random_yyyymmdd = astropy.time.Time(random_date()).strftime("%Y%m%d")
     fields = (
         "".join(random.sample(string.ascii_uppercase, 2)),
         random.choice(string.ascii_uppercase),
-        "".join(random.sample(string.digits, 8)),
+        random_yyyymmdd,
         "".join(random.sample(string.digits, 6)),
     )
     return "_".join(fields)
@@ -473,14 +479,20 @@ def random_message() -> MessageDictT:
       * Set parent_message["date_invalidated"] =
         edited_message["date_added"]
     """
-    random_yyyymmdd = astropy.time.Time(random_date()).strftime("%Y%m%d")
+    obs_id = random_obs_id()
+    obs_id_match = OBS_ID_RE.fullmatch(obs_id)
+    assert obs_id_match is not None
+    obs_id_match_groups = obs_id_match.groups()
+    day_obs = int(obs_id_match_groups[2])
+    seq_num = int(obs_id_match_groups[3])
 
     message = dict(
         id=None,
         site_id=TEST_SITE_ID,
-        obs_id=random_obs_id(),
+        obs_id=obs_id,
         instrument=random_str(nchar=16),
-        day_obs=int(random_yyyymmdd),
+        day_obs=day_obs,
+        seq_num=seq_num,
         message_text=random_str(nchar=20),
         level=random.randint(0, 40),
         tags=random_words(TEST_TAGS),
