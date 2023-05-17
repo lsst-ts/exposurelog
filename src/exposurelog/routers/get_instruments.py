@@ -20,6 +20,10 @@ class Config(pydantic.BaseModel):
         description="Instruments supported by butler 2; "
         "'[]' if there is only one butler."
     )
+    butler_instruments_3: list[str] = pydantic.Field(
+        description="Instruments supported by butler 3; "
+        "'[]' if there is only one butler."
+    )
 
 
 @router.get("/instruments", response_model=Config)
@@ -47,4 +51,5 @@ def blocking_get_instruments(
     return Config(
         butler_instruments_1=instrument_lists.get(0, []),
         butler_instruments_2=instrument_lists.get(1, []),
+        butler_instruments_3=instrument_lists.get(2, []),
     )

@@ -12,6 +12,7 @@ class Config(pydantic.BaseModel):
     site_id: str = pydantic.Field(description="Site ID.")
     butler_uri_1: str = pydantic.Field(description="Butler URI 1.")
     butler_uri_2: str = pydantic.Field(description="Butler URI 2.")
+    butler_uri_3: str = pydantic.Field(description="Butler URI 3.")
 
     class Config:
         orm_mode = True

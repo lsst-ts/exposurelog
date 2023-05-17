@@ -63,6 +63,7 @@ ArgDictT = dict[str, typing.Any]
 async def create_test_client(
     repo_path: pathlib.Path,
     repo_path_2: None | pathlib.Path = None,
+    repo_path_3: None | pathlib.Path = None,
     num_messages: int = 0,
     num_edited: int = 0,
     random_seed: int = 47,
@@ -85,6 +86,7 @@ async def create_test_client(
             BUTLER_WRITEABLE_HACK="true",
             BUTLER_URI_1=str(repo_path),
             BUTLER_URI_2=None if repo_path_2 is None else str(repo_path_2),
+            BUTLER_URI_3=None if repo_path_3 is None else str(repo_path_3),
             SITE_ID=TEST_SITE_ID,
             **db_config,
         ):
