@@ -2,6 +2,11 @@
 Change Log
 ==========
 
+1.1.0
+-----
+
+* Support a third butler registry, and make the maximum number of registries easier to change.
+
 1.0.0
 -----
 
