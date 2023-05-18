@@ -57,6 +57,13 @@ class SharedState:
     site_id : str
         Name identifying where the exposurelog service is running.
         Values include: "summit" and "base".
+    butler_uri_1 (required)
+        URI for a butler registry.
+    butler_uri_2
+        URI for a second butler registry, or "" if none.
+    ...
+    butler_uri_{num_registries}
+        URIs for additional regitries.
     registries : list[lsst.daf.butler.Registry]
         List of one or two butler registries.
     exposurelog_db : sa.Table
@@ -66,26 +73,37 @@ class SharedState:
     Reads the following env variables; all are optional,
     unless otherwise noted:
 
-    site_id (required)
+    SITE_ID (required)
         String identifying where the exposurelog service is running.
         Standard values include: "summit" and "base".
-    butler_uri1 (required)
+    BUTLER_URI_1 (required)
         URI for a butler registry.
-    butler_uri2
+    BUTLER_URI_2
         URI for a second butler registry, or "" if none.
-    exposurelog_db_user
+    ...
+    BUTLER_URI_{num_registries}
+        URIs for additional regitries.
+    EXPOSURELOG_DB_USER
         Exposure log database user name.
-    exposurelog_db_password
+    EXPOSURELOG_DB_PASSWORD
         Exposure log database password.
-    exposurelog_db_host
+    EXPOSURELOG_DB_HOST
         Exposure log database TCP/IP host.
-    exposurelog_db_port
+    EXPOSURELOG_DB_PORT
         Exposure log database TCP/IP port.
-    exposurelog_db_database
+    EXPOSURELOG_DB_DATABASE
         Name of exposurelog database.
     """
 
-    def __init__(self):  # type: ignore
+    # How many butler registries to read?
+    # This also controls how many butler_uri_n attributes there are.
+    # If you change this value then also update the following:
+    # * Config in get_configuration.py.
+    # * create_test_client in testutils.py.
+    # * The exposurelog deployment files in the phalanx package.
+    num_registries = 3
+
+    def __init__(self) -> None:
         site_id = get_env("SITE_ID")
         if len(site_id) > SITE_ID_LEN:
             raise ValueError(
@@ -102,25 +120,23 @@ class SharedState:
             )
         butler_writeable_hack = butler_writeable_hack_str == "true"
         del butler_writeable_hack_str
-        self.butler_uri_1 = get_env("BUTLER_URI_1")
-        self.butler_uri_2 = get_env("BUTLER_URI_2", "")
-        exposurelog_db_url = create_db_url()
 
-        butlers = [
-            lsst.daf.butler.Butler(
-                self.butler_uri_1, writeable=butler_writeable_hack
-            )
-        ]
-        if self.butler_uri_2:
-            butlers.append(
-                lsst.daf.butler.Butler(
-                    self.butler_uri_2, writeable=butler_writeable_hack
+        self.registries: list[lsst.daf.butler.Registry] = []
+        for i in range(self.num_registries):
+            uri_attr_name = f"butler_uri_{i + 1}"
+            # The first butler URI is required.
+            default = None if i == 0 else ""
+            butler_uri = get_env(uri_attr_name.upper(), default=default)
+            setattr(self, uri_attr_name, butler_uri)
+            if butler_uri != "":
+                butler = lsst.daf.butler.Butler(
+                    butler_uri, writeable=butler_writeable_hack
                 )
-            )
+                self.registries.append(butler.registry)
+        exposurelog_db_url = create_db_url()
 
         self.log = logging.getLogger("exposurelog")
         self.site_id = site_id
-        self.registries = [butler.registry for butler in butlers]
         self.exposurelog_db = LogMessageDatabase(
             message_table=create_message_table(), url=exposurelog_db_url
         )
