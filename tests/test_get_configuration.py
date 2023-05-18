@@ -19,6 +19,8 @@ class GetConfigurationTestCase(unittest.IsolatedAsyncioTestCase):
                 )
                 data = assert_good_response(response)
                 assert data["site_id"] == shared_state.site_id
+                # Note: the SharedState butler_uri_{n} attributes are set
+                # programmatically, so mypy does not know about them.
                 assert data["butler_uri_1"] == shared_state.butler_uri_1  # type: ignore
                 assert data["butler_uri_2"] == ""
                 assert data["butler_uri_3"] == ""
@@ -38,6 +40,8 @@ class GetConfigurationTestCase(unittest.IsolatedAsyncioTestCase):
             response = await client.get("/exposurelog/configuration")
             data = assert_good_response(response)
             assert data["site_id"] == shared_state.site_id
+            # Note: the SharedState butler_uri_{n} attributes are set
+            # programmatically, so mypy does not know about them.
             assert data["butler_uri_1"] == shared_state.butler_uri_1  # type: ignore
             assert data["butler_uri_2"] == ""
             assert data["butler_uri_3"] == shared_state.butler_uri_3  # type: ignore
