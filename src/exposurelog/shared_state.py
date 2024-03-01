@@ -110,17 +110,6 @@ class SharedState:
                 f"SITE_ID={site_id!r} too long; max length={SITE_ID_LEN}"
             )
 
-        # TODO DM-33642: get rid of BUTLER_WRITEABLE_HACK support
-        # and construct Butlers with writeable=False, when safe to do so.
-        butler_writeable_hack_str = get_env("BUTLER_WRITEABLE_HACK", "")
-        if butler_writeable_hack_str not in ("true", ""):
-            raise ValueError(
-                f"BUTLER_WRITEABLE_HACK={butler_writeable_hack_str} "
-                "must be 'true' or ''"
-            )
-        butler_writeable_hack = butler_writeable_hack_str == "true"
-        del butler_writeable_hack_str
-
         self.registries: list[lsst.daf.butler.Registry] = []
         for i in range(self.num_registries):
             uri_attr_name = f"butler_uri_{i + 1}"
@@ -129,9 +118,7 @@ class SharedState:
             butler_uri = get_env(uri_attr_name.upper(), default=default)
             setattr(self, uri_attr_name, butler_uri)
             if butler_uri != "":
-                butler = lsst.daf.butler.Butler(
-                    butler_uri, writeable=butler_writeable_hack
-                )
+                butler = lsst.daf.butler.Butler(butler_uri)
                 self.registries.append(butler.registry)
         exposurelog_db_url = create_db_url()
 
