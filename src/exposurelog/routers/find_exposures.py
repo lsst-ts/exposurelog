@@ -9,7 +9,6 @@ import typing
 import astropy.time
 import fastapi
 import lsst.daf.butler
-import lsst.daf.butler.core
 import lsst.daf.butler.registry
 
 from ..exposure import EXPOSURE_ORDER_BY_VALUES, Exposure
@@ -246,7 +245,7 @@ def astropy_from_datetime(
 
 
 def dict_from_exposure(
-    exposure: lsst.daf.butler.core.DimensionRecord,
+    exposure: lsst.daf.butler.DimensionRecord,
 ) -> dict:
     data = exposure.toDict()
     timespan = data.pop("timespan")
@@ -263,7 +262,7 @@ def find_exposures_in_a_registry(
     order_by: list[str],
     offset: None | int = None,
     limit: int = 50,
-) -> list[lsst.daf.butler.core.DimensionRecord]:
+) -> list[lsst.daf.butler.DimensionRecord]:
     """Find exposures matching specified criteria.
 
     The exposures are sorted by obs_id.

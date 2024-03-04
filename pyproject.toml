@@ -11,7 +11,7 @@ build-backend = 'setuptools.build_meta'
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = py310,coverage-report,lint
+envlist = py311,coverage-report,lint
 isolated_build = True
 
 [testenv]
@@ -47,7 +47,7 @@ description = Compile coverage from each test run.
 skip_install = true
 deps = coverage[toml]>=5.0.2
 depends =
-    py310
+    py311
 commands =
     coverage combine
     coverage report
@@ -89,7 +89,7 @@ exclude_lines = [
 
 [tool.black]
 line-length = 79
-target-version = ['py310']
+target-version = ['py311']
 exclude = '''
 /(
     \.eggs

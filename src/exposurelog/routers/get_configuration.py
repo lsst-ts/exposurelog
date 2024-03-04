@@ -14,8 +14,10 @@ class Config(pydantic.BaseModel):
     butler_uri_2: str = pydantic.Field(description="Butler URI 2.")
     butler_uri_3: str = pydantic.Field(description="Butler URI 3.")
 
-    class Config:
-        orm_mode = True
+    model_config = {
+        # Allow model_validate to work against arbitrary Python objects
+        "from_attributes": True
+    }
 
 
 @router.get("/configuration", response_model=Config)

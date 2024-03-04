@@ -69,8 +69,10 @@ class Message(pydantic.BaseModel):
         description="Message ID of message this is an edited version of."
     )
 
-    class Config:
-        orm_mode = True
+    model_config = {
+        # Allow model_validate to work against SqlAlchemy database rows
+        "from_attributes": True
+    }
 
 
 MESSAGE_FIELDS = tuple(Message.schema()["properties"].keys())
