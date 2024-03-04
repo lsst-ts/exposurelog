@@ -125,7 +125,7 @@ async def add_message(
         )
         result = result.fetchone()
 
-    return Message.from_orm(result)
+    return Message.model_validate(result)
 
 
 def exposure_from_registry(

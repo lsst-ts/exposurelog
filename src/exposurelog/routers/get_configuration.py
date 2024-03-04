@@ -27,4 +27,4 @@ async def get_config(
 ) -> Config:
     """Get the configuration."""
 
-    return Config.from_orm(state)
+    return Config.model_validate(state)

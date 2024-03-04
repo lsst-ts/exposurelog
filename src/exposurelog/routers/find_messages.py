@@ -316,4 +316,4 @@ async def find_messages(
         )
         rows = result.fetchall()
 
-    return [Message.from_orm(row) for row in rows]
+    return [Message.model_validate(row) for row in rows]
