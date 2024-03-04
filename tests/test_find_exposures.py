@@ -108,7 +108,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
         repo_path = pathlib.Path(__file__).parent / "data" / instrument
 
         # Find all exposures in the registry, and save as a list of dicts.
-        butler = lsst.daf.butler.Butler(str(repo_path))
+        butler = lsst.daf.butler.Butler.from_config(str(repo_path))
         registry = butler.registry
         exposure_iter = registry.queryDimensionRecords(
             "exposure",
@@ -395,7 +395,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
         # thus searches only return exposures from one registry.
         # Use instrument=LATISS to search the second registry
         # in order to test DM-33601.
-        butler = lsst.daf.butler.Butler(str(repo_path_2))
+        butler = lsst.daf.butler.Butler.from_config(str(repo_path_2))
         registry = butler.registry
         exposure_iter = registry.queryDimensionRecords(
             "exposure",
