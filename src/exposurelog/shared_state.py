@@ -6,8 +6,7 @@ import logging
 import os
 import urllib.parse
 
-import lsst.daf.butler
-
+from .butler_factory import ButlerFactory
 from .create_message_table import SITE_ID_LEN, create_message_table
 from .log_message_database import LogMessageDatabase
 
@@ -64,8 +63,8 @@ class SharedState:
     ...
     butler_uri_{num_registries}
         URIs for additional regitries.
-    registries : list[lsst.daf.butler.Registry]
-        List of one or two butler registries.
+    butler_factory : ButlerFactory
+        Factory object for getting access to Butler instances.
     exposurelog_db : sa.Table
 
     Notes
@@ -110,16 +109,18 @@ class SharedState:
                 f"SITE_ID={site_id!r} too long; max length={SITE_ID_LEN}"
             )
 
-        self.registries: list[lsst.daf.butler.Registry] = []
+        butler_repositories: dict[int, str] = {}
         for i in range(self.num_registries):
-            uri_attr_name = f"butler_uri_{i + 1}"
+            repository_number = i + 1
+            uri_attr_name = f"butler_uri_{repository_number}"
             # The first butler URI is required.
             default = None if i == 0 else ""
             butler_uri = get_env(uri_attr_name.upper(), default=default)
             setattr(self, uri_attr_name, butler_uri)
             if butler_uri != "":
-                butler = lsst.daf.butler.Butler(butler_uri)
-                self.registries.append(butler.registry)
+                butler_repositories[repository_number] = butler_uri
+        self.butler_factory = ButlerFactory(butler_repositories)
+
         exposurelog_db_url = create_db_url()
 
         self.log = logging.getLogger("exposurelog")

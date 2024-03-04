@@ -36,7 +36,7 @@ class GetConfigurationTestCase(unittest.IsolatedAsyncioTestCase):
             messages,
         ):
             shared_state = get_shared_state()
-            assert len(shared_state.registries) == 2
+            assert len(shared_state.butler_factory.repositories) == 2
             response = await client.get("/exposurelog/configuration")
             data = assert_good_response(response)
             assert data["site_id"] == shared_state.site_id

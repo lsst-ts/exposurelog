@@ -88,8 +88,10 @@ class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
                     **db_config,
                 ):
                     assert not has_shared_state()
+                    await create_shared_state()
                     with self.assertRaises(FileNotFoundError):
-                        await create_shared_state()
+                        get_shared_state().butler_factory.get_butler(1)
+                    await delete_shared_state()
 
                 # Test bad database configuration env variables.
                 for key, (
@@ -116,7 +118,7 @@ class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
                     assert has_shared_state()
 
                     shared_state = get_shared_state()
-                    assert len(shared_state.registries) == 1
+                    assert len(shared_state.butler_factory.repositories) == 1
                     assert shared_state.site_id == required_kwargs["SITE_ID"]
 
                     # Cannot create shared state once it is created.
@@ -145,7 +147,7 @@ class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
                     assert has_shared_state()
 
                     shared_state = get_shared_state()
-                    assert len(shared_state.registries) == 2
+                    assert len(shared_state.butler_factory.repositories) == 2
             finally:
                 await delete_shared_state()
 

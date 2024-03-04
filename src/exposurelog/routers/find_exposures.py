@@ -11,6 +11,7 @@ import fastapi
 import lsst.daf.butler
 import lsst.daf.butler.registry
 
+from ..butler_factory import ButlerFactory
 from ..exposure import EXPOSURE_ORDER_BY_VALUES, Exposure
 from ..shared_state import SharedState, get_shared_state
 
@@ -139,12 +140,11 @@ async def find_exposures(
     you specify, else you will get no exposures. Use the ``/instruments``
     endpoint to find out which registries have data for which instruments.
     """
-    if registry > len(state.registries):
+    if not state.butler_factory.is_valid_repository(registry):
         raise fastapi.HTTPException(
             status_code=http.HTTPStatus.NOT_FOUND,
             detail=f"registry={registry} but no second registry configured",
         )
-    registry_instance = state.registries[registry - 1]
 
     # Names of selection arguments;
     # note that min_date and max_date are handled separately.
@@ -219,7 +219,8 @@ async def find_exposures(
     loop = asyncio.get_running_loop()
     find_func = functools.partial(
         find_exposures_in_a_registry,
-        registry=registry_instance,
+        butler_factory=state.butler_factory,
+        repository=registry,
         instrument=instrument,
         bind=bind,
         where=where,
@@ -255,7 +256,8 @@ def dict_from_exposure(
 
 
 def find_exposures_in_a_registry(
-    registry: lsst.daf.butler.registry.Registry,
+    butler_factory: ButlerFactory,
+    repository: int,
     instrument: str,
     bind: dict,
     where: str,
@@ -269,8 +271,10 @@ def find_exposures_in_a_registry(
 
     Parameters
     ----------
-    registry
-        The data registry to search.
+    butler_factory
+        Factory used to create a Butler instance for doing the search.
+    repository
+        The repository number of the Butler data registry to search.
     instrument
         Name of instrument.
     bind
@@ -290,8 +294,9 @@ def find_exposures_in_a_registry(
     exposures
         The matching exposures.
     """
+    butler = butler_factory.get_butler(repository)
     try:
-        record_iter = registry.queryDimensionRecords(
+        record_iter = butler.registry.queryDimensionRecords(
             "exposure",
             instrument=instrument,
             bind=bind,

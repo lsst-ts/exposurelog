@@ -1,12 +1,11 @@
 __all__ = ["get_instruments"]
 
 import asyncio
-import collections.abc
 
 import fastapi
-import lsst.daf.butler.registry
 import pydantic
 
+from ..butler_factory import ButlerFactory
 from ..shared_state import SharedState, get_shared_state
 
 router = fastapi.APIRouter()
@@ -34,18 +33,18 @@ async def get_instruments(
     """Get the list of instruments."""
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(
-        None, blocking_get_instruments, state.registries
+        None,
+        blocking_get_instruments,
+        state.butler_factory,
     )
 
 
-def blocking_get_instruments(
-    registries: collections.abc.Iterable[lsst.daf.butler.registry.Registry],
-) -> Config:
+def blocking_get_instruments(factory: ButlerFactory) -> Config:
     instrument_lists = dict()
-    for i, registry in enumerate(registries):
+    for i, butler in enumerate(factory.get_all_butlers()):
         instrument_lists[i] = [
             result.name
-            for result in registry.queryDimensionRecords("instrument")
+            for result in butler.registry.queryDimensionRecords("instrument")
         ]
 
     return Config(

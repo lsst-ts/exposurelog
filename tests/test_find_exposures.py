@@ -418,7 +418,7 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
             messages,
         ):
             shared_state = get_shared_state()
-            assert len(shared_state.registries) == 2
+            assert len(shared_state.butler_factory.repositories) == 2
 
             async def run_find(
                 find_args: dict[str, typing.Any],
