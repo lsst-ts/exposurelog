@@ -1,3 +1,6 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 import fastapi
 import fastapi.responses
 import starlette.requests
@@ -14,7 +17,15 @@ from .routers import (
     get_message,
 )
 
-app = fastapi.FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: fastapi.FastAPI) -> AsyncIterator[None]:
+    await shared_state.create_shared_state()
+    yield
+    await shared_state.delete_shared_state()
+
+
+app = fastapi.FastAPI(lifespan=lifespan)
 
 subapp = fastapi.FastAPI(
     title="Exposure log service",
@@ -52,13 +63,3 @@ async def root(request: starlette.requests.Request) -> str:
         but harder to read.
     </html>
     """
-
-
-@app.on_event("startup")
-async def startup_event() -> None:
-    await shared_state.create_shared_state()
-
-
-@app.on_event("shutdown")
-async def shutdown_event() -> None:
-    await shared_state.delete_shared_state()

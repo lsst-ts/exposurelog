@@ -6,7 +6,6 @@ import unittest
 import astropy.time
 import httpx
 import lsst.daf.butler
-import lsst.daf.butler.core
 
 from exposurelog.shared_state import get_shared_state
 from exposurelog.testutils import (
@@ -48,7 +47,7 @@ def assert_good_add_response(
 
 def find_all_exposures(
     registry: lsst.daf.butler.Registry, instrument: str
-) -> list[lsst.daf.butler.core.DimensionRecord]:
+) -> list[lsst.daf.butler.DimensionRecord]:
     """Find all exposures in the specified registry.
 
     Parameters

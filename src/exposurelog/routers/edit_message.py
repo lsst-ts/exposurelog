@@ -132,4 +132,4 @@ async def edit_message(
             .values(date_invalidated=current_tai)
         )
 
-    return Message.from_orm(add_row)
+    return Message.model_validate(add_row)

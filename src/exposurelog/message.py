@@ -69,11 +69,13 @@ class Message(pydantic.BaseModel):
         description="Message ID of message this is an edited version of."
     )
 
-    class Config:
-        orm_mode = True
+    model_config = {
+        # Allow model_validate to work against SqlAlchemy database rows
+        "from_attributes": True
+    }
 
 
-MESSAGE_FIELDS = tuple(Message.schema()["properties"].keys())
+MESSAGE_FIELDS = tuple(Message.model_json_schema()["properties"].keys())
 
 
 def _make_message_order_by_values() -> tuple[str, ...]:
@@ -83,7 +85,7 @@ def _make_message_order_by_values() -> tuple[str, ...]:
     plus those same field names with a leading "-".
     """
     order_by_values = []
-    for field in Message.schema()["properties"]:
+    for field in Message.model_json_schema()["properties"]:
         order_by_values += [field, "-" + field]
     return tuple(order_by_values)
 

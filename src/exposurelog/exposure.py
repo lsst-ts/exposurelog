@@ -77,7 +77,7 @@ def _make_exposure_order_by_values() -> tuple[str, ...]:
     omit_fields = {"instrument"}
 
     order_by_fields = []
-    for field in Exposure.schema()["properties"]:
+    for field in Exposure.model_json_schema()["properties"]:
         if field in omit_fields:
             continue
         order_by_fields += [field, "-" + field]

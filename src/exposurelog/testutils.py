@@ -88,19 +88,14 @@ async def create_test_client(
             **db_config,
         ):
             # Note: httpx.AsyncClient does not trigger startup and shutdown
-            # events. We could use asgi-lifespan's LifespanManager,
-            # but it does not trigger the shutdown event if there is
-            # an exception, so it does not seem worth the bother.
+            # events, so we have to manually trigger the lifespan events.
             assert not shared_state.has_shared_state()
-            await main.startup_event()
-            try:
+            async with main.lifespan(main.app):
                 async with httpx.AsyncClient(
                     app=main.app, base_url="http://test"
                 ) as client:
                     assert shared_state.has_shared_state()
                     yield client, messages
-            finally:
-                await main.shutdown_event()
 
 
 @contextlib.contextmanager
