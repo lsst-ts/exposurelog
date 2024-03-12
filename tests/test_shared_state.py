@@ -62,9 +62,6 @@ class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
                         # Hide BUTLER_URI_2 in case it exists in the
                         # user's environment.
                         BUTLER_URI_2=None,
-                        # TODO DM-33642: get rid of BUTLER_WRITEABLE_HACK
-                        # when safe to do so.
-                        BUTLER_WRITEABLE_HACK="true",
                         **missing_required_kwargs,
                         **db_config,
                     ):
@@ -78,9 +75,6 @@ class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
                     BUTLER_URI_1=str(repo_path),
                     BUTLER_URI_2=None,
                     SITE_ID=bad_site_id,
-                    # TODO DM-33642: get rid of BUTLER_WRITEABLE_HACK
-                    # when safe to do so.
-                    BUTLER_WRITEABLE_HACK="true",
                     **db_config,
                 ):
                     assert not has_shared_state()
@@ -91,9 +85,6 @@ class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
                 with modify_environ(
                     BUTLER_URI_1="bad/path/to/repo",
                     SITE_ID=TEST_SITE_ID,
-                    # TODO DM-33642: get rid of BUTLER_WRITEABLE_HACK
-                    # when safe to do so.
-                    BUTLER_WRITEABLE_HACK="true",
                     **db_config,
                 ):
                     assert not has_shared_state()
@@ -108,9 +99,6 @@ class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
                     bad_db_config = db_config.copy()
                     bad_db_config[key] = bad_value
                     with modify_environ(
-                        # TODO DM-33642: get rid of BUTLER_WRITEABLE_HACK
-                        # when safe to do so.
-                        BUTLER_WRITEABLE_HACK="true",
                         **required_kwargs,
                         **bad_db_config,
                     ):
@@ -121,9 +109,6 @@ class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
                 # Test a valid shared state with one registry.
                 with modify_environ(
                     BUTLER_URI_2=None,
-                    # TODO DM-33642: get rid of BUTLER_WRITEABLE_HACK
-                    # when safe to do so.
-                    BUTLER_WRITEABLE_HACK="true",
                     **required_kwargs,
                     **db_config,
                 ):
@@ -153,9 +138,6 @@ class SharedStateTestCase(unittest.IsolatedAsyncioTestCase):
                 # Create two butler registries
                 with modify_environ(
                     BUTLER_URI_2=str(repo_path_2),
-                    # TODO DM-33642: get rid of BUTLER_WRITEABLE_HACK
-                    # when safe to do so.
-                    BUTLER_WRITEABLE_HACK="true",
                     **required_kwargs,
                     **db_config,
                 ):
