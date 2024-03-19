@@ -33,9 +33,6 @@ class Exposure(pydantic.BaseModel):
         description="String group identifier associated with this exposure "
         "by the acquisition system."
     )
-    group_id: int = pydantic.Field(
-        description="Integer derived from 'group_name'."
-    )
     target_name: str = pydantic.Field(
         description="Object of interest for this observation or survey field name."
     )

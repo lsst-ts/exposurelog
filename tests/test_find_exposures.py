@@ -338,21 +338,21 @@ class FindExposuresTestCase(unittest.IsolatedAsyncioTestCase):
                 data_dicts=found_exposures, order_by=order_by
             )
 
-            # group_id is not sufficient (there are duplicates)
+            # group_name is not sufficient (there are duplicates)
             # but the service appends "id" if "id" if not specified.
-            response = await run_find(dict(order_by=["group_id"]))
+            response = await run_find(dict(order_by=["group_name"]))
             exposures.sort(
-                key=lambda exposure: (exposure["group_id"], exposure["id"])
+                key=lambda exposure: (exposure["group_name"], exposure["id"])
             )
             assert_good_find_response(
                 response, exposures, predicate=lambda exposure: True
             )
 
-            # Now check group_id with -id to make sure the service
+            # Now check group_name with -id to make sure the service
             # is not appending id after the -id.
-            response = await run_find(dict(order_by=["group_id", "-id"]))
+            response = await run_find(dict(order_by=["group_name", "-id"]))
             exposures.sort(
-                key=lambda exposure: (exposure["group_id"], -exposure["id"])
+                key=lambda exposure: (exposure["group_name"], -exposure["id"])
             )
             assert_good_find_response(
                 response, exposures, predicate=lambda exposure: True

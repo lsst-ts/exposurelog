@@ -56,7 +56,6 @@ exposure:
   day_obs: 20190322
   seq_num: 2
   group_name: '3019032200002'
-  group_id: 3019032200002
   target_name: 'UNKNOWN'
   science_program: '6489D'
   tracking_ra: None
@@ -77,7 +76,6 @@ exposure:
   day_obs: 20190319
   seq_num: 1
   group_name: '3019031900001'
-  group_id: 3019031900001
   target_name: 'UNKNOWN'
   science_program: 'unknown'
   tracking_ra: None
@@ -101,7 +99,6 @@ exposure:
   day_obs: 20220208
   seq_num: 143
   group_name: '2022-02-09T00:55:40.390'
-  group_id: 2242977403900000
   target_name: 'HD  49790'
   science_program: 'CWFS'
   tracking_ra: 102.278392749663
@@ -122,7 +119,6 @@ exposure:
   day_obs: 20220208
   seq_num: 151
   group_name: '2022-02-09T01:18:55.093'
-  group_id: 2242991350930000
   target_name: 'HD  49790'
   science_program: 'unknown'
   tracking_ra: 102.292270913397
@@ -143,7 +139,6 @@ exposure:
   day_obs: 20220208
   seq_num: 145
   group_name: '2022-02-09T00:55:40.390'
-  group_id: 2242977403900000
   target_name: 'HD  49790'
   science_program: 'CWFS'
   tracking_ra: 102.278418936765
@@ -164,7 +159,6 @@ exposure:
   day_obs: 20220208
   seq_num: 150
   group_name: '2022-02-09T01:18:55.093'
-  group_id: 2242991350930000
   target_name: 'HD  49790'
   science_program: 'unknown'
   tracking_ra: 102.292177163303
@@ -185,7 +179,6 @@ exposure:
   day_obs: 20220208
   seq_num: 144
   group_name: '2022-02-09T00:55:40.390'
-  group_id: 2242977403900000
   target_name: 'HD  49790'
   science_program: 'CWFS'
   tracking_ra: 102.278389105931
@@ -206,7 +199,6 @@ exposure:
   day_obs: 20220208
   seq_num: 140
   group_name: '2022-02-09T00:55:40.390'
-  group_id: 2242977403900000
   target_name: 'HD  49790'
   science_program: 'CWFS'
   tracking_ra: 102.278403320713
@@ -227,7 +219,6 @@ exposure:
   day_obs: 20220208
   seq_num: 146
   group_name: '2022-02-09T00:55:40.390'
-  group_id: 2242977403900000
   target_name: 'HD  49790'
   science_program: 'CWFS'
   tracking_ra: 102.278455280663
@@ -248,7 +239,6 @@ exposure:
   day_obs: 20220208
   seq_num: 141
   group_name: '2022-02-09T00:55:40.390'
-  group_id: 2242977403900000
   target_name: 'HD  49790'
   science_program: 'CWFS'
   tracking_ra: 102.278442397096
@@ -269,7 +259,6 @@ exposure:
   day_obs: 20220208
   seq_num: 142
   group_name: '2022-02-09T00:55:40.390'
-  group_id: 2242977403900000
   target_name: 'HD  49790'
   science_program: 'CWFS'
   tracking_ra: 102.27839886926
@@ -290,7 +279,6 @@ exposure:
   day_obs: 20220208
   seq_num: 147
   group_name: '2022-02-09T00:55:40.390'
-  group_id: 2242977403900000
   target_name: 'HD  49790'
   science_program: 'CWFS'
   tracking_ra: 102.278419655072
@@ -311,7 +299,6 @@ exposure:
   day_obs: 20220208
   seq_num: 148
   group_name: '2022-02-09T01:15:40.129'
-  group_id: 2242989401290000
   target_name: 'HD  49790'
   science_program: 'unknown'
   tracking_ra: 102.278466428031
@@ -332,7 +319,6 @@ exposure:
   day_obs: 20220208
   seq_num: 149
   group_name: '2022-02-09T01:18:55.093'
-  group_id: 2242991350930000
   target_name: 'HD  49790'
   science_program: 'unknown'
   tracking_ra: 102.278528804567

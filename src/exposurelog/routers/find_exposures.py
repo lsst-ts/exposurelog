@@ -252,6 +252,10 @@ def dict_from_exposure(
     timespan = data.pop("timespan")
     data["timespan_begin"] = getattr(timespan.begin, "datetime", None)
     data["timespan_end"] = getattr(timespan.end, "datetime", None)
+    # "group_name" is renamed to just "group" for repositories with Butler
+    # universe version 6 and later.
+    if data.get("group_name") is None:
+        data["group_name"] = data.get("group")
     return data
 
 
