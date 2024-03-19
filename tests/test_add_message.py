@@ -79,11 +79,12 @@ class AddMessageTestCase(unittest.IsolatedAsyncioTestCase):
         ):
             shared_state = get_shared_state()
             exposures = []
-            for registry, instrument in zip(
-                shared_state.registries, ("LSSTCam", "LATISS")
+            for repository, instrument in zip(
+                shared_state.butler_factory.repositories, ("LSSTCam", "LATISS")
             ):
+                butler = shared_state.butler_factory.get_butler(repository)
                 exposures += find_all_exposures(
-                    registry=registry, instrument=instrument
+                    registry=butler.registry, instrument=instrument
                 )
 
             # Add a message whose obs_id matches an exposure

@@ -1,7 +1,6 @@
 __all__ = ["add_message"]
 
 import asyncio
-import collections.abc
 import http
 import logging
 import re
@@ -12,6 +11,7 @@ import lsst.daf.butler
 import lsst.daf.butler.registry
 import sqlalchemy as sa
 
+from ..butler_factory import ButlerFactory
 from ..message import ExposureFlag, Message
 from ..shared_state import SharedState, get_shared_state
 from .normalize_tags import TAG_DESCRIPTION, normalize_tags
@@ -87,7 +87,7 @@ async def add_message(
         exposure = await loop.run_in_executor(
             None,
             exposure_from_registry,
-            state.registries,
+            state.butler_factory,
             instrument,
             obs_id,
         )
@@ -129,16 +129,16 @@ async def add_message(
 
 
 def exposure_from_registry(
-    registries: collections.abc.Sequence[lsst.daf.butler.registry.Registry],
+    butler_factory: ButlerFactory,
     instrument: str,
     obs_id: str,
 ) -> lsst.daf.butler.dimensions.DimensionRecord:
-    """Get the day of observation of an exposure, or None if not found.
+    """Get the metadata associated with an exposure, or None if not found.
 
     Parameters
     ----------
-    registries: `list` [`lsst.daf.butler.registry.Registry`]
-        One or more data registries.
+    butler_factory: ButlerFactory
+        Factory object that can be used to create one or more Butler instances.
         They are searched in order.
     instrument : `str`
         Instrument name.
@@ -165,16 +165,18 @@ def exposure_from_registry(
     """
     try:
         query_str = f"exposure.obs_id='{obs_id}' and instrument='{instrument}'"
-        for registry in registries:
+        for butler in butler_factory.get_all_butlers():
             try:
                 records = list(
-                    registry.queryDimensionRecords("exposure", where=query_str)
+                    butler.registry.queryDimensionRecords(
+                        "exposure", where=query_str
+                    )
                 )
                 if len(records) == 1:
                     return records[0]
                 elif len(records) > 1:
                     raise RuntimeError(
-                        f"Found {len(records)} > 1 exposures in {registries=} "
+                        f"Found {len(records)} > 1 exposures in {butler=} "
                         f"with {instrument=} and {obs_id=}. Is the registry corrupt?"
                     )
             except lsst.daf.butler.registry.DataIdValueError:
@@ -183,5 +185,6 @@ def exposure_from_registry(
     except Exception as e:
         raise RuntimeError(f"Error in butler query: {e!r}")
     raise RuntimeError(
-        f"No exposure found in {registries=} with {instrument=} and {obs_id=}"
+        f"No exposure found in registries={butler_factory.config_urls}"
+        f" with {instrument=} and {obs_id=}"
     )

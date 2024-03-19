@@ -11,7 +11,7 @@ def print_registry_contents(name: str) -> None:
         The instrument name, which must match the registry name, e.g. "LATISS".
     """
     print(f"\nregistry=instrument={name}\n")
-    butler = lsst.daf.butler.Butler(name, writeable=False)
+    butler = lsst.daf.butler.Butler.from_config(name, writeable=False)
     registry = butler.registry
     record_iter = registry.queryDimensionRecords(
         "exposure",
