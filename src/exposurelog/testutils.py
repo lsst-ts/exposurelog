@@ -91,8 +91,9 @@ async def create_test_client(
             # events, so we have to manually trigger the lifespan events.
             assert not shared_state.has_shared_state()
             async with main.lifespan(main.app):
+                transport = httpx.ASGITransport(app=main.app)
                 async with httpx.AsyncClient(
-                    app=main.app, base_url="http://test"
+                    transport=transport, base_url="http://test"
                 ) as client:
                     assert shared_state.has_shared_state()
                     yield client, messages
