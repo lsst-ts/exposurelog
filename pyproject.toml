@@ -8,63 +8,6 @@ build-backend = 'setuptools.build_meta'
 
 [tool.setuptools_scm]
 
-[tool.tox]
-legacy_tox_ini = """
-[tox]
-envlist = py311,coverage-report,lint
-isolated_build = True
-
-[testenv]
-description = Run pytest against {envname}.
-deps =
-    -r{toxinidir}/requirements/main.txt
-    -r{toxinidir}/requirements/dev.txt
-commands =
-    coverage run -m pytest {posargs}
-passenv =
-    # Basic configuration
-    BUTLER_URI_1
-    BUTLER_URI_2
-    PGUSER
-    PGPASSWORD
-    EXPOSURELOG_DB_USER
-    EXPOSURELOG_DB_PASSWORD
-    EXPOSURELOG_DB_HOST
-    EXPOSURELOG_DB_PORT
-    EXPOSURELOG_DB_DATABASE
-    SITE_ID
-    # OpenSplice DDS and SAL, should this prove necessary
-    # LSST_DDS_QOS
-    # OSPL_HOME
-    # OSPL_URI
-    # ADLINK_LICENSE
-setenv =
-    # Silence warning about ignoring PYTHONPATH.
-    PYTHONPATH=
-
-[testenv:coverage-report]
-description = Compile coverage from each test run.
-skip_install = true
-deps = coverage[toml]>=5.0.2
-depends =
-    py311
-commands =
-    coverage combine
-    coverage report
-
-[testenv:lint]
-description = Lint codebase by running pre-commit (black, isort, flake8, mypy).
-skip_install = true
-deps =
-    pre-commit
-commands = pre-commit run --all-files
-
-[testenv:run]
-description = Run the development server with auto-reload for code changes.
-usedevelop = true
-commands = uvicorn exposurelog.app:app --reload
-"""
-
 [tool.coverage.run]
 parallel = true
 branch = true
