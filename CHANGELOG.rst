@@ -2,6 +2,39 @@
 Change Log
 ==========
 
+1.3.2
+-----
+
+* Added sqlalchemy pool_pre_ping option to avoid idle connections and made package configuration updates.
+
+1.3.1
+-----
+
+* Updated dependencies.
+* Bumped python from 3.10-slim-bullseye to 3.12-slim-bullseye.
+* Bumped actions/checkout from 3.5.2 to 4.1.6.
+* Bumped actions/setup-python from 4 to 5.
+* Bumped actions/cache from 3.3.1 to 4.0.2.
+* Moved image push from public lsstsqre dockerhub to lsst-ts GHCR.
+
+1.3.0
+-----
+
+* Added lsst-daf-butler s3 extra dependency.
+
+1.2.1
+-----
+
+* Fixed compatibility with Butler universe 7.
+
+1.2.0
+-----
+
+* Fixed compatibility with Butler universe 6.
+* Fixed Butler threadsafety issue.
+* Upgraded Butler and associated libraries
+* Removed BUTLER_WRITEABLE_HACK.
+
 1.1.0
 -----
 
